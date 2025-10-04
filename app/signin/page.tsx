@@ -1,0 +1,174 @@
+/**
+ * Sign In Page
+ * 
+ * User authentication page for existing users to log into their accounts.
+ * Includes form validation, password visibility toggle, remember me option,
+ * and integration with the authentication context. Redirects to dashboard
+ * upon successful login.
+ */
+
+"use client"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { TrendingUp, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
+import Link from "next/link"
+import { useState } from "react"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+
+export default function SignInPage() {
+  // Form state management
+  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
+  
+  // Auth context and routing
+  const { login, loading } = useAuth()
+  const router = useRouter()
+
+  // Handle form submission with validation
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!email || !password) {
+      toast.error('Please fill in all fields')
+      return
+    }
+
+    try {
+      await login({ email, password })
+      toast.success('Successfully signed in!')
+      router.push('/dashboard')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to sign in')
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex items-center space-x-2">
+            <TrendingUp className="h-8 w-8 text-emerald-600" />
+                        <span className="text-2xl font-bold text-foreground">StockMento</span>
+          </Link>
+          <p className="text-muted-foreground mt-2">Welcome back to your learning journey</p>
+        </div>
+
+        <Card className="border border-border/60 bg-card/95 shadow-xl dark:shadow-none">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
+            <CardDescription className="text-center">Continue your stock market education</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="Enter your email" 
+                    className="pl-10" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    className="pl-10 pr-10"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-muted-foreground hover:text-muted-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="remember" 
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  />
+                  <Label htmlFor="remember" className="text-sm text-muted-foreground">Remember me</Label>
+                </div>
+                <Link href="/forgot-password" className="text-sm text-emerald-600 hover:text-emerald-700">
+                  Forgot password?
+                </Link>
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </form>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Demo Accounts</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs text-muted-foreground bg-muted/40 dark:bg-muted/30 p-3 rounded-md">
+              <p className="font-medium">Try these demo accounts:</p>
+              <p><strong>Student:</strong> john.doe@example.com (any password)</p>
+              <p><strong>Admin:</strong> admin@psxacademy.com (any password)</p>
+            </div>
+
+            <div className="text-center text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <Link href="/signup" className="text-emerald-600 hover:underline font-medium">
+                Sign up
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="text-center mt-6 text-xs text-muted-foreground">
+          Secure login protected by industry-standard encryption
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+
