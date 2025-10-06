@@ -2,14 +2,13 @@
 
 ## 📚 Overview
 
-StockMento is a comprehensive online learning platform designed specifically for Pakistani investors who want to master the Pakistan Stock Exchange (PSX). The platform offers interactive courses, video lessons, case studies, and progress tracking to help users develop their trading and investment skills.
+StockMento is a comprehensive online learning platform designed specifically for Pakistani investors who want to master the Pakistan Stock Exchange (PSX). The platform offers interactive courses, video lessons, and progress tracking to help users develop their trading and investment skills.
 
 ## 🚀 Features
 
 ### Core Learning Features
 - **Interactive Courses**: Structured learning paths for different skill levels
 - **Video Lessons**: Expert-led video content covering trading strategies
-- **Case Studies**: Real-world PSX scenarios and analysis
 - **Progress Tracking**: Detailed learning analytics and achievements
 - **Quiz System**: Knowledge assessment and skill validation
 
@@ -63,7 +62,6 @@ app/
 ├── signin/            # User authentication
 ├── signup/            # User registration
 ├── progress/          # Progress tracking
-├── case-studies/      # Case study content
 └── layout.tsx         # Root layout with providers
 
 components/
@@ -159,7 +157,6 @@ The app supports automatic dark/light mode switching based on system preferences
 - **Courses**: Main learning containers with metadata
 - **Lessons**: Individual learning units (text, video, quiz)
 - **Quizzes**: Assessment tools with multiple choice questions
-- **Case Studies**: Real-world trading scenarios
 
 ### Progress Tracking
 - **Enrollment**: User course registrations

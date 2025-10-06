@@ -6,15 +6,20 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TrendingUp, BookOpen, Clock, Users, Star, CheckCircle, Lock, FileText, Video, ArrowLeft, Play, Download } from "lucide-react"
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { TrendingUp, BookOpen, Clock, Users, Star, CheckCircle, Lock, FileText, Video, ArrowLeft, Play, Download, Menu, LogOut, Bell, Trophy, Settings } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { mockCourses, mockUserProgress, getUserCourses, getLessonsByCourseId } from "@/lib/mock-data"
 import { calculateCourseProgress, formatDuration } from "@/lib/data-utils"
 import { toast } from "sonner"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const router = useRouter()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const courseId = params.id
   
   // Find the course
@@ -22,6 +27,12 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   
   // Get lessons for this course
   const lessons = getLessonsByCourseId(courseId)
+
+  const handleLogout = () => {
+    logout()
+    router.push('/')
+    setMobileMenuOpen(false)
+  }
   
   if (!course) {
     return (
@@ -100,31 +111,144 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Link href="/courses">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Courses
-                </Button>
-              </Link>
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="h-8 w-8 text-emerald-600" />
-                <span className="text-xl font-bold text-foreground">StockMento</span>
-              </div>
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center space-x-4">
+            <Link href="/courses">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="mr-0 sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Back to Courses</span>
+              </Button>
+            </Link>
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="h-8 w-8 text-emerald-600" />
+              <span className="text-xl font-bold text-foreground">StockMento</span>
             </div>
+          </div>
+
+          {/* Desktop Navigation & User Menu */}
+          <div className="hidden items-center space-x-8 md:flex">
+            {/* Navigation Links */}
+            <nav className="flex items-center space-x-6">
+              <Link href="/dashboard" className="text-muted-foreground transition-colors hover:text-emerald-600 dark:hover:text-emerald-400">
+                Dashboard
+              </Link>
+              <Link href="/progress" className="text-muted-foreground transition-colors hover:text-emerald-600 dark:hover:text-emerald-400">
+                Progress
+              </Link>
+            </nav>
             
+            {/* User Menu */}
             {user ? (
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-muted-foreground">Welcome, {user.firstName}</span>
-                <Link href="/dashboard">
-                  <Button variant="outline">Dashboard</Button>
+              <div className="flex items-center space-x-4">
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
+                  <Bell className="h-5 w-5" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-muted-foreground hover:text-red-600 dark:hover:text-red-400"
+                  onClick={() => {
+                    logout()
+                    router.push('/')
+                  }}
+                  title="Logout"
+                >
+                  <LogOut className="h-5 w-5" />
+                </Button>
+                <Link href="/dashboard/profile">
+                  <Avatar className="h-8 w-8 cursor-pointer">
+                    <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                    <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
+                      {user.firstName[0]}
+                      {user.lastName[0]}
+                    </AvatarFallback>
+                  </Avatar>
                 </Link>
               </div>
             ) : (
               <Link href="/signin">
-                <Button className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400">Sign In</Button>
+                <Button className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400">
+                  Sign In
+                </Button>
+              </Link>
+            )}
+          </div>
+
+          {/* Mobile Menu */}
+          <div className="flex items-center space-x-2 md:hidden">
+            {user && (
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
+                <Bell className="h-5 w-5" />
+              </Button>
+            )}
+            {user ? (
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon" className="border-border/40 text-muted-foreground hover:text-emerald-600 hover:border-emerald-600/20">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Toggle menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader className="border-b pb-4">
+                    <SheetTitle className="flex items-center gap-3 text-left">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                        <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
+                          {user.firstName[0]}
+                          {user.lastName[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{user.firstName} {user.lastName}</span>
+                    </SheetTitle>
+                    <SheetDescription className="text-left">
+                      {user.email}
+                    </SheetDescription>
+                  </SheetHeader>
+                  <nav className="flex flex-col gap-3 mt-6">
+                    <Link 
+                      href="/dashboard" 
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <TrendingUp className="h-4 w-4" />
+                      Dashboard
+                    </Link>
+                    <Link 
+                      href="/progress" 
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Trophy className="h-4 w-4" />
+                      Progress
+                    </Link>
+                    <Link 
+                      href="/dashboard/profile" 
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Settings className="h-4 w-4" />
+                      Profile Settings
+                    </Link>
+                    <button
+                      onClick={() => {
+                        logout()
+                        router.push('/')
+                        setMobileMenuOpen(false)
+                      }}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 w-full text-left"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            ) : (
+              <Link href="/signin">
+                <Button className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400">
+                  Sign In
+                </Button>
               </Link>
             )}
           </div>

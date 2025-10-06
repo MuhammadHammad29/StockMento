@@ -127,76 +127,76 @@ export default function ProfilePage() {
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Dashboard
+                <Button variant="ghost" size="sm" className="px-2 sm:px-3">
+                  <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Back to Dashboard</span>
+                  <span className="sm:hidden">Back</span>
                 </Button>
               </Link>
               <div className="flex items-center space-x-2">
-                <TrendingUp className="h-8 w-8 text-emerald-600" />
-                <span className="text-xl font-bold text-foreground">StockMento</span>
+                <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
+                <span className="text-lg sm:text-xl font-bold text-foreground">StockMento</span>
               </div>
             </div>
             
-            <Button onClick={handleLogout} variant="outline">
+            <Button onClick={handleLogout} variant="outline" size="sm" className="px-3 sm:px-4">
               Logout
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Profile Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <Card>
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
-                <div className="relative">
-                  <Avatar className="h-24 w-24">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex flex-col space-y-4 sm:space-y-6">
+                <div className="relative flex justify-center sm:justify-start">
+                  <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
                     <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
-                    <AvatarFallback className="text-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
+                    <AvatarFallback className="text-xl sm:text-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                       {user.firstName[0]}{user.lastName[0]}
                     </AvatarFallback>
                   </Avatar>
                   <Button
                     size="icon"
                     variant="outline"
-                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-background/90 backdrop-blur dark:bg-background/60"
+                    className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-background/90 backdrop-blur dark:bg-background/60"
                   >
-                    <Camera className="h-4 w-4" />
+                    <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
                 
-                <div className="flex-1">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <h1 className="text-3xl font-bold text-foreground">
-                        {user.firstName} {user.lastName}
-                      </h1>
-                      <p className="text-muted-foreground mt-1">{profileData.bio}</p>
-                      <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
-                        <span className="flex items-center">
-                          <Mail className="h-4 w-4 mr-1" />
-                          {user.email}
-                        </span>
-                        <span className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          Joined {profileData.joinDate}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 mt-4 md:mt-0">
-                      <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200">
-                        {user.role === 'admin' ? 'Administrator' : 'Student'}
-                      </Badge>
-                      <Button onClick={() => setIsEditing(!isEditing)} variant="outline">
-                        <Settings className="mr-2 h-4 w-4" />
-                        {isEditing ? 'Cancel' : 'Edit Profile'}
-                      </Button>
-                    </div>
+                <div className="text-center sm:text-left space-y-3">
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                      {user.firstName} {user.lastName}
+                    </h1>
+                    <p className="text-sm sm:text-base text-muted-foreground mt-1 px-2 sm:px-0">{profileData.bio}</p>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
+                    <span className="flex items-center justify-center sm:justify-start">
+                      <Mail className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
+                      <span className="truncate">{user.email}</span>
+                    </span>
+                    <span className="flex items-center justify-center sm:justify-start">
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
+                      Joined {profileData.joinDate}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-3">
+                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200">
+                      {user.role === 'admin' ? 'Administrator' : 'Student'}
+                    </Badge>
+                    <Button onClick={() => setIsEditing(!isEditing)} variant="outline" size="sm" className="w-full sm:w-auto">
+                      <Settings className="mr-2 h-4 w-4" />
+                      {isEditing ? 'Cancel' : 'Edit Profile'}
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -204,52 +204,63 @@ export default function ProfilePage() {
           </Card>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="courses">Courses</TabsTrigger>
-            <TabsTrigger value="achievements">Achievements</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+            <TabsTrigger value="courses" className="text-xs sm:text-sm">Courses</TabsTrigger>
+            <TabsTrigger value="achievements" className="text-xs sm:text-sm">Awards</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Courses Enrolled</p>
-                      <p className="text-3xl font-bold text-foreground">{activitySummary.totalCourses}</p>
+                      <p className="text-xs sm:text-sm font-medium text-muted-foreground">Courses Enrolled</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{activitySummary.totalCourses}</p>
                     </div>
-                    <BookOpen className="h-8 w-8 text-blue-600" />
+                    <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Lessons Completed</p>
-                      <p className="text-3xl font-bold text-foreground">{activitySummary.totalLessons}</p>
+                      <p className="text-xs sm:text-sm font-medium text-muted-foreground">Lessons Completed</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{activitySummary.totalLessons}</p>
                     </div>
-                    <Target className="h-8 w-8 text-emerald-600" />
+                    <Target className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Average Progress</p>
-                      <p className="text-3xl font-bold text-foreground">{activitySummary.averageProgress}%</p>
+                      <p className="text-xs sm:text-sm font-medium text-muted-foreground">Average Progress</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{activitySummary.averageProgress}%</p>
                     </div>
-                    <Trophy className="h-8 w-8 text-purple-600" />
+                    <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
                   </div>
                 </CardContent>
               </Card>
 
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs sm:text-sm font-medium text-muted-foreground">Quizzes Passed</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{activitySummary.totalQuizzes}</p>
+                    </div>
+                    <Star className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -259,13 +270,13 @@ export default function ProfilePage() {
                   <CardDescription>Your latest learning activities</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {recentActivity.map((activity) => (
                       <div key={activity.id} className="flex items-start space-x-3 p-3 border rounded-lg">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2"></div>
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground">{activity.title}</p>
-                          <p className="text-sm text-muted-foreground">{activity.details}</p>
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground text-sm sm:text-base truncate">{activity.title}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">{activity.details}</p>
                           <p className="text-xs text-muted-foreground mt-1">{formatTimeAgo(activity.date)}</p>
                         </div>
                       </div>
@@ -300,30 +311,32 @@ export default function ProfilePage() {
                 <CardDescription>Track your progress across all enrolled courses</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {enrolledCourses.map((course) => {
                     const progress = userProgressData.find(p => p.courseId === course.id)
                     return (
-                      <div key={course.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                      <div key={course.id} className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 p-3 sm:p-4 border rounded-lg">
                         <img 
                           src={course.thumbnail} 
                           alt={course.title}
-                          className="w-16 h-16 rounded-lg object-cover"
+                          className="w-full sm:w-16 h-32 sm:h-16 rounded-lg object-cover flex-shrink-0"
                         />
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-foreground">{course.title}</h3>
-                          <p className="text-sm text-muted-foreground">StockMento Instructor</p>
-                          <div className="flex items-center space-x-2 mt-2">
-                            <Progress value={progress?.overallProgress || 0} className="flex-1" />
-                            <span className="text-sm text-muted-foreground">{progress?.overallProgress || 0}%</span>
+                        <div className="flex-1 w-full space-y-2">
+                          <div>
+                            <h3 className="font-semibold text-foreground text-sm sm:text-base">{course.title}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground">StockMento Instructor</p>
                           </div>
-                          <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
+                          <div className="flex items-center space-x-2">
+                            <Progress value={progress?.overallProgress || 0} className="flex-1" />
+                            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">{progress?.overallProgress || 0}%</span>
+                          </div>
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0 text-xs text-muted-foreground">
                             <span>{progress?.completedLessons.length || 0} lessons completed</span>
                             <span>{progress?.completedQuizzes.length || 0} quizzes taken</span>
                           </div>
                         </div>
-                        <Link href={`/courses/${course.id}`}>
-                          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+                        <Link href={`/courses/${course.id}`} className="w-full sm:w-auto">
+                          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
                             Continue
                           </Button>
                         </Link>
@@ -342,31 +355,31 @@ export default function ProfilePage() {
                 <CardDescription>Your learning milestones and accomplishments</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:gap-4">
                   {achievements.map((achievement) => (
                     <div 
                       key={achievement.id} 
-                      className={`p-4 border rounded-lg ${
+                      className={`p-3 sm:p-4 border rounded-lg ${
                         achievement.earned 
                           ? 'bg-gradient-to-r from-emerald-50 to-blue-50 border-emerald-200 dark:from-emerald-500/10 dark:to-blue-500/10 dark:border-emerald-500/30' 
                           : 'bg-muted/40 border-border/60 dark:bg-muted/30'
                       }`}
                     >
                       <div className="flex items-start space-x-3">
-                        <div className={`p-2 rounded-lg ${
+                        <div className={`p-2 rounded-lg flex-shrink-0 ${
                           achievement.earned ? 'bg-emerald-100 dark:bg-emerald-500/20 dark:text-emerald-200' : 'bg-muted/60 dark:bg-muted/40'
                         }`}>
-                          <achievement.icon className={`h-6 w-6 ${
+                          <achievement.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${
                             achievement.earned ? 'text-emerald-600 dark:text-emerald-300' : 'text-muted-foreground'
                           }`} />
                         </div>
-                        <div className="flex-1">
-                          <h3 className={`font-semibold ${
+                        <div className="flex-1 min-w-0">
+                          <h3 className={`font-semibold text-sm sm:text-base ${
                             achievement.earned ? 'text-foreground' : 'text-muted-foreground'
                           }`}>
                             {achievement.title}
                           </h3>
-                          <p className={`text-sm ${
+                          <p className={`text-xs sm:text-sm ${
                             achievement.earned ? 'text-muted-foreground' : 'text-muted-foreground'
                           }`}>
                             {achievement.description}
@@ -378,7 +391,7 @@ export default function ProfilePage() {
                           )}
                         </div>
                         {achievement.earned && (
-                          <Star className="h-5 w-5 text-yellow-500" />
+                          <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 flex-shrink-0" />
                         )}
                       </div>
                     </div>
@@ -394,10 +407,10 @@ export default function ProfilePage() {
                 <CardTitle>Profile Settings</CardTitle>
                 <CardDescription>Update your personal information</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent className="space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
+                    <Label htmlFor="firstName" className="text-sm">First Name</Label>
                     <Input
                       id="firstName"
                       value={profileData.firstName}
@@ -406,7 +419,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
+                    <Label htmlFor="lastName" className="text-sm">Last Name</Label>
                     <Input
                       id="lastName"
                       value={profileData.lastName}
@@ -417,7 +430,7 @@ export default function ProfilePage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="text-sm">Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -428,7 +441,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
+                  <Label htmlFor="bio" className="text-sm">Bio</Label>
                   <Input
                     id="bio"
                     value={profileData.bio}
@@ -438,7 +451,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
+                  <Label htmlFor="location" className="text-sm">Location</Label>
                   <Input
                     id="location"
                     value={profileData.location}
@@ -448,12 +461,12 @@ export default function ProfilePage() {
                 </div>
 
                 {isEditing && (
-                  <div className="flex space-x-3 pt-4">
-                    <Button onClick={handleSaveProfile} className="bg-emerald-600 hover:bg-emerald-700">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
+                    <Button onClick={handleSaveProfile} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
                       <Save className="mr-2 h-4 w-4" />
                       Save Changes
                     </Button>
-                    <Button onClick={() => setIsEditing(false)} variant="outline">
+                    <Button onClick={() => setIsEditing(false)} variant="outline" className="w-full sm:w-auto">
                       Cancel
                     </Button>
                   </div>

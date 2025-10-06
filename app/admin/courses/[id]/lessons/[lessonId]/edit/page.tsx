@@ -178,30 +178,30 @@ export default function AdminLessonEditPage({
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Link href="/admin" className="flex items-center space-x-2">
-                <TrendingUp className="h-8 w-8 text-emerald-600" />
-                <span className="text-xl font-bold text-foreground">StockMento</span>
-                <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300">Admin</Badge>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
+              <Link href="/admin" className="flex items-center space-x-1 sm:space-x-2 min-w-0">
+                <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600 flex-shrink-0" />
+                <span className="text-sm sm:text-lg lg:text-xl font-bold text-foreground truncate">StockMento</span>
+                <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300 text-xs flex-shrink-0">Admin</Badge>
               </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/courses" className="text-muted-foreground hover:text-foreground">
+              <span className="text-muted-foreground hidden lg:inline">/</span>
+              <Link href="/admin/courses" className="text-muted-foreground hover:text-foreground hidden lg:inline">
                 Courses
               </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href={`/admin/courses/${courseId}`} className="text-muted-foreground hover:text-foreground truncate max-w-32">
+              <span className="text-muted-foreground hidden lg:inline">/</span>
+              <Link href={`/admin/courses/${courseId}`} className="text-muted-foreground hover:text-foreground truncate max-w-32 hidden lg:inline">
                 {course.title}
               </Link>
-              <span className="text-muted-foreground">/</span>
-              <span className="text-muted-foreground truncate max-w-32">{lesson.title}</span>
+              <span className="text-muted-foreground hidden lg:inline">/</span>
+              <span className="text-muted-foreground truncate max-w-32 hidden lg:inline">{lesson.title}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Link href={`/admin/courses/${courseId}`}>
-                <Button variant="outline" className="bg-background/60">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
+                <Button variant="outline" className="bg-background/60 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9">
+                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Back</span>
                 </Button>
               </Link>
             </div>
@@ -209,27 +209,28 @@ export default function AdminLessonEditPage({
         </div>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Edit Lesson</h1>
-            <p className="text-muted-foreground">Update lesson content and settings</p>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-8 gap-3 sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-2">Edit Lesson</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Update lesson content and settings</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <Link href={`/courses/${courseId}/lessons/${lessonId}`}>
-              <Button variant="outline">
-                <Eye className="mr-2 h-4 w-4" />
-                Preview
+              <Button variant="outline" className="text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9">
+                <Eye className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Preview</span>
               </Button>
             </Link>
             <Button 
               onClick={handleSave} 
               disabled={!hasChanges || isLoading}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9"
             >
-              <Save className="mr-2 h-4 w-4" />
-              {isLoading ? 'Saving...' : 'Save Changes'}
+              <Save className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{isLoading ? 'Saving...' : 'Save Changes'}</span>
+              <span className="sm:hidden">{isLoading ? 'Save...' : 'Save'}</span>
             </Button>
           </div>
         </div>

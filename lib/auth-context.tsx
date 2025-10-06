@@ -9,6 +9,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuthUser, LoginCredentials, SignupData, AuthContextType } from '@/lib/types';
 import { saveToStorage, loadFromStorage, removeFromStorage, STORAGE_KEYS } from '@/lib/data-utils';
 import { mockUsers } from '@/lib/mock-data';
@@ -23,6 +24,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     // Check for existing user session on mount
@@ -135,6 +137,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Clear other user-specific data
     removeFromStorage(STORAGE_KEYS.PROGRESS);
     removeFromStorage(STORAGE_KEYS.PREFERENCES);
+    // Redirect to landing page
+    router.push('/');
   };
 
   const resetPassword = async (email: string): Promise<void> => {

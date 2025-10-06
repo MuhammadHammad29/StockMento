@@ -2,11 +2,11 @@
  * Mock Data for StockMento Learning Platform
  * 
  * Contains sample data for development and testing purposes.
- * Includes users, courses, lessons, quizzes, progress tracking, and case studies.
+ * Includes users, courses, lessons, quizzes, and progress tracking.
  * This data will be replaced with database queries when backend is integrated.
  */
 
-import { Course, Lesson, Quiz, QuizQuestion, CaseStudy, User, UserProgress } from './types';
+import { Course, Lesson, Quiz, QuizQuestion, User, UserProgress } from './types';
 import { comprehensiveLessons } from './lessons-data';
 
 /**
@@ -358,54 +358,6 @@ export const mockQuizzes: Quiz[] = [
     ],
     createdAt: new Date('2024-04-01'),
     updatedAt: new Date('2024-12-12'),
-  }
-];
-
-// Mock Case Studies
-export const mockCaseStudies: CaseStudy[] = [
-  {
-    id: 'case-1',
-    title: 'Bank Alfalah IPO Analysis',
-    description: 'Comprehensive analysis of Bank Alfalah\'s public offering and market performance.',
-    content: `# Bank Alfalah IPO Case Study
-
-## Background
-Bank Alfalah Limited is one of Pakistan's leading private banks. This case study examines the bank's initial public offering process and subsequent market performance.
-
-## Key Learning Points
-- IPO valuation methodologies
-- Banking sector analysis
-- Market timing considerations
-- Post-IPO performance tracking`,
-    difficulty: 'Medium',
-    estimatedTime: 45,
-    tags: ['Banking', 'IPO', 'Valuation'],
-    scenario: 'You are an investment analyst evaluating Bank Alfalah\'s IPO opportunity',
-    objectives: [
-      'Analyze the bank\'s financial performance',
-      'Evaluate IPO pricing',
-      'Assess market conditions',
-      'Make investment recommendation'
-    ],
-    keyTakeaways: [
-      'IPO valuation requires comprehensive analysis',
-      'Market conditions significantly impact IPO success',
-      'Banking fundamentals are crucial for evaluation'
-    ],
-    resources: [
-      {
-        title: 'Bank Alfalah Annual Report',
-        type: 'document',
-        url: '#'
-      },
-      {
-        title: 'PSX Banking Sector Overview',
-        type: 'link',
-        url: '#'
-      }
-    ],
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-12-01'),
   }
 ];
 

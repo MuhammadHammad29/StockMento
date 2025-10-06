@@ -1192,7 +1192,7 @@ Fundamental analysis is a method of evaluating securities by analyzing economic,
   {
     id: 'lesson-4-10',
     courseId: 'course-4',
-    title: 'Industry Analysis Case Study',
+    title: 'Industry Analysis Practice',
     description: 'Comprehensive analysis of Pakistani banking sector.',
     type: 'video',
     videoUrl: 'https://www.youtube.com/watch?v=p7HKvqRI_Bo',

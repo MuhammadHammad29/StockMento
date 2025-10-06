@@ -1,4 +1,4 @@
-import { Course, Lesson, Quiz, CaseStudy, UserProgress, User, CourseFilter } from './types';
+import { Course, Lesson, Quiz, UserProgress, User, CourseFilter } from './types';
 
 // Local storage keys
 export const STORAGE_KEYS = {

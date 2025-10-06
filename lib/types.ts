@@ -94,28 +94,6 @@ export interface QuizQuestion {
   points: number;
 }
 
-export interface CaseStudy {
-  id: string;
-  title: string;
-  description: string;
-  content: string; // Markdown content
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  estimatedTime: number; // in minutes
-  tags: string[];
-  scenario: string;
-  objectives: string[];
-  keyTakeaways: string[];
-  resources: CaseStudyResource[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface CaseStudyResource {
-  title: string;
-  type: 'link' | 'document' | 'video';
-  url: string;
-}
-
 export interface UserProgress {
   userId: string;
   courseId: string;
@@ -158,7 +136,7 @@ export interface AdminStats {
   totalUsers: number;
   totalCourses: number;
   totalQuizzes: number;
-  totalCaseStudies: number;
+  totalLessons: number;
   activeUsers: number;
   courseCompletions: number;
   averageQuizScore: number;

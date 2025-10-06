@@ -179,8 +179,8 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
             <div className="flex items-center space-x-4">
               <Link href={`/courses/${courseId}`}>
                 <Button variant="ghost" size="sm">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Course
+                  <ArrowLeft className="mr-0 lg:mr-2 h-4 w-4" />
+                  <span className="hidden lg:inline">Back to Course</span>
                 </Button>
               </Link>
               <div className="flex items-center space-x-2">

@@ -185,29 +185,7 @@ CREATE INDEX idx_quiz_attempts_quiz_id ON quiz_attempts(quiz_id);
 CREATE INDEX idx_quiz_attempts_course_id ON quiz_attempts(course_id);
 ```
 
-### 9. Case Studies Table
-```sql
-CREATE TABLE case_studies (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    content TEXT NOT NULL, -- Markdown content
-    difficulty VARCHAR(20) NOT NULL CHECK (difficulty IN ('Easy', 'Medium', 'Hard')),
-    estimated_time_minutes INTEGER DEFAULT 30,
-    tags TEXT[],
-    scenario TEXT NOT NULL,
-    objectives TEXT[],
-    key_takeaways TEXT[],
-    is_published BOOLEAN DEFAULT false,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_case_studies_difficulty ON case_studies(difficulty);
-CREATE INDEX idx_case_studies_published ON case_studies(is_published);
-```
-
-### 10. File Uploads Table
+### 9. File Uploads Table
 ```sql
 CREATE TABLE file_uploads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
