@@ -248,8 +248,8 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Revenue</p>
-                  <p className="text-2xl font-bold">PKR {(course.price * enrolledUsers.length).toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">Enrollments</p>
+                  <p className="text-2xl font-bold">{enrolledUsers.length}</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-emerald-600" />
               </div>
@@ -345,9 +345,9 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                       
                       {/* Mobile: Badge and duration on separate line */}
                       <div className="flex items-center justify-between sm:hidden">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {lesson.type}
+                      <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-xs">
+                          {lesson.type}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
                             {lesson.duration} min
@@ -357,7 +357,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
 
                       {/* Desktop: All controls in one line */}
                       <div className="hidden sm:flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-xs">
                           {lesson.type}
                         </Badge>
                         <span className="text-sm text-muted-foreground">

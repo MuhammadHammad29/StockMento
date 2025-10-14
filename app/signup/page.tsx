@@ -5,17 +5,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { TrendingUp, Mail, Lock, User, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { TrendingUp, Mail, Lock, User, Eye, EyeOff, Loader2, Camera } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { validateEmail, validatePassword } from "@/lib/data-utils"
+import AvatarPicker from "@/components/avatar-picker"
+import { getDefaultAvatarId, getAvatarPath } from "@/lib/mock-data"
 
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const [selectedAvatarId, setSelectedAvatarId] = useState(getDefaultAvatarId())
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -29,6 +34,12 @@ export default function SignUpPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleAvatarSelect = (avatarId: string) => {
+    setSelectedAvatarId(avatarId)
+    setShowAvatarPicker(false)
+    toast.success('Avatar selected!')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,7 +77,8 @@ export default function SignUpPage() {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        avatarId: selectedAvatarId
       })
       toast.success('Account created successfully!')
       router.push('/dashboard')
@@ -122,6 +134,34 @@ export default function SignUpPage() {
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
                       required 
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Avatar Selection */}
+              <div className="space-y-2">
+                <Label>Choose Your Avatar</Label>
+                <div className="flex items-center space-x-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={getAvatarPath(selectedAvatarId)} alt="Selected avatar" />
+                    <AvatarFallback>
+                      <User className="h-8 w-8" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <Button 
+                      type="button"
+                      onClick={() => setShowAvatarPicker(true)} 
+                      variant="outline" 
+                      size="sm"
+                      className="w-full"
+                    >
+                      <Camera className="mr-2 h-4 w-4" />
+                      Choose Avatar
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Select from our collection of professional avatars
+                    </p>
                   </div>
                 </div>
               </div>
@@ -238,6 +278,19 @@ export default function SignUpPage() {
           You can unsubscribe at any time.
         </div>
       </div>
+
+      {/* Avatar Picker Modal */}
+      {showAvatarPicker && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="max-w-md w-full max-h-[90vh] overflow-auto">
+            <AvatarPicker
+              selectedAvatarId={selectedAvatarId}
+              onAvatarSelect={handleAvatarSelect}
+              onCancel={() => setShowAvatarPicker(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

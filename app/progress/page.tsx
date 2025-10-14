@@ -10,25 +10,27 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescri
 import {
   TrendingUp,
   BookOpen,
-  Trophy,
   Clock,
+  Users,
+  Star,
+  Trophy,
   Target,
   Calendar,
+  ChevronRight,
   BarChart3,
+  Menu,
+  LogOut,
+  Play,
   CheckCircle,
   PlayCircle,
   Lock,
-  Star,
   ArrowLeft,
-  Menu,
-  Bell,
   Settings,
-  User,
-  LogOut,
 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
+import { getAvatarById } from "@/lib/mock-data"
 
 export default function ProgressPage() {
   const { user, logout } = useAuth()
@@ -167,9 +169,6 @@ export default function ProgressPage() {
 
               {/* Desktop User Menu */}
               <div className="hidden items-center space-x-4 md:flex">
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
-                  <Bell className="h-5 w-5" />
-                </Button>
                 <Button 
                   variant="ghost" 
                   size="icon" 
@@ -181,7 +180,7 @@ export default function ProgressPage() {
                 </Button>
                 <Link href="/dashboard/profile">
                   <Avatar className="h-8 w-8 cursor-pointer">
-                    <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                    <AvatarImage src={getAvatarById(user.avatarId)?.imagePath} alt={`${user.firstName} ${user.lastName}`} />
                     <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                       {user.firstName[0]}
                       {user.lastName[0]}
@@ -192,9 +191,6 @@ export default function ProgressPage() {
 
               {/* Mobile Menu */}
               <div className="flex items-center space-x-2 md:hidden">
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
-                  <Bell className="h-5 w-5" />
-                </Button>
                 <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                   <SheetTrigger asChild>
                     <Button variant="outline" size="icon" className="border-border/40 text-muted-foreground hover:text-emerald-600 hover:border-emerald-600/20">
@@ -206,7 +202,7 @@ export default function ProgressPage() {
                     <SheetHeader className="border-b pb-4">
                       <SheetTitle className="flex items-center gap-3 text-left">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                          <AvatarImage src={getAvatarById(user.avatarId)?.imagePath} alt={`${user.firstName} ${user.lastName}`} />
                           <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                             {user.firstName[0]}
                             {user.lastName[0]}

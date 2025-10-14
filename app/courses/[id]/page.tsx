@@ -7,10 +7,10 @@ import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
-import { TrendingUp, BookOpen, Clock, Users, Star, CheckCircle, Lock, FileText, Video, ArrowLeft, Play, Download, Menu, LogOut, Bell, Trophy, Settings } from "lucide-react"
+import { TrendingUp, BookOpen, Clock, Users, Star, CheckCircle, Lock, FileText, Video, ArrowLeft, Play, Download, Menu, LogOut, Trophy, Settings } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { mockCourses, mockUserProgress, getUserCourses, getLessonsByCourseId } from "@/lib/mock-data"
+import { mockCourses, mockUserProgress, getUserCourses, getLessonsByCourseId, getAvatarById } from "@/lib/mock-data"
 import { calculateCourseProgress, formatDuration } from "@/lib/data-utils"
 import { toast } from "sonner"
 import { useState } from "react"
@@ -80,7 +80,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       user: { name: "Ali Hassan", avatar: "/placeholder-user.jpg" },
       rating: 5,
       date: "2 weeks ago",
-      comment: "This course changed my understanding of the stock market completely. The instructor's expertise really shows through the content."
+      comment: "This course changed my understanding of the stock market completely. The content is well-structured and comprehensive."
     }
   ]
 
@@ -90,10 +90,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       return
     }
     toast.success("Successfully enrolled in the course!")
-  }
-
-  const formatPrice = (price: number) => {
-    return price === 0 ? "Free" : `PKR ${price.toLocaleString()}`
   }
 
   const getLessonIcon = (type: string) => {
@@ -140,9 +136,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             {/* User Menu */}
             {user ? (
               <div className="flex items-center space-x-4">
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
-                  <Bell className="h-5 w-5" />
-                </Button>
                 <Button 
                   variant="ghost" 
                   size="icon" 
@@ -157,7 +150,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 </Button>
                 <Link href="/dashboard/profile">
                   <Avatar className="h-8 w-8 cursor-pointer">
-                    <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                    <AvatarImage src={getAvatarById(user.avatarId)?.imagePath} alt={`${user.firstName} ${user.lastName}`} />
                     <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                       {user.firstName[0]}
                       {user.lastName[0]}
@@ -176,11 +169,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
           {/* Mobile Menu */}
           <div className="flex items-center space-x-2 md:hidden">
-            {user && (
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
-                <Bell className="h-5 w-5" />
-              </Button>
-            )}
             {user ? (
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
@@ -193,7 +181,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   <SheetHeader className="border-b pb-4">
                     <SheetTitle className="flex items-center gap-3 text-left">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                        <AvatarImage src={getAvatarById(user.avatarId)?.imagePath} alt={`${user.firstName} ${user.lastName}`} />
                         <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                           {user.firstName[0]}
                           {user.lastName[0]}
@@ -265,7 +253,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 <Badge variant={course.level === "Beginner" ? "default" : course.level === "Intermediate" ? "secondary" : "destructive"}>
                   {course.level}
                 </Badge>
-                <Badge variant="outline">{formatPrice(course.price)}</Badge>
                 <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-200">
                   {course.category}
                 </Badge>
@@ -306,9 +293,8 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
             {/* Course Content Tabs */}
             <Tabs defaultValue="curriculum" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-                <TabsTrigger value="instructor">Instructor</TabsTrigger>
                 <TabsTrigger value="reviews">Reviews</TabsTrigger>
               </TabsList>
 
@@ -344,7 +330,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                                   )}
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                  <LessonIcon className={`h-4 w-4 ${lesson.type === "video" ? "text-blue-600" : "text-muted-foreground"}`} />
+                                                              <LessonIcon className={`h-4 w-4 ${lesson.type === "video" ? "text-blue-600" : "text-muted-foreground"}`} />
                                   <span className={`font-medium ${status === "current" ? "text-emerald-700" : ""}`}>
                                     {lesson.title}
                                   </span>
@@ -374,43 +360,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     <p className="text-muted-foreground">The curriculum for this course is being prepared.</p>
                   </Card>
                 )}
-              </TabsContent>
-
-              <TabsContent value="instructor">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-4">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage src="/professional-woman-instructor.jpg" />
-                        <AvatarFallback>PSX</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold mb-1">StockMento Instructor</h3>
-                        <p className="text-muted-foreground mb-3">Senior Financial Analyst & Market Expert</p>
-                        <p className="text-foreground mb-4">
-                          Our instructor has over 15 years of experience in financial markets and has been teaching 
-                          stock market fundamentals for the past 8 years. Known for making complex financial concepts 
-                          accessible to beginners while providing valuable insights for experienced traders.
-                        </p>
-
-                        <div className="grid md:grid-cols-3 gap-4">
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-emerald-600">15+</div>
-                            <div className="text-sm text-muted-foreground">Years Experience</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-blue-600">5,000+</div>
-                            <div className="text-sm text-muted-foreground">Students Taught</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-yellow-600">4.9</div>
-                            <div className="text-sm text-muted-foreground">Average Rating</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
               </TabsContent>
 
               <TabsContent value="reviews">
@@ -484,10 +433,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   ) : (
                     <div className="space-y-4">
                       <Button onClick={handleEnroll} className="w-full bg-emerald-600 hover:bg-emerald-700" size="lg">
-                        Enroll Now - {formatPrice(course.price)}
-                      </Button>
-                      <Button variant="outline" className="w-full">
-                        Add to Wishlist
+                        Enroll Now
                       </Button>
                     </div>
                   )}
@@ -535,7 +481,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                           <div className="flex-1">
                             <h4 className="font-medium text-sm line-clamp-2">{relatedCourse.title}</h4>
                             <p className="text-xs text-muted-foreground">{relatedCourse.level} • {formatDuration(relatedCourse.duration)}</p>
-                            <p className="text-xs text-emerald-600 font-medium">{formatPrice(relatedCourse.price)}</p>
                           </div>
                         </div>
                       </Link>

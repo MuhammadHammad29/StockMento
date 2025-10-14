@@ -101,15 +101,6 @@ export const filterCourses = (courses: Course[], filters: CourseFilter): Course[
       }
     }
     
-    // Price range filter
-    if (filters.priceRange) {
-      const [min, max] = filters.priceRange;
-      const price = course.price;
-      if (price < min || price > max) {
-        return false;
-      }
-    }
-    
     // Rating filter
     if (filters.rating && course.rating < filters.rating) {
       return false;
@@ -293,17 +284,6 @@ export const getYouTubeVideoId = (url: string): string | null => {
   const match = url.match(regex);
   return match ? match[1] : null;
 };
-
-export const formatCurrency = (amount: number, currency = 'PKR'): string => {
-  return new Intl.NumberFormat('en-PK', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
-
-
 
 // Analytics utilities
 export const calculateAverageRating = (ratings: number[]): number => {

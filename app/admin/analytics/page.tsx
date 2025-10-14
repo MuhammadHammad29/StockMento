@@ -90,11 +90,6 @@ export default function AdminAnalyticsPage() {
                 <span className="sm:hidden">Back</span>
               </Button>
             </Link>
-            <Button variant="outline" className="gap-2 bg-background/60 text-sm">
-              <Download className="h-4 w-4" />
-              <span className="hidden md:inline">Export Report</span>
-              <span className="md:hidden">Export</span>
-            </Button>
           </div>
 
           {/* Mobile Menu */}
@@ -130,14 +125,6 @@ export default function AdminAnalyticsPage() {
                     Dashboard
                   </Link>
                   <Link 
-                    href="/admin/users" 
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Users className="h-4 w-4" />
-                    Manage Users
-                  </Link>
-                  <Link 
                     href="/admin/courses" 
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
                     onClick={() => setMobileMenuOpen(false)}
@@ -162,16 +149,6 @@ export default function AdminAnalyticsPage() {
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </Button>
-                  <div className="mt-2">
-                    <Button
-                      onClick={() => setMobileMenuOpen(false)}
-                      variant="outline"
-                      className="w-full gap-2 bg-background/60"
-                    >
-                      <Download className="h-4 w-4" />
-                      Export Report
-                    </Button>
-                  </div>
                 </div>
               </SheetContent>
             </Sheet>
@@ -235,40 +212,6 @@ export default function AdminAnalyticsPage() {
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-4 sm:space-y-6">
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-foreground text-lg sm:text-xl">Monthly User Activity</CardTitle>
-                <CardDescription className="text-sm">Comparison of total vs active users</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6">
-                <div className="grid gap-3 sm:gap-4 text-sm text-muted-foreground grid-cols-1 sm:grid-cols-2">
-                  {userActivity.map((point) => (
-                    <div
-                      key={point.month}
-                      className="rounded-lg border border-border/40 bg-background/70 p-3 sm:p-4 backdrop-blur-sm"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-foreground text-sm">{point.month}</span>
-                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs">
-                          Active
-                        </Badge>
-                      </div>
-                      <div className="mt-3 flex items-baseline justify-between">
-                        <div>
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Total Users</p>
-                          <p className="text-xl font-semibold text-foreground">{point.users}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Active Users</p>
-                          <p className="text-xl font-semibold text-emerald-600 dark:text-emerald-300">{point.active}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border border-border/60 bg-card/90">
               <CardHeader>
                 <CardTitle className="text-foreground">Top Courses</CardTitle>
                 <CardDescription>Most popular by enrollment</CardDescription>
@@ -291,6 +234,59 @@ export default function AdminAnalyticsPage() {
                     <p className="mt-2 text-sm text-muted-foreground">Rating: {course.rating.toFixed(1)} / 5</p>
                   </div>
                 ))}
+              </CardContent>
+            </Card>
+
+            <Card className="border border-border/60 bg-card/90">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-foreground text-lg sm:text-xl">Learning Patterns</CardTitle>
+                <CardDescription className="text-sm">When and how students learn best</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <div className="grid gap-3 sm:gap-4 text-sm text-muted-foreground grid-cols-1 sm:grid-cols-2">
+                  {[
+                    {
+                      pattern: "Peak Hours",
+                      value: "7-9 PM",
+                      description: "Most active learning time",
+                      icon: "🕰️"
+                    },
+                    {
+                      pattern: "Preferred Days", 
+                      value: "Weekends",
+                      description: "40% more activity",
+                      icon: "📅"
+                    },
+                    {
+                      pattern: "Session Length",
+                      value: "25 mins",
+                      description: "Average study session",
+                      icon: "⏱️"
+                    },
+                    {
+                      pattern: "Content Type Preferences",
+                      value: "Video 45%",
+                      description: "Most completed content type",
+                      icon: "🎥"
+                    }
+                  ].map((item) => (
+                    <div
+                      key={item.pattern}
+                      className="rounded-lg border border-border/40 bg-background/70 p-3 sm:p-4 backdrop-blur-sm"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-foreground text-sm flex items-center gap-2">
+                          <span>{item.icon}</span>
+                          {item.pattern}
+                        </span>
+                        <Badge className="bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-200 text-xs">
+                          {item.value}
+                        </Badge>
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">{item.description}</p>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -353,10 +349,10 @@ export default function AdminAnalyticsPage() {
                     description: "Courses with <40% completion",
                   },
                   {
-                    label: "Expiring Trials",
-                    value: "24 users",
-                    tone: "blue",
-                    description: "Trial access ending within 7 days",
+                    label: "Low Engagement Content",
+                    value: "23%",
+                    tone: "red",
+                    description: "Risk Assessment Quiz completion rate",
                   },
                 ].map((item) => (
                   <div key={item.label} className="rounded-lg border border-border/40 bg-background/70 p-4 backdrop-blur-sm">
@@ -378,35 +374,45 @@ export default function AdminAnalyticsPage() {
 
             <Card className="border border-border/60 bg-card/90">
               <CardHeader>
-                <CardTitle className="text-foreground">Action Items</CardTitle>
-                <CardDescription>Next steps to improve engagement</CardDescription>
+                <CardTitle className="text-foreground">Course Performance Insights</CardTitle>
+                <CardDescription>Key course effectiveness indicators</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {[
                   {
-                    title: "Launch onboarding walkthrough",
-                    description: "Increase beginner retention with guided tours",
-                    tone: "emerald",
+                    metric: "Highest Quiz Pass Rate",
+                    value: "92%",
+                    detail: "Technical Analysis",
+                    icon: "📈"
                   },
                   {
-                    title: "Add advanced modules",
-                    description: "Provide deeper content for advanced learners",
-                    tone: "blue",
+                    metric: "Most Engaging Course",
+                    value: "4.8/5",
+                    detail: "PSX Fundamentals",
+                    icon: "🎯"
                   },
                   {
-                    title: "Re-engage inactive users",
-                    description: "Send targeted email campaigns to 45 users",
-                    tone: "amber",
+                    metric: "Fastest Completion",
+                    value: "3.2 days",
+                    detail: "Risk Management",
+                    icon: "⚡"
+                  },
+                  {
+                    metric: "Course Reviews",
+                    value: "45",
+                    detail: "This Month",
+                    icon: "💬"
                   },
                 ].map((item) => (
-                  <div key={item.title} className="rounded-lg border border-border/40 bg-background/70 p-4 backdrop-blur-sm">
-                    <Badge
-                      className="mb-2 w-fit"
-                    >
-                      Priority
-                    </Badge>
-                    <p className="text-sm font-medium text-foreground">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.description}</p>
+                  <div key={item.metric} className="rounded-lg border border-border/40 bg-background/70 p-4 backdrop-blur-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-lg">{item.icon}</span>
+                      <Badge className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs">
+                        {item.value}
+                      </Badge>
+                    </div>
+                    <p className="text-sm font-medium text-foreground">{item.metric}</p>
+                    <p className="text-xs text-muted-foreground">{item.detail}</p>
                   </div>
                 ))}
               </CardContent>

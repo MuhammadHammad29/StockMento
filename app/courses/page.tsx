@@ -4,7 +4,10 @@
  * Displays all available courses with filtering and search functionality.
  * Shows user enrollment                  <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                     <SheetTrigger asChild>
-                      <Button variant="outline" size="icon" className="border-border/40 text-muted-foreground hover:text-emerald-600 hover:border-emerald-600/20">
+                      <Button variant="ou                  <option value="Long">&gt;5h)</option>
+                </select>
+              </div>
+            </div>con" className="border-border/40 text-muted-foreground hover:text-emerald-600 hover:border-emerald-600/20">
                         <Menu className="h-5 w-5" />
                         <span className="sr-only">Open menu</span>
                       </Button>
@@ -21,11 +24,11 @@ import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
-import { TrendingUp, BookOpen, Clock, Users, Star, Search, Filter, ChevronRight, ArrowLeft, Menu, BarChart3, User, Settings, Bell, LogOut } from "lucide-react"
+import { TrendingUp, BookOpen, Clock, Users, Star, Search, Filter, ChevronRight, ArrowLeft, Menu, BarChart3, User, Settings, LogOut } from "lucide-react"
 import Link from "next/link"
 import { useState, useMemo } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { mockCourses, getUserCourses, mockUserProgress } from "@/lib/mock-data"
+import { mockCourses, getUserCourses, mockUserProgress, getAvatarById } from "@/lib/mock-data"
 import { calculateCourseProgress } from "@/lib/data-utils"
 
 export default function CoursesPage() {
@@ -36,7 +39,6 @@ export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [levelFilter, setLevelFilter] = useState("All")
   const [durationFilter, setDurationFilter] = useState("All")
-  const [priceFilter, setPriceFilter] = useState("All")
 
   // Get user's enrolled courses and progress data
   const enrolledCourses = user ? getUserCourses(user.id) : []
@@ -77,13 +79,9 @@ export default function CoursesPage() {
         (durationFilter === "Medium" && course.duration > 120 && course.duration <= 300) ||
         (durationFilter === "Long" && course.duration > 300)
       
-      const matchesPrice = priceFilter === "All" ||
-        (priceFilter === "Free" && course.price === 0) ||
-        (priceFilter === "Paid" && course.price > 0)
-      
-      return matchesSearch && matchesLevel && matchesDuration && matchesPrice
+      return matchesSearch && matchesLevel && matchesDuration
     })
-  }, [coursesWithProgress, searchQuery, levelFilter, durationFilter, priceFilter])
+  }, [coursesWithProgress, searchQuery, levelFilter, durationFilter])
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60)
@@ -92,10 +90,6 @@ export default function CoursesPage() {
       return `${hours}h ${mins > 0 ? `${mins}m` : ''}`
     }
     return `${mins}m`
-  }
-
-  const formatPrice = (price: number) => {
-    return price === 0 ? "Free" : `PKR ${price.toLocaleString()}`
   }
 
   const getLevelColor = (level: string) => {
@@ -138,9 +132,6 @@ export default function CoursesPage() {
 
                 {/* Desktop User Menu */}
                 <div className="hidden items-center space-x-4 md:flex">
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
-                    <Bell className="h-5 w-5" />
-                  </Button>
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -152,7 +143,7 @@ export default function CoursesPage() {
                   </Button>
                   <Link href="/dashboard/profile">
                     <Avatar className="h-8 w-8 cursor-pointer">
-                      <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                      <AvatarImage src={getAvatarById(user.avatarId)?.imagePath} alt={`${user.firstName} ${user.lastName}`} />
                       <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                         {user.firstName[0]}
                         {user.lastName[0]}
@@ -163,9 +154,6 @@ export default function CoursesPage() {
 
                 {/* Mobile Menu */}
                 <div className="flex items-center space-x-2 md:hidden">
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
-                    <Bell className="h-5 w-5" />
-                  </Button>
                   <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                     <SheetTrigger asChild>
                       <Button variant="outline" size="icon" className="border-border/40 text-muted-foreground hover:text-emerald-600 hover:border-emerald-600/20">
@@ -177,7 +165,7 @@ export default function CoursesPage() {
                       <SheetHeader className="border-b pb-4">
                         <SheetTitle className="flex items-center gap-3 text-left">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                            <AvatarImage src={getAvatarById(user.avatarId)?.imagePath} alt={`${user.firstName} ${user.lastName}`} />
                             <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                               {user.firstName[0]}
                               {user.lastName[0]}
@@ -277,7 +265,7 @@ export default function CoursesPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Search courses, instructors, or topics..." 
+                  placeholder="Search courses or topics..." 
                   className="pl-10" 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -305,16 +293,6 @@ export default function CoursesPage() {
                   <option value="Medium">Medium (2-5h)</option>
                   <option value="Long">Long (&gt;5h)</option>
                 </select>
-                
-                <select
-                  value={priceFilter}
-                  onChange={(e) => setPriceFilter(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                  <option value="All">All Prices</option>
-                  <option value="Free">Free</option>
-                  <option value="Paid">Paid</option>
-                </select>
               </div>
             </div>
             
@@ -337,7 +315,6 @@ export default function CoursesPage() {
                 setSearchQuery("")
                 setLevelFilter("All")
                 setDurationFilter("All")
-                setPriceFilter("All")
               }}
               variant="outline"
             >
@@ -357,11 +334,6 @@ export default function CoursesPage() {
                   <div className="absolute top-3 left-3">
                     <Badge variant={getLevelColor(course.level)} className="shadow-sm">
                       {course.level}
-                    </Badge>
-                  </div>
-                  <div className="absolute top-3 right-3">
-                    <Badge variant="outline" className="bg-background/90 shadow-sm">
-                      {formatPrice(course.price)}
                     </Badge>
                   </div>
                   {course.isEnrolled && (

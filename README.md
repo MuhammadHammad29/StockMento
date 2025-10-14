@@ -94,7 +94,6 @@ lib/
 ### Admin Pages
 - **Admin Dashboard** (`/admin`): Administrative overview
 - **Course Management** (`/admin/courses`): Create/edit courses
-- **User Management** (`/admin/users`): User administration
 - **Analytics** (`/admin/analytics`): Platform metrics
 
 ## 💻 Development
@@ -170,9 +169,6 @@ The app supports automatic dark/light mode switching based on system preferences
 npm run build
 npm run start
 ```
-
-### Vercel Deployment
-The app is optimized for Vercel deployment with analytics integration included.
 
 ## 🔄 Backend Integration
 

@@ -40,8 +40,6 @@ import {
   BookOpen,
   PlayCircle,
   BarChart3,
-  Settings,
-  Bell,
   FileText,
   LogOut,
   Menu,
@@ -116,22 +114,6 @@ export default function AdminDashboard() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300 p-2"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Notifications</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300 p-2"
-            >
-              <Settings className="h-4 w-4" />
-              <span className="sr-only">Settings</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
               onClick={adminLogout}
               className="text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 p-2"
             >
@@ -148,14 +130,6 @@ export default function AdminDashboard() {
 
           {/* Mobile Menu */}
           <div className="flex items-center space-x-2 sm:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300 h-8 w-8"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Notifications</span>
-            </Button>
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-emerald-600 h-8 w-8">
@@ -179,14 +153,6 @@ export default function AdminDashboard() {
                   </SheetDescription>
                 </SheetHeader>
                 <nav className="flex flex-col gap-3 mt-6">
-                  <Link 
-                    href="/admin/users" 
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Users className="h-4 w-4" />
-                    Manage Users
-                  </Link>
                   <Link 
                     href="/admin/courses" 
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
@@ -320,15 +286,6 @@ export default function AdminDashboard() {
                     </div>
                   </Button>
                 </Link>
-                <Link href="/admin/users">
-                  <Button variant="outline" className="h-auto w-full justify-start bg-background/70 p-4">
-                    <Users className="mr-3 h-5 w-5 text-blue-500" />
-                    <div className="text-left">
-                      <div className="font-medium text-foreground">Manage Users</div>
-                      <div className="text-sm text-muted-foreground">View and update learner accounts</div>
-                    </div>
-                  </Button>
-                </Link>
                 <Link href="/admin/analytics">
                   <Button variant="outline" className="h-auto w-full justify-start bg-background/70 p-4">
                     <BarChart3 className="mr-3 h-5 w-5 text-purple-500" />
@@ -407,35 +364,31 @@ export default function AdminDashboard() {
                     </div>
                   ))}
                 </div>
-                <Link href="/admin/users">
-                  <Button variant="outline" className="mt-3 sm:mt-4 w-full text-sm">
-                    View All Users
-                  </Button>
-                </Link>
               </CardContent>
             </Card>
 
             <Card className="border border-border/60 bg-card/90">
               <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-foreground text-lg sm:text-xl">System Status</CardTitle>
+                <CardTitle className="text-foreground text-lg sm:text-xl">Recent Enrollments</CardTitle>
+                <CardDescription className="text-sm">Latest course enrollments</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 p-4 sm:p-6">
                 {[
-                  { label: "Server Status", badge: "Online", tone: "emerald" },
-                  { label: "Database", badge: "Connected", tone: "emerald" },
-                  { label: "Storage", badge: "78% Used", tone: "amber" },
-                  { label: "Backup", badge: "Up to Date", tone: "emerald" },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between">
-                    <span className="text-sm text-foreground">{item.label}</span>
+                  { course: "PSX Fundamentals", student: "Ahmed Khan", time: "2 hours ago", level: "Beginner" },
+                  { course: "Technical Analysis", student: "Fatima Ali", time: "4 hours ago", level: "Intermediate" },
+                  { course: "Risk Management", student: "Hassan Ahmed", time: "6 hours ago", level: "Advanced" },
+                  { course: "Portfolio Building", student: "Ayesha Khan", time: "8 hours ago", level: "Intermediate" },
+                ].map((enrollment, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{enrollment.course}</p>
+                      <p className="text-xs text-muted-foreground">{enrollment.student} • {enrollment.time}</p>
+                    </div>
                     <Badge
-                      className={
-                        item.tone === "emerald"
-                          ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200"
-                          : "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200"
-                      }
+                      variant="outline"
+                      className="text-xs capitalize flex-shrink-0 ml-2"
                     >
-                      {item.badge}
+                      {enrollment.level}
                     </Badge>
                   </div>
                 ))}

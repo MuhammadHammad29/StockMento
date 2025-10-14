@@ -87,12 +87,12 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
       return
     }
 
-    if (!formData.description.trim()) {
-      toast.error('Please enter a lesson description')
-      return
-    }
+  if (!formData.description.trim()) {
+    toast.error('Please enter a lesson description')
+    return
+  }
 
-    setIsLoading(true)
+  setIsLoading(true)
     
     try {
       // TODO: Replace with actual API call to NestJS backend

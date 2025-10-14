@@ -31,7 +31,6 @@ interface CourseFormData {
   longDescription: string
   level: 'Beginner' | 'Intermediate' | 'Advanced'
   duration: number
-  price: number
   category: string
   tags: string[]
   isPublished: boolean
@@ -54,7 +53,6 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
     longDescription: '',
     level: 'Beginner',
     duration: 0,
-    price: 0,
     category: '',
     tags: [],
     isPublished: false,
@@ -70,7 +68,6 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
         longDescription: course.longDescription,
         level: course.level,
         duration: course.duration,
-        price: course.price,
         category: course.category,
         tags: course.tags,
         isPublished: course.isPublished,
@@ -315,20 +312,6 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
                   />
                   <p className="text-xs text-muted-foreground">
                     Approximately {Math.round(formData.duration / 60)} hours
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (PKR)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => handleInputChange('price', parseInt(e.target.value) || 0)}
-                    placeholder="Course price in PKR"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {formData.price === 0 ? 'Free course' : `PKR ${formData.price.toLocaleString()}`}
                   </p>
                 </div>
               </div>

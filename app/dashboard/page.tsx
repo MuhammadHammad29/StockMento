@@ -33,14 +33,13 @@ import {
   Star,
   ChevronRight,
   Settings,
-  Bell,
   Menu,
   LogOut,
 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { mockCourses, mockUserProgress, getUserCourses, getCourseById } from "@/lib/mock-data"
+import { mockCourses, mockUserProgress, getUserCourses, getCourseById, getAvatarPath } from "@/lib/mock-data"
 import { formatTimeAgo, getActivitySummary } from "@/lib/data-utils"
 
 export default function DashboardPage() {
@@ -66,11 +65,11 @@ export default function DashboardPage() {
   const enrolledCourses = getUserCourses(user.id)
   const activitySummary = getActivitySummary(userProgressData)
 
-  // Get courses user hasn't enrolled in for recommendations
+  // Get courses user hasn't enrolled in for exploration
   const enrolledCourseIds = enrolledCourses.map(c => c.id)
-  const recommendedCourses = mockCourses
+  const availableCourses = mockCourses
     .filter(course => !enrolledCourseIds.includes(course.id) && course.isPublished)
-    .slice(0, 3) // Show top 3 recommendations
+    .slice(0, 3) // Show top 3 available courses
 
   const recentActivity = [
     {
@@ -137,9 +136,6 @@ export default function DashboardPage() {
             
             {/* User Menu */}
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
-                <Bell className="h-5 w-5" />
-              </Button>
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -151,7 +147,7 @@ export default function DashboardPage() {
               </Button>
               <Link href="/dashboard/profile">
                 <Avatar className="h-8 w-8 cursor-pointer">
-                  <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                  <AvatarImage src={getAvatarPath(user.avatarId)} alt={`${user.firstName} ${user.lastName}`} />
                   <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                     {user.firstName[0]}
                     {user.lastName[0]}
@@ -163,9 +159,6 @@ export default function DashboardPage() {
 
           {/* Mobile Menu */}
           <div className="flex items-center space-x-2 md:hidden">
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
-              <Bell className="h-5 w-5" />
-            </Button>
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon" className="border-border/40 text-muted-foreground hover:text-emerald-600 hover:border-emerald-600/20">
@@ -177,7 +170,7 @@ export default function DashboardPage() {
                 <SheetHeader className="border-b pb-4">
                   <SheetTitle className="flex items-center gap-3 text-left">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                      <AvatarImage src={getAvatarPath(user.avatarId)} alt={`${user.firstName} ${user.lastName}`} />
                       <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                         {user.firstName[0]}
                         {user.lastName[0]}
@@ -393,16 +386,16 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Recommended Courses Section */}
-          {recommendedCourses.length > 0 && (
+          {/* Available Courses Section */}
+          {availableCourses.length > 0 && (
             <Card className="border border-border/60 bg-card/90">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2 text-foreground">
-                    <Star className="h-5 w-5 text-amber-500" />
-                    Recommended for You
+                    <BookOpen className="h-5 w-5 text-emerald-600" />
+                    Explore More Courses
                   </CardTitle>
-                  <CardDescription>Courses to advance your trading knowledge</CardDescription>
+                  <CardDescription>Continue building your trading expertise</CardDescription>
                 </div>
                 <Link href="/courses">
                   <Button variant="outline" size="sm">
@@ -413,7 +406,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 sm:gap-5 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {recommendedCourses.map((course) => (
+                  {availableCourses.map((course) => (
                     <div
                       key={course.id}
                       className="group rounded-xl border border-border/50 bg-background/70 p-4 md:p-5 backdrop-blur-sm transition-all hover:border-emerald-200 hover:bg-background/90 hover:shadow-md flex flex-col h-full"
@@ -422,10 +415,7 @@ export default function DashboardPage() {
                         <Badge variant="outline" className="border-emerald-200 text-emerald-600 dark:border-emerald-400/40 dark:text-emerald-300 text-xs md:text-sm">
                           {course.level}
                         </Badge>
-                        <div className="text-right">
-                          <div className="text-sm md:text-base font-semibold text-foreground">
-                            {course.price > 0 ? `Rs. ${course.price}` : 'Free'}
-                          </div>
+                        <div className="text-right ml-2">
                           <div className="text-xs md:text-sm text-muted-foreground">
                             {course.duration} min
                           </div>
@@ -454,7 +444,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
                       
-                      <div className="flex flex-col sm:flex-row gap-2 mt-auto">
+                      <div className="flex flex-col xl:flex-row gap-2 mt-auto">
                         <Link href={`/courses/${course.id}`} className="flex-1">
                           <Button variant="outline" size="sm" className="w-full h-9 text-xs sm:text-sm font-medium">
                             Preview
@@ -462,7 +452,7 @@ export default function DashboardPage() {
                         </Link>
                         <Link href={`/courses/${course.id}`} className="flex-1">
                           <Button size="sm" className="w-full h-9 bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm font-medium">
-                            {course.price > 0 ? 'Enroll' : 'Start'}
+                            Start Learning
                           </Button>
                         </Link>
                       </div>
@@ -577,4 +567,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-

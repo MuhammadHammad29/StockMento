@@ -1,13 +1,28 @@
 /**
  * Mock Data for StockMento Learning Platform
  * 
- * Contains sample data for development and testing purposes.
- * Includes users, courses, lessons, quizzes, and progress tracking.
+ * Contains sample data     category: 'Techn    category: 'Risk Management',
+    rating: 4.7,l Analysis',
+    rating: 4.9, development and testing purposes.
+ * Includes users,    category: 'Portfolio Management',
+    rating: 4.6,urses, lessons, quizzes, and progress tracking.
  * This data will be replaced with database queries when backend is integrated.
  */
 
 import { Course, Lesson, Quiz, QuizQuestion, User, UserProgress } from './types';
 import { comprehensiveLessons } from './lessons-data';
+
+/**
+ * Avatar Configuration
+ * Simple avatar management using public folder images
+ * Backend will serve these images directly from /public/avatars/
+ */
+export const AVATAR_CONFIG = {
+  TOTAL_AVATARS: 15,
+  BASE_PATH: '/avatars',
+  DEFAULT_AVATAR: 'avatar-1',
+  FILE_EXTENSION: '.jpg' // or .png depending on your images
+};
 
 /**
  * Mock Users Data
@@ -19,7 +34,7 @@ export const mockUsers: User[] = [
     email: 'john.doe@example.com',
     firstName: 'John',
     lastName: 'Doe',
-    avatar: '/professional-user-photo.jpg',
+    avatarId: 'avatar-1',
     role: 'student',
     createdAt: new Date('2024-01-15'),
     lastLogin: new Date('2024-12-15'),
@@ -31,7 +46,7 @@ export const mockUsers: User[] = [
     email: 'admin@psxacademy.com',
     firstName: 'Admin',
     lastName: 'User',
-    avatar: '/professional-woman-instructor.jpg',
+    avatarId: 'avatar-2',
     role: 'admin',
     createdAt: new Date('2024-01-01'),
     lastLogin: new Date('2024-12-17'),
@@ -43,7 +58,7 @@ export const mockUsers: User[] = [
     email: 'sarah.ahmed@example.com',
     firstName: 'Sarah',
     lastName: 'Ahmed',
-    avatar: '/user-profile-photo.png',
+    avatarId: 'avatar-3',
     role: 'student',
     createdAt: new Date('2024-02-20'),
     lastLogin: new Date('2024-12-16'),
@@ -62,7 +77,6 @@ export const mockCourses: Course[] = [
     level: 'Beginner',
     thumbnail: '/stock-market-basics.png',
     category: 'Market Basics',
-    price: 0, // Free course
     rating: 4.8,
     totalStudents: 1250,
     totalLessons: 8,
@@ -81,7 +95,6 @@ export const mockCourses: Course[] = [
     level: 'Intermediate',
     thumbnail: '/technical-analysis-chart.png',
     category: 'Technical Analysis',
-    price: 4999,
     rating: 4.7,
     totalStudents: 980,
     totalLessons: 10,
@@ -100,7 +113,6 @@ export const mockCourses: Course[] = [
     level: 'Intermediate',
     thumbnail: '/risk-management-concept.png',
     category: 'Risk Management',
-    price: 3999,
     rating: 4.6,
     totalStudents: 720,
     totalLessons: 6,
@@ -119,7 +131,6 @@ export const mockCourses: Course[] = [
     level: 'Advanced',
     thumbnail: '/technical-analysis-charts.png',
     category: 'Fundamental Analysis',
-    price: 5999,
     rating: 4.9,
     totalStudents: 540,
     totalLessons: 12,
@@ -138,7 +149,6 @@ export const mockCourses: Course[] = [
     level: 'Advanced',
     thumbnail: '/risk-management-portfolio.jpg',
     category: 'Advanced Trading',
-    price: 7999,
     rating: 4.8,
     totalStudents: 320,
     totalLessons: 15,
@@ -157,7 +167,6 @@ export const mockCourses: Course[] = [
     level: 'Intermediate',
     thumbnail: '/diverse-user-avatars.png',
     category: 'Sector Analysis',
-    price: 4499,
     rating: 4.5,
     totalStudents: 650,
     totalLessons: 10,
@@ -176,7 +185,6 @@ export const mockCourses: Course[] = [
     level: 'Intermediate',
     thumbnail: '/placeholder-user.jpg',
     category: 'Psychology',
-    price: 3499,
     rating: 4.4,
     totalStudents: 890,
     totalLessons: 8,
@@ -195,7 +203,6 @@ export const mockCourses: Course[] = [
     level: 'Advanced',
     thumbnail: '/placeholder-bbgaf.png',
     category: 'Market Structure',
-    price: 6499,
     rating: 4.7,
     totalStudents: 280,
     totalLessons: 12,
@@ -214,7 +221,6 @@ export const mockCourses: Course[] = [
     level: 'Intermediate',
     thumbnail: '/placeholder-twa2v.png',
     category: 'Economics',
-    price: 4299,
     rating: 4.6,
     totalStudents: 440,
     totalLessons: 10,
@@ -233,7 +239,6 @@ export const mockCourses: Course[] = [
     level: 'Advanced',
     thumbnail: '/placeholder-x2x1n.png',
     category: 'Portfolio Management',
-    price: 8999,
     rating: 4.9,
     totalStudents: 180,
     totalLessons: 18,
@@ -431,4 +436,66 @@ export const getUserCourses = (userId: string): Course[] => {
     const course = mockCourses.find(c => c.id === progress.courseId);
     return course;
   }).filter(Boolean) as Course[];
+};
+
+/**
+ * Avatar Helper Functions
+ * Simple functions for managing avatars stored in public folder
+ */
+
+/**
+ * Get avatar image path by avatar ID
+ * @param avatarId - Avatar ID (e.g., 'avatar-1', 'avatar-2')
+ * @returns Full path to avatar image
+ */
+export const getAvatarPath = (avatarId: string): string => {
+  if (!avatarId) return `${AVATAR_CONFIG.BASE_PATH}/${AVATAR_CONFIG.DEFAULT_AVATAR}${AVATAR_CONFIG.FILE_EXTENSION}`;
+  return `${AVATAR_CONFIG.BASE_PATH}/${avatarId}${AVATAR_CONFIG.FILE_EXTENSION}`;
+};
+
+/**
+ * Get all available avatar IDs
+ * @returns Array of avatar IDs
+ */
+export const getAvailableAvatars = (): string[] => {
+  const avatars: string[] = [];
+  for (let i = 1; i <= AVATAR_CONFIG.TOTAL_AVATARS; i++) {
+    avatars.push(`avatar-${i}`);
+  }
+  return avatars;
+};
+
+/**
+ * Check if avatar ID is valid
+ * @param avatarId - Avatar ID to validate
+ * @returns True if avatar ID is valid
+ */
+export const isValidAvatarId = (avatarId: string): boolean => {
+  const availableAvatars = getAvailableAvatars();
+  return availableAvatars.includes(avatarId);
+};
+
+/**
+ * Get user's avatar path
+ * @param user - User object
+ * @returns Path to user's avatar image
+ */
+export const getUserAvatarPath = (user: User): string => {
+  return getAvatarPath(user.avatarId);
+};
+
+/**
+ * Get default avatar ID
+ * @returns Default avatar ID
+ */
+export const getDefaultAvatarId = (): string => {
+  return AVATAR_CONFIG.DEFAULT_AVATAR;
+};
+
+/**
+ * Legacy function for backward compatibility
+ * @deprecated Use getAvatarPath instead
+ */
+export const getUserAvatar = (user: User): string => {
+  return getUserAvatarPath(user);
 };

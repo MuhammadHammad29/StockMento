@@ -67,7 +67,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         firstName: foundUser.firstName,
         lastName: foundUser.lastName,
         role: foundUser.role,
-        avatar: foundUser.avatar,
+        avatarId: foundUser.avatarId,
       };
 
       setUser(authUser);
@@ -101,7 +101,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
-        avatar: undefined,
+        avatarId: data.avatarId,
         role: 'student' as const,
         createdAt: new Date(),
         lastLogin: new Date(),
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         role: newUser.role,
-        avatar: newUser.avatar,
+        avatarId: newUser.avatarId,
       };
 
       setUser(authUser);

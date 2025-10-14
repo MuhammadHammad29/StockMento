@@ -18,7 +18,6 @@ export default function CreateCoursePage() {
     description: "",
     category: "",
     level: "",
-    price: "",
     thumbnail: "",
     duration: "",
   })
@@ -143,17 +142,6 @@ export default function CreateCoursePage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (PKR)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    value={courseData.price}
-                    onChange={(e) => handleInputChange('price', e.target.value)}
-                    placeholder="0"
-                  />
-                </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="duration">Duration (minutes)</Label>
                   <Input

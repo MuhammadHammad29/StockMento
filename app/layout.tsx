@@ -9,7 +9,6 @@
 import type { Metadata, Viewport } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
-import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/lib/auth-context'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
@@ -37,7 +36,6 @@ export const viewport: Viewport = {
  * - ThemeProvider: Enables dark/light mode switching
  * - AuthProvider: Handles user authentication state
  * - Font configuration: Applies Geist Sans and Mono fonts
- * - Analytics: Vercel analytics integration
  */
 export default function RootLayout({
   children,
@@ -68,9 +66,6 @@ export default function RootLayout({
             <Toaster />
           </AuthProvider>
         </ThemeProvider>
-        
-        {/* Analytics Integration */}
-        <Analytics />
       </body>
     </html>
   )

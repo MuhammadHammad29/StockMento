@@ -26,13 +26,15 @@ import {
 import Link from "next/link"
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { mockUserProgress, getUserCourses } from "@/lib/mock-data"
+import { mockUserProgress, getUserCourses, getAvatarPath } from "@/lib/mock-data"
 import { getActivitySummary, formatTimeAgo } from "@/lib/data-utils"
 import { toast } from "sonner"
+import AvatarPicker from "@/components/avatar-picker"
 
 export default function ProfilePage() {
   const { user, logout } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [profileData, setProfileData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -116,6 +118,12 @@ export default function ProfilePage() {
     setIsEditing(false)
   }
 
+  const handleAvatarSelect = (avatarId: string) => {
+    // In a real app, this would update the user's avatar in the database
+    toast.success('Avatar updated successfully!')
+    setShowAvatarPicker(false)
+  }
+
   const handleLogout = () => {
     logout()
     toast.success('Logged out successfully!')
@@ -156,18 +164,11 @@ export default function ProfilePage() {
               <div className="flex flex-col space-y-4 sm:space-y-6">
                 <div className="relative flex justify-center sm:justify-start">
                   <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
-                    <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                    <AvatarImage src={getAvatarPath(user.avatarId)} alt={`${user.firstName} ${user.lastName}`} />
                     <AvatarFallback className="text-xl sm:text-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                       {user.firstName[0]}{user.lastName[0]}
                     </AvatarFallback>
                   </Avatar>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-background/90 backdrop-blur dark:bg-background/60"
-                  >
-                    <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </Button>
                 </div>
                 
                 <div className="text-center sm:text-left space-y-3">
@@ -193,10 +194,6 @@ export default function ProfilePage() {
                     <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200">
                       {user.role === 'admin' ? 'Administrator' : 'Student'}
                     </Badge>
-                    <Button onClick={() => setIsEditing(!isEditing)} variant="outline" size="sm" className="w-full sm:w-auto">
-                      <Settings className="mr-2 h-4 w-4" />
-                      {isEditing ? 'Cancel' : 'Edit Profile'}
-                    </Button>
                   </div>
                 </div>
               </div>
@@ -209,7 +206,7 @@ export default function ProfilePage() {
             <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
             <TabsTrigger value="courses" className="text-xs sm:text-sm">Courses</TabsTrigger>
             <TabsTrigger value="achievements" className="text-xs sm:text-sm">Awards</TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm">Account</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -324,7 +321,6 @@ export default function ProfilePage() {
                         <div className="flex-1 w-full space-y-2">
                           <div>
                             <h3 className="font-semibold text-foreground text-sm sm:text-base">{course.title}</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">StockMento Instructor</p>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Progress value={progress?.overallProgress || 0} className="flex-1" />
@@ -404,10 +400,41 @@ export default function ProfilePage() {
           <TabsContent value="settings" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Profile Settings</CardTitle>
-                <CardDescription>Update your personal information</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Account Information</CardTitle>
+                    <CardDescription>Manage your personal details and preferences</CardDescription>
+                  </div>
+                  <Button onClick={() => setIsEditing(!isEditing)} variant="outline" size="sm">
+                    <Settings className="mr-2 h-4 w-4" />
+                    {isEditing ? 'Cancel' : 'Edit Profile'}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4">
+                {/* Avatar Section */}
+                <div className="space-y-2">
+                  <Label className="text-sm">Profile Avatar</Label>
+                  <div className="flex items-center space-x-4">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={getAvatarPath(user.avatarId)} alt="Profile" />
+                      <AvatarFallback>
+                        <User className="h-8 w-8" />
+                      </AvatarFallback>
+                    </Avatar>
+                    {isEditing && (
+                      <Button 
+                        onClick={() => setShowAvatarPicker(true)} 
+                        variant="outline" 
+                        size="sm"
+                      >
+                        <Camera className="mr-2 h-4 w-4" />
+                        Change Avatar
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName" className="text-sm">First Name</Label>
@@ -476,6 +503,19 @@ export default function ProfilePage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Avatar Picker Modal */}
+      {showAvatarPicker && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="max-w-md w-full max-h-[90vh] overflow-auto">
+            <AvatarPicker
+              selectedAvatarId={user.avatarId}
+              onAvatarSelect={handleAvatarSelect}
+              onCancel={() => setShowAvatarPicker(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -124,7 +124,7 @@ export default function AdminLessonEditPage({
     setHasChanges(true)
   }
 
-  const handleSave = async () => {
+  const handleSave = async () => { 
     setIsLoading(true)
     
     try {
@@ -410,7 +410,6 @@ export default function AdminLessonEditPage({
                   </Alert>
                 </div>
               )}
-
               {/* Quiz Content */}
               {formData.type === 'quiz' && (
                 <div className="space-y-6">

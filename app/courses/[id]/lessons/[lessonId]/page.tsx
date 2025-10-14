@@ -21,7 +21,7 @@ import {
   MessageCircle,
   Download,
   Trophy,
-  Timer
+  Timer,
 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
@@ -357,7 +357,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                     )}
                   </div>
                 ) : (
-                  // Regular lesson content (video or text)
+                  // Regular lesson(Video or Text)
                   <div>
                     {lesson.type === "video" ? (
                       <div className="aspect-video bg-slate-900 relative rounded-lg overflow-hidden mb-6">
@@ -384,7 +384,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                       </div>
                     ) : null}
 
-                    {/* Lesson Text Content */}
+                   {/* Lesson Text Content */}
                     <div className="prose prose-emerald max-w-none">
                       {lesson.content ? (
                         <div className="text-foreground leading-relaxed">
@@ -394,7 +394,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                             {lesson.content}
                           </ReactMarkdown>
                         </div>
-                      ) : (
+                        ) : (
                     <div className="text-foreground leading-relaxed">
                       <p className="mb-6">
                         Welcome to this comprehensive lesson on {lesson.title.toLowerCase()}. In this lesson, we&apos;ll explore the fundamental concepts that every investor should understand when navigating the Pakistan Stock Exchange.
@@ -409,36 +409,36 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                         <li>• Recognize opportunities and risks in the PSX market</li>
                       </ul>
 
-                      <h3 className="text-xl font-semibold text-foreground mb-3">Core Concepts</h3>
+                        <h3 className="text-xl font-semibold text-foreground mb-3">Core Concepts</h3>
                       
                       <p className="mb-4"><strong className="font-semibold">Market Fundamentals:</strong> The Pakistan Stock Exchange operates on principles of supply and demand, where prices are determined by the collective actions of buyers and sellers. Understanding these dynamics is crucial for successful investing.</p>
 
                       <p className="mb-4"><strong className="font-semibold">Risk Assessment:</strong> Every investment carries inherent risks. Learning to assess and manage these risks is fundamental to long-term success in the stock market.</p>
-
+        
                       <p className="mb-6"><strong className="font-semibold">Market Analysis:</strong> There are two primary approaches to analyzing stocks: Fundamental Analysis (examining company financials, industry trends, and economic indicators) and Technical Analysis (using charts and statistical indicators to predict price movements).</p>
-
+            
                       <h3 className="text-xl font-semibold text-foreground mb-3">Practical Examples</h3>
                       
                       <p className="mb-4"><strong className="font-semibold">Blue-Chip Stocks:</strong> Companies like Oil & Gas Development Company Limited (OGDC) and Pakistan Petroleum Limited (PPL) represent stable, established businesses that often form the backbone of investment portfolios.</p>
+    
+                              <p className="mb-6"><strong className="font-semibold">Emerging Sectors:</strong> The technology and financial sectors in Pakistan have shown significant growth potential, with companies like Systems Limited and MCB Bank leading the way.</p>
 
-                      <p className="mb-6"><strong className="font-semibold">Emerging Sectors:</strong> The technology and financial sectors in Pakistan have shown significant growth potential, with companies like Systems Limited and MCB Bank leading the way.</p>
+                              <h3 className="text-xl font-semibold text-foreground mb-3">Key Takeaways</h3>
+                              <ul className="mb-6 space-y-2">
+                                <li>- Always conduct thorough research before making investment decisions</li>
+                                <li>- Diversification is crucial for risk management</li>
+                                <li>- Stay informed about market trends and economic indicators</li>
+                                <li>- Consider your risk tolerance and investment timeline</li>
+                              </ul>
 
-                      <h3 className="text-xl font-semibold text-foreground mb-3">Key Takeaways</h3>
-                      <ul className="mb-6 space-y-2">
-                        <li>• Always conduct thorough research before making investment decisions</li>
-                        <li>• Diversification is crucial for risk management</li>
-                        <li>• Stay informed about market trends and economic indicators</li>
-                        <li>• Consider your risk tolerance and investment timeline</li>
-                      </ul>
-
-                      <div className="text-sm text-muted-foreground p-4 bg-amber-100/80 border-l-4 border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/40 rounded italic">
-                        Remember: This is educational content and should not be considered as financial advice. Always consult with qualified financial advisors before making investment decisions.
+                              <div className="text-sm text-muted-foreground p-4 bg-amber-100/80 border-l-4 border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/40 rounded italic">
+                                Remember: This is educational content and should not be considered as financial advice. Always consult with qualified financial advisors before making investment decisions.
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                    </div>
-                  </div>
-                )}
+                    )}
               </CardContent>
             </Card>
 

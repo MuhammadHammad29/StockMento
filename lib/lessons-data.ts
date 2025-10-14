@@ -159,7 +159,7 @@ The PSX operates under comprehensive regulations ensuring:
     type: 'text',
     content: `# Getting Started with PSX Investing
 
-## Opening a Trading Account
+## Opening a Trading Account  
 
 ### Required Documents
 - National Identity Card (CNIC)
@@ -171,38 +171,32 @@ The PSX operates under comprehensive regulations ensuring:
 - **Full-Service Brokers**: Complete advisory services
 - **Discount Brokers**: Low-cost execution only
 - **Online Platforms**: Digital trading interfaces
-
 ## Setting Investment Goals
-
 ### Time Horizon
 - **Short-term** (1-2 years): Conservative approach
 - **Medium-term** (3-7 years): Balanced strategy
 - **Long-term** (8+ years): Growth-oriented
-
 ### Risk Tolerance
 - **Conservative**: Capital preservation focus
 - **Moderate**: Balanced growth and safety
 - **Aggressive**: Maximum growth potential
-
 ## Investment Process
-
 ### Research and Analysis
 1. Company fundamental analysis
 2. Market trend evaluation
 3. Sector performance review
 4. Economic indicator assessment
-
 ### Portfolio Construction
 - Asset allocation strategy
 - Diversification across sectors
 - Position sizing decisions
 - Risk management rules
-
 ### Monitoring and Review
 - Regular performance evaluation
 - Rebalancing when needed
 - Strategy adjustments
 - Tax optimization`,
+
     duration: 25,
     order: 4,
     isLocked: false,

@@ -17,7 +17,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  avatar?: string; // Optional profile picture URL
+  avatarId: string; // Selected avatar ID from predefined avatars
   role: 'student' | 'admin'; // User role for permission management
   createdAt: Date;
   lastLogin?: Date; // Track user activity
@@ -37,7 +37,6 @@ export interface Course {
   level: 'Beginner' | 'Intermediate' | 'Advanced'; // Difficulty level
   duration: number; // Total duration in minutes for consistency with NestJS
   thumbnail: string; // Course image/thumbnail URL
-  price: number; // Price in number format, 0 for free courses
   rating: number; // Average user rating (0-5)
   totalStudents: number; // Number of enrolled students
   totalLessons: number; // Count of lessons in course
@@ -131,7 +130,6 @@ export interface Notification {
   createdAt: Date;
   actionUrl?: string;
 }
-
 export interface AdminStats {
   totalUsers: number;
   totalCourses: number;
@@ -161,7 +159,7 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   role: 'student' | 'admin';
-  avatar?: string;
+  avatarId: string;
 }
 
 export interface LoginCredentials {
@@ -174,6 +172,7 @@ export interface SignupData {
   password: string;
   firstName: string;
   lastName: string;
+  avatarId: string;
 }
 
 export interface AuthContextType {
@@ -207,7 +206,6 @@ export interface PaginatedResponse<T> {
 export interface CourseFilter {
   level?: string[];
   category?: string[];
-  priceRange?: [number, number];
   rating?: number;
   duration?: string;
 }

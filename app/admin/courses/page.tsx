@@ -31,7 +31,6 @@ export default function AdminCoursesPage() {
       id: course.id,
       title: course.title,
       description: course.description,
-      instructor: "StockMento",
       students: course.totalStudents,
       lessons: course.totalLessons,
       textLessons,
@@ -41,7 +40,6 @@ export default function AdminCoursesPage() {
       status: course.isPublished ? "published" : "draft",
       createdDate: course.createdAt.toISOString().split('T')[0],
       completionRate,
-      price: course.price,
       rating: course.rating,
       category: course.category,
       level: course.level,
@@ -106,14 +104,6 @@ export default function AdminCoursesPage() {
                     >
                       <BarChart3 className="h-4 w-4" />
                       Dashboard
-                    </Link>
-                    <Link 
-                      href="/admin/users" 
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Users className="h-4 w-4" />
-                      Manage Users
                     </Link>
                     <div className="flex items-center gap-3 rounded-lg px-3 py-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20">
                       <BookOpen className="h-4 w-4" />
@@ -230,18 +220,13 @@ export default function AdminCoursesPage() {
             <div className="flex flex-col gap-3 sm:gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search courses by title or instructor..." className="pl-10" />
+                <Input placeholder="Search courses by title..." className="pl-10" />
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" className="flex items-center gap-1 sm:gap-2 bg-background/60 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9">
                   <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Status</span>
                   <span className="sm:hidden">Status</span>
-                </Button>
-                <Button variant="outline" className="flex items-center gap-1 sm:gap-2 bg-background/60 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9">
-                  <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Instructor</span>
-                  <span className="sm:hidden">Teacher</span>
                 </Button>
                 <Button variant="outline" className="flex items-center gap-1 sm:gap-2 bg-background/60 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9">
                   <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -279,7 +264,6 @@ export default function AdminCoursesPage() {
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
                 <div className="text-xs sm:text-sm text-muted-foreground">
-                  <p>Instructor: {course.instructor}</p>
                   <p>Created: {course.createdDate}</p>
                 </div>
 
@@ -297,7 +281,6 @@ export default function AdminCoursesPage() {
                     <span className="truncate">{course.duration}</span>
                   </div>
                 </div>
-
                 {course.status === "published" && (
                   <div>
                     <div className="flex justify-between text-xs sm:text-sm mb-1">
@@ -338,6 +321,3 @@ export default function AdminCoursesPage() {
     </div>
   )
 }
-
-
-

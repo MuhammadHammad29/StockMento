@@ -49,11 +49,6 @@ DATABASE_NAME=stockmento_dbs system provides comprehensive lesson and course man
 - Recent activity
 - Revenue tracking (ready for backend)
 
-### 5. User Management
-- User listing (`/admin/users`)
-- User progress tracking
-- Enrollment management
-
 ## File Structure
 
 ```
@@ -201,11 +196,6 @@ NEXT_PUBLIC_API_URL=http://localhost:3001/api
 - `POST /api/admin/courses/:courseId/lessons` - Create lesson
 - `PUT /api/admin/courses/:courseId/lessons/:id` - Update lesson
 - `DELETE /api/admin/courses/:courseId/lessons/:id` - Delete lesson
-
-#### User Management
-- `GET /api/admin/users` - List users
-- `GET /api/admin/users/:id` - Get user details
-- `PUT /api/admin/users/:id` - Update user
 
 #### Authentication
 - `POST /api/auth/admin/login` - Admin login

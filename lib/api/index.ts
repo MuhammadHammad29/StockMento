@@ -129,39 +129,6 @@ export const lessonApi = {
   },
 }
 
-// User Management APIs
-export const userApi = {
-  // Get all users (admin)
-  getAllUsers: async (): Promise<User[]> => {
-    return apiCall<User[]>('/admin/users')
-  },
-
-  // Get single user
-  getUser: async (userId: string): Promise<User> => {
-    return apiCall<User>(`/admin/users/${userId}`)
-  },
-
-  // Update user
-  updateUser: async (userId: string, userData: Partial<User>): Promise<User> => {
-    return apiCall<User>(`/admin/users/${userId}`, {
-      method: 'PUT',
-      body: JSON.stringify(userData),
-    })
-  },
-
-  // Delete user
-  deleteUser: async (userId: string): Promise<void> => {
-    return apiCall<void>(`/admin/users/${userId}`, {
-      method: 'DELETE',
-    })
-  },
-
-  // Get user progress
-  getUserProgress: async (userId: string): Promise<UserProgress[]> => {
-    return apiCall<UserProgress[]>(`/admin/users/${userId}/progress`)
-  },
-}
-
 // Analytics APIs
 export const analyticsApi = {
   // Get dashboard stats
@@ -295,7 +262,6 @@ export const progressApi = {
 export const api = {
   courses: courseApi,
   lessons: lessonApi,
-  users: userApi,
   analytics: analyticsApi,
   files: fileApi,
   auth: authApi,
