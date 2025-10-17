@@ -20,6 +20,36 @@ export interface CourseStats {
   completionRate: number
 }
 
+export interface CompletionEvent {
+  userId: string
+  courseId: string
+  completedAt: Date
+  finalProgress: number
+  shouldShowDialog: boolean
+}
+
+export const checkCourseCompletion = (
+  userId: string,
+  courseId: string,
+  currentProgress: number,
+  previousProgress: number
+): CompletionEvent | null => {
+  // Check if user just completed the course (reached 100% for the first time)
+  const justCompleted = currentProgress >= 100 && previousProgress < 100;
+  
+  if (justCompleted) {
+    return {
+      userId,
+      courseId,
+      completedAt: new Date(),
+      finalProgress: currentProgress,
+      shouldShowDialog: true
+    };
+  }
+  
+  return null;
+};
+
 export class ProgressManager {
   private static instance: ProgressManager
   private progressData: Map<string, UserProgress> = new Map()

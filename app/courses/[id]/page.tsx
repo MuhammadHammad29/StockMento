@@ -7,19 +7,26 @@ import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { TrendingUp, BookOpen, Clock, Users, Star, CheckCircle, Lock, FileText, Video, ArrowLeft, Play, Download, Menu, LogOut, Trophy, Settings } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { mockCourses, mockUserProgress, getUserCourses, getLessonsByCourseId, getAvatarById } from "@/lib/mock-data"
+import { mockCourses, mockUserProgress, getUserCourses, getLessonsByCourseId, getAvatarPath, getCourseReviews, getCourseReviewSummary, hasUserReviewedCourse } from "@/lib/mock-data"
 import { calculateCourseProgress, formatDuration } from "@/lib/data-utils"
 import { toast } from "sonner"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import ReviewForm from "@/components/review-form"
+import ReviewDisplay from "@/components/review-display"
+import CourseCompletionDialog from "@/components/course-completion-dialog"
+import Logo from "@/components/ui/logo"
 
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
   const { user, logout } = useAuth()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false)
   const courseId = params.id
   
   // Find the course
@@ -27,6 +34,11 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   
   // Get lessons for this course
   const lessons = getLessonsByCourseId(courseId)
+
+  // Get review data
+  const courseReviews = getCourseReviews(courseId)
+  const reviewSummary = getCourseReviewSummary(courseId)
+  const userHasReviewed = user ? hasUserReviewedCourse(user.id, courseId) : false
 
   const handleLogout = () => {
     logout()
@@ -59,30 +71,8 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     0 // quizzes count
   ) : 0
 
-  // Sample reviews data
-  const reviews = [
-    {
-      id: 1,
-      user: { name: "Muhammad Khan", avatar: "/user-profile-photo.png" },
-      rating: 5,
-      date: "2 days ago",
-      comment: "Excellent course for beginners! Dr. Sarah explains complex concepts in a very simple way. The practical examples really helped me understand how PSX works."
-    },
-    {
-      id: 2,
-      user: { name: "Ayesha Fatima", avatar: "/professional-user-photo.jpg" },
-      rating: 4,
-      date: "1 week ago",
-      comment: "Great content and well-structured lessons. I wish there were more interactive exercises, but overall a solid foundation course for PSX trading."
-    },
-    {
-      id: 3,
-      user: { name: "Ali Hassan", avatar: "/placeholder-user.jpg" },
-      rating: 5,
-      date: "2 weeks ago",
-      comment: "This course changed my understanding of the stock market completely. The content is well-structured and comprehensive."
-    }
-  ]
+  const isCompleted = overallProgress >= 100
+  const canWriteReview = isEnrolled && isCompleted && !userHasReviewed
 
   const handleEnroll = () => {
     if (!user) {
@@ -90,6 +80,12 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       return
     }
     toast.success("Successfully enrolled in the course!")
+  }
+
+  const handleReviewSubmit = (review: { rating: number; comment: string }) => {
+    // In a real app, this would submit to the backend
+    toast.success("Review submitted successfully!")
+    setShowReviewForm(false)
   }
 
   const getLessonIcon = (type: string) => {
@@ -107,17 +103,17 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center space-x-4">
+        <div className="mx-auto flex h-14 sm:h-16 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
             <Link href="/courses">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="px-2 sm:px-3">
                 <ArrowLeft className="mr-0 sm:mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Back to Courses</span>
               </Button>
             </Link>
             <div className="flex items-center space-x-2">
-              <TrendingUp className="h-8 w-8 text-emerald-600" />
-              <span className="text-xl font-bold text-foreground">StockMento</span>
+              <Logo size="sm" className="sm:hidden" />
+              <Logo size="md" className="hidden sm:block" />
             </div>
           </div>
 
@@ -150,7 +146,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 </Button>
                 <Link href="/dashboard/profile">
                   <Avatar className="h-8 w-8 cursor-pointer">
-                    <AvatarImage src={getAvatarById(user.avatarId)?.imagePath} alt={`${user.firstName} ${user.lastName}`} />
+                    <AvatarImage src={getAvatarPath(user.avatarId)} alt={`${user.firstName} ${user.lastName}`} />
                     <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                       {user.firstName[0]}
                       {user.lastName[0]}
@@ -181,7 +177,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   <SheetHeader className="border-b pb-4">
                     <SheetTitle className="flex items-center gap-3 text-left">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={getAvatarById(user.avatarId)?.imagePath} alt={`${user.firstName} ${user.lastName}`} />
+                        <AvatarImage src={getAvatarPath(user.avatarId)} alt={`${user.firstName} ${user.lastName}`} />
                         <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                           {user.firstName[0]}
                           {user.lastName[0]}
@@ -243,13 +239,13 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
             {/* Course Header */}
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
+            <div className="mb-6 sm:mb-8">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
                 <Badge variant={course.level === "Beginner" ? "default" : course.level === "Intermediate" ? "secondary" : "destructive"}>
                   {course.level}
                 </Badge>
@@ -258,35 +254,42 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 </Badge>
               </div>
 
-              <h1 className="text-3xl font-bold text-foreground mb-4">{course.title}</h1>
-              <p className="text-lg text-muted-foreground mb-6">{course.description}</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 sm:mb-4">{course.title}</h1>
+              <p className="text-base sm:text-lg text-muted-foreground mb-4 sm:mb-6">{course.description}</p>
 
-              <div className="flex items-center gap-6 text-sm text-muted-foreground mb-6">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 sm:gap-6 text-sm text-muted-foreground mb-4 sm:mb-6">
                 <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-1" />
-                  {formatDuration(course.duration)}
+                  <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
+                  <span className="truncate">{formatDuration(course.duration)}</span>
                 </div>
                 <div className="flex items-center">
-                  <BookOpen className="h-4 w-4 mr-1" />
-                  {lessons?.length || 0} lessons
+                  <BookOpen className="h-4 w-4 mr-1 flex-shrink-0" />
+                  <span className="truncate">{lessons?.length || 0} lessons</span>
                 </div>
                 <div className="flex items-center">
-                  <Users className="h-4 w-4 mr-1" />
-                  {course.enrollmentCount || Math.floor(Math.random() * 2000) + 500} students
+                  <Users className="h-4 w-4 mr-1 flex-shrink-0" />
+                  <span className="truncate">{course.enrollmentCount || Math.floor(Math.random() * 2000) + 500} students</span>
                 </div>
                 <div className="flex items-center">
-                  <Star className="h-4 w-4 mr-1 text-yellow-400 fill-current" />
-                  {course.rating}
+                  <Star className="h-4 w-4 mr-1 text-yellow-400 fill-current flex-shrink-0" />
+                  <span className="truncate">
+                    {reviewSummary.totalReviews > 0 ? reviewSummary.averageRating : course.rating}
+                    {reviewSummary.totalReviews > 0 && (
+                      <span className="ml-1 text-muted-foreground">
+                        ({reviewSummary.totalReviews})
+                      </span>
+                    )}
+                  </span>
                 </div>
               </div>
 
               {isEnrolled && (
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   <div className="flex justify-between text-sm mb-2">
                     <span>Course Progress</span>
                     <span className="font-medium">{overallProgress}%</span>
                   </div>
-                  <Progress value={overallProgress} className="h-3" />
+                  <Progress value={overallProgress} className="h-2 sm:h-3" />
                 </div>
               )}
             </div>
@@ -294,18 +297,18 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             {/* Course Content Tabs */}
             <Tabs defaultValue="curriculum" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-                <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                <TabsTrigger value="curriculum" className="text-sm">Curriculum</TabsTrigger>
+                <TabsTrigger value="reviews" className="text-sm">Reviews</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="curriculum" className="space-y-6">
+              <TabsContent value="curriculum" className="space-y-4 sm:space-y-6">
                 {lessons && lessons.length > 0 ? (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Course Lessons</CardTitle>
+                      <CardTitle className="text-base sm:text-lg">Course Lessons</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
+                      <div className="space-y-2 sm:space-y-3">
                         {lessons.map((lesson, index) => {
                           const status = getLessonStatus(lesson.id)
                           const LessonIcon = getLessonIcon(lesson.type)
@@ -313,36 +316,36 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                           return (
                             <div
                               key={lesson.id}
-                              className={`flex items-center justify-between p-3 rounded-lg border ${
+                              className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border ${
                                 status === "current" ? "bg-emerald-50 border-emerald-200" : "bg-background"
                               }`}
                             >
-                              <div className="flex items-center space-x-3">
+                              <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
                                 <div className="flex-shrink-0">
                                   {status === "completed" ? (
-                                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
                                   ) : status === "current" ? (
-                                    <div className="h-5 w-5 rounded-full bg-emerald-600 flex items-center justify-center">
-                                      <div className="h-2 w-2 rounded-full bg-background" />
+                                    <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-emerald-600 flex items-center justify-center">
+                                      <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-background" />
                                     </div>
                                   ) : (
-                                    <Lock className="h-5 w-5 text-muted-foreground" />
+                                    <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                                   )}
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                                              <LessonIcon className={`h-4 w-4 ${lesson.type === "video" ? "text-blue-600" : "text-muted-foreground"}`} />
-                                  <span className={`font-medium ${status === "current" ? "text-emerald-700" : ""}`}>
+                                <div className="flex items-center space-x-1 sm:space-x-2 min-w-0 flex-1">
+                                  <LessonIcon className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${lesson.type === "video" ? "text-blue-600" : "text-muted-foreground"}`} />
+                                  <span className={`font-medium text-sm sm:text-base truncate ${status === "current" ? "text-emerald-700" : ""}`}>
                                     {lesson.title}
                                   </span>
                                 </div>
                               </div>
-                              <div className="flex items-center space-x-3">
-                                <span className="text-sm text-muted-foreground">{formatDuration(lesson.duration)}</span>
+                              <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                                <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">{formatDuration(lesson.duration)}</span>
                                 {isEnrolled && (status === "completed" || status === "current") && (
                                   <Link href={`/courses/${course.id}/lessons/${lesson.id}`}>
-                                    <Button size="sm" variant={status === "current" ? "default" : "outline"}>
-                                      {status === "completed" ? "Review" : "Start"}
-                                      <Play className="ml-1 h-3 w-3" />
+                                    <Button size="sm" variant={status === "current" ? "default" : "outline"} className="text-xs sm:text-sm px-2 sm:px-3">
+                                      <span className="hidden sm:inline">{status === "completed" ? "Review" : "Start"}</span>
+                                      <Play className="h-3 w-3 sm:ml-1" />
                                     </Button>
                                   </Link>
                                 )}
@@ -363,37 +366,12 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
               </TabsContent>
 
               <TabsContent value="reviews">
-                <div className="space-y-6">
-                  {reviews.map((review) => (
-                    <Card key={review.id}>
-                      <CardContent className="p-6">
-                        <div className="flex items-start space-x-4">
-                          <Avatar>
-                            <AvatarImage src={review.user.avatar} />
-                            <AvatarFallback>{review.user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-semibold">{review.user.name}</h4>
-                              <div className="flex items-center">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star 
-                                    key={i} 
-                                    className={`h-4 w-4 ${
-                                      i < review.rating ? "text-yellow-400 fill-current" : "text-muted-foreground opacity-60"
-                                    }`} 
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                            <p className="text-muted-foreground text-sm mb-2">{review.date}</p>
-                            <p className="text-foreground">{review.comment}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                <ReviewDisplay
+                  reviews={courseReviews}
+                  summary={reviewSummary}
+                  showWriteButton={canWriteReview}
+                  onWriteReview={() => setShowReviewForm(true)}
+                />
               </TabsContent>
             </Tabs>
           </div>
@@ -425,10 +403,17 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                           Course Content Coming Soon
                         </Button>
                       )}
-                      <Button variant="outline" className="w-full">
-                        <Download className="mr-2 h-4 w-4" />
-                        Download Resources
-                      </Button>
+                      {/* Demo Button for Testing Completion Dialog */}
+                      {isEnrolled && (
+                        <Button 
+                          onClick={() => setShowCompletionDialog(true)}
+                          variant="outline" 
+                          className="w-full text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                          size="sm"
+                        >
+                          🎉 Demo: Course Completion
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -491,6 +476,28 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
           </div>
         </div>
       </div>
+
+      {/* Course Completion Dialog */}
+      <CourseCompletionDialog
+        isOpen={showCompletionDialog}
+        onClose={() => setShowCompletionDialog(false)}
+        courseId={courseId}
+        courseTitle={course.title}
+        onReviewSubmit={handleReviewSubmit}
+        hasAlreadyReviewed={userHasReviewed}
+      />
+
+      {/* Review Form Dialog */}
+      <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
+        <DialogContent className="sm:max-w-md">
+          <ReviewForm
+            courseId={courseId}
+            courseTitle={course.title}
+            onSubmit={handleReviewSubmit}
+            onCancel={() => setShowReviewForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

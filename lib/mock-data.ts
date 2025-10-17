@@ -9,7 +9,7 @@
  * This data will be replaced with database queries when backend is integrated.
  */
 
-import { Course, Lesson, Quiz, QuizQuestion, User, UserProgress } from './types';
+import { Course, Lesson, Quiz, QuizQuestion, User, UserProgress, Review, ReviewSummary } from './types';
 import { comprehensiveLessons } from './lessons-data';
 
 /**
@@ -436,6 +436,134 @@ export const getUserCourses = (userId: string): Course[] => {
     const course = mockCourses.find(c => c.id === progress.courseId);
     return course;
   }).filter(Boolean) as Course[];
+};
+
+/**
+ * Mock Reviews Data
+ * Sample course reviews for testing review functionality
+ */
+export const mockReviews: Review[] = [
+  {
+    id: 'review-1',
+    userId: 'user-2',
+    courseId: 'course-1',
+    userName: 'Sarah Ahmad',
+    userAvatarId: 'avatar-2',
+    rating: 5,
+    comment: 'Excellent course! The instructor explains complex concepts in a very simple way. I learned so much about stock market basics.',
+    isVerifiedCompletion: true,
+    helpfulVotes: 12,
+    createdAt: new Date('2024-01-20'),
+    updatedAt: new Date('2024-01-20')
+  },
+  {
+    id: 'review-2',
+    userId: 'user-3',
+    courseId: 'course-1',
+    userName: 'Ahmed Khan',
+    userAvatarId: 'avatar-3',
+    rating: 4,
+    comment: 'Great content and well-structured lessons. Would recommend to anyone starting their investment journey.',
+    isVerifiedCompletion: true,
+    helpfulVotes: 8,
+    createdAt: new Date('2024-01-25'),
+    updatedAt: new Date('2024-01-25')
+  },
+  {
+    id: 'review-3',
+    userId: 'user-4',
+    courseId: 'course-2',
+    userName: 'Fatima Sheikh',
+    userAvatarId: 'avatar-4',
+    rating: 5,
+    comment: 'Technical analysis made easy! The charts and examples are very helpful. This course is a must for serious traders.',
+    isVerifiedCompletion: true,
+    helpfulVotes: 15,
+    createdAt: new Date('2024-02-01'),
+    updatedAt: new Date('2024-02-01')
+  },
+  {
+    id: 'review-4',
+    userId: 'user-5',
+    courseId: 'course-2',
+    userName: 'Omar Hassan',
+    userAvatarId: 'avatar-5',
+    rating: 4,
+    comment: 'Good course with practical examples. The technical indicators section was particularly useful.',
+    isVerifiedCompletion: true,
+    helpfulVotes: 6,
+    createdAt: new Date('2024-02-10'),
+    updatedAt: new Date('2024-02-10')
+  },
+  {
+    id: 'review-5',
+    userId: 'user-6',
+    courseId: 'course-3',
+    userName: 'Zara Ali',
+    userAvatarId: 'avatar-6',
+    rating: 5,
+    comment: 'Perfect for understanding risk management. The portfolio diversification strategies are excellent.',
+    isVerifiedCompletion: true,
+    helpfulVotes: 10,
+    createdAt: new Date('2024-02-15'),
+    updatedAt: new Date('2024-02-15')
+  }
+];
+
+/**
+ * Review Helper Functions
+ */
+
+/**
+ * Get reviews for a specific course
+ */
+export const getCourseReviews = (courseId: string): Review[] => {
+  return mockReviews.filter(review => review.courseId === courseId);
+};
+
+/**
+ * Get reviews by a specific user
+ */
+export const getUserReviews = (userId: string): Review[] => {
+  return mockReviews.filter(review => review.userId === userId);
+};
+
+/**
+ * Check if user has reviewed a course
+ */
+export const hasUserReviewedCourse = (userId: string, courseId: string): boolean => {
+  return mockReviews.some(review => review.userId === userId && review.courseId === courseId);
+};
+
+/**
+ * Calculate course review summary
+ */
+export const getCourseReviewSummary = (courseId: string): ReviewSummary => {
+  const reviews = getCourseReviews(courseId);
+  const totalReviews = reviews.length;
+  
+  if (totalReviews === 0) {
+    return {
+      courseId,
+      totalReviews: 0,
+      averageRating: 0,
+      ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+    };
+  }
+
+  const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews;
+  
+  const ratingDistribution = reviews.reduce((dist, review) => {
+    dist[review.rating as keyof typeof dist]++;
+    return dist;
+  }, { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+
+  return {
+    courseId,
+    totalReviews,
+    averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
+    ratingDistribution
+  };
 };
 
 /**

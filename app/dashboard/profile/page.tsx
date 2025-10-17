@@ -26,10 +26,11 @@ import {
 import Link from "next/link"
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { mockUserProgress, getUserCourses, getAvatarPath } from "@/lib/mock-data"
+import { mockUserProgress, getUserCourses, getAvatarPath, getUserReviews } from "@/lib/mock-data"
 import { getActivitySummary, formatTimeAgo } from "@/lib/data-utils"
 import { toast } from "sonner"
 import AvatarPicker from "@/components/avatar-picker"
+import Logo from "@/components/ui/logo"
 
 export default function ProfilePage() {
   const { user, logout } = useAuth()
@@ -140,12 +141,17 @@ export default function ProfilePage() {
                 <Button variant="ghost" size="sm" className="px-2 sm:px-3">
                   <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
                   <span className="hidden sm:inline">Back to Dashboard</span>
-                  <span className="sm:hidden">Back</span>
                 </Button>
               </Link>
               <div className="flex items-center space-x-2">
-                <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
-                <span className="text-lg sm:text-xl font-bold text-foreground">StockMento</span>
+                {/* Mobile: Small logo */}
+                <div className="block md:hidden">
+                  <Logo size="sm" className="h-auto" />
+                </div>
+                {/* Desktop: Medium logo */}
+                <div className="hidden md:block">
+                  <Logo size="md" className="h-auto" />
+                </div>
               </div>
             </div>
             
@@ -202,9 +208,10 @@ export default function ProfilePage() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
             <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
             <TabsTrigger value="courses" className="text-xs sm:text-sm">Courses</TabsTrigger>
+            <TabsTrigger value="reviews" className="text-xs sm:text-sm">Reviews</TabsTrigger>
             <TabsTrigger value="achievements" className="text-xs sm:text-sm">Awards</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs sm:text-sm">Account</TabsTrigger>
           </TabsList>
@@ -340,6 +347,84 @@ export default function ProfilePage() {
                     )
                   })}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="reviews" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>My Reviews</CardTitle>
+                <CardDescription>Reviews you've written for completed courses</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const userReviews = getUserReviews(user.id)
+                  
+                  if (userReviews.length === 0) {
+                    return (
+                      <div className="text-center py-8">
+                        <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-foreground mb-2">No Reviews Yet</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Complete a course to write your first review
+                        </p>
+                        <Link href="/courses">
+                          <Button className="bg-emerald-600 hover:bg-emerald-700">
+                            Browse Courses
+                          </Button>
+                        </Link>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div className="space-y-4">
+                      {userReviews.map((review) => {
+                        const course = enrolledCourses.find(c => c.id === review.courseId)
+                        return (
+                          <div key={review.id} className="p-4 border rounded-lg">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1">
+                                <Link href={`/courses/${review.courseId}`}>
+                                  <h3 className="font-semibold text-foreground hover:text-emerald-600 transition-colors">
+                                    {course?.title || 'Course Title'}
+                                  </h3>
+                                </Link>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <div className="flex space-x-1">
+                                    {Array.from({ length: 5 }, (_, index) => (
+                                      <Star
+                                        key={index}
+                                        className={`h-4 w-4 ${
+                                          index < review.rating ? 'text-yellow-500 fill-current' : 'text-gray-300'
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                  <span className="text-sm text-muted-foreground">
+                                    {formatTimeAgo(review.createdAt)}
+                                  </span>
+                                </div>
+                              </div>
+                              {review.isVerifiedCompletion && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Verified
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-foreground">{review.comment}</p>
+                            {review.helpfulVotes && review.helpfulVotes > 0 && (
+                              <div className="mt-3 text-sm text-muted-foreground">
+                                {review.helpfulVotes} people found this helpful
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
               </CardContent>
             </Card>
           </TabsContent>

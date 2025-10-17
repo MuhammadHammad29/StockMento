@@ -10,6 +10,7 @@ import { TrendingUp, Eye, EyeOff, Shield } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useAdminAuth } from "@/lib/admin-auth-context"
+import Logo from "@/components/ui/logo"
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -70,8 +71,8 @@ export default function AdminLoginPage() {
       <Card className="w-full max-w-md border border-border/60 bg-card/95">
         <CardHeader className="space-y-1 text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <TrendingUp className="h-8 w-8 text-emerald-600" />
-            <span className="text-2xl font-bold text-foreground">StockMento</span>
+            <Logo size="sm" className="sm:hidden" />
+            <Logo size="md" className="hidden sm:block" />
           </div>
           <div className="flex items-center justify-center space-x-2 mb-2">
             <Shield className="h-5 w-5 text-muted-foreground" />

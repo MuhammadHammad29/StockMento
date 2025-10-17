@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { 
@@ -32,6 +31,7 @@ import { useState, useEffect } from "react"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { mockCourses, mockUserProgress, getLessonsByCourseId } from "@/lib/mock-data"
 import { toast } from "@/components/ui/use-toast"
+import Logo from "@/components/ui/logo"
 
 export default function AdminCourseDetailPage({ params }: { params: { id: string } }) {
   const { adminUser } = useAdminAuth()
@@ -144,8 +144,8 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
           <div className="flex justify-between items-center h-14 sm:h-16">
             <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
               <Link href="/admin" className="flex items-center space-x-1 sm:space-x-2 min-w-0">
-                <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600 flex-shrink-0" />
-                <span className="text-sm sm:text-lg lg:text-xl font-bold text-foreground truncate">StockMento</span>
+                <Logo size="sm" className="sm:hidden" />
+                <Logo size="md" className="hidden sm:block" />
                 <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300 text-xs flex-shrink-0">Admin</Badge>
               </Link>
               <span className="text-muted-foreground hidden lg:inline">/</span>
@@ -257,32 +257,23 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
           </Card>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="lessons" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="lessons">Lessons</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="students">Students</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
-
-          {/* Lessons Tab */}
-          <TabsContent value="lessons" className="space-y-4 sm:space-y-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
-              <div className="min-w-0 flex-1">
-                <h2 className="text-xl sm:text-2xl font-bold">Course Lessons</h2>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Use the arrow buttons to reorder lessons. Changes are saved automatically.
-                </p>
-              </div>
-              <Link href={`/admin/courses/${courseId}/lessons/new`}>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9 w-full sm:w-auto">
-                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Add Lesson</span>
-                  <span className="sm:hidden">Add</span>
-                </Button>
-              </Link>
+        {/* Course Lessons Section */}
+        <div className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl sm:text-2xl font-bold">Course Lessons</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Use the arrow buttons to reorder lessons. Changes are saved automatically.
+              </p>
             </div>
+            <Link href={`/admin/courses/${courseId}/lessons/new`}>
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9 w-full sm:w-auto">
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Add Lesson</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+            </Link>
+          </div>
 
             {orderedLessons.length === 0 ? (
               <Card className="text-center py-12">
@@ -573,59 +564,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
-
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Course Analytics</CardTitle>
-                <CardDescription>Performance metrics and insights</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Analytics dashboard will be implemented with backend integration</p>
-                  <p className="text-sm mt-2">This will include completion rates, engagement metrics, and learning progress charts</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Students Tab */}
-          <TabsContent value="students" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Enrolled Students ({enrolledUsers.length})</CardTitle>
-                <CardDescription>Manage student enrollments and track progress</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Student management interface will be implemented with backend</p>
-                  <p className="text-sm mt-2">View individual progress, send messages, and manage enrollments</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Course Settings</CardTitle>
-                <CardDescription>Configure course properties and access</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Course settings panel will be implemented with backend</p>
-                  <p className="text-sm mt-2">Manage pricing, access levels, certificates, and course metadata</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
     </div>
   )

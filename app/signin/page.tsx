@@ -20,6 +20,7 @@ import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import Logo from "@/components/ui/logo"
 
 export default function SignInPage() {
   // Form state management
@@ -55,9 +56,8 @@ export default function SignInPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center space-x-2">
-            <TrendingUp className="h-8 w-8 text-emerald-600" />
-                        <span className="text-2xl font-bold text-foreground">StockMento</span>
+          <Link href="/" className="inline-flex items-center justify-center">
+            <Logo size="lg" className="h-auto" />
           </Link>
           <p className="text-muted-foreground mt-2">Welcome back to your learning journey</p>
         </div>

@@ -28,6 +28,7 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { mockCourses, mockUserProgress, getLessonsByCourseId } from "@/lib/mock-data"
 import { formatDuration } from "@/lib/data-utils"
+import Logo from "@/components/ui/logo"
 import { toast } from "sonner"
 
 export default function LessonPage({ params }: { params: { id: string; lessonId: string } }) {
@@ -174,69 +175,71 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
               <Link href={`/courses/${courseId}`}>
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="mr-0 lg:mr-2 h-4 w-4" />
-                  <span className="hidden lg:inline">Back to Course</span>
+                <Button variant="ghost" size="sm" className="px-2 sm:px-3">
+                  <ArrowLeft className="mr-0 sm:mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Back to Course</span>
                 </Button>
               </Link>
               <div className="flex items-center space-x-2">
-                <TrendingUp className="h-8 w-8 text-emerald-600" />
-                <span className="text-xl font-bold text-foreground">StockMento</span>
+                <Logo size="sm" className="sm:hidden" />
+                <Logo size="md" className="hidden sm:block" />
               </div>
             </div>
             
-            <div className="flex items-center space-x-3">
-              <Badge variant="outline">{lesson.type === "video" ? "Video Lesson" : "Text Lesson"}</Badge>
-              <span className="text-sm text-muted-foreground">{formatDuration(lesson.duration)}</span>
+            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+              <Badge variant="outline" className="text-xs sm:text-sm px-1 sm:px-2">
+                {lesson.type === "video" ? "Video" : lesson.type === "quiz" ? "Quiz" : "Text"}
+              </Badge>
+              <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">{formatDuration(lesson.duration)}</span>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
           {/* Main Content */}
           <div className="lg:col-span-3">
             {/* Lesson Header */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h1 className="text-3xl font-bold text-foreground">{lesson.title}</h1>
+            <div className="mb-6 sm:mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2 sm:gap-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{lesson.title}</h1>
                 {lessonCompleted && (
-                  <Badge className="bg-green-100 text-green-800">
-                    <CheckCircle className="w-4 h-4 mr-1" />
+                  <Badge className="bg-green-100 text-green-800 self-start sm:self-center">
+                    <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                     Completed
                   </Badge>
                 )}
               </div>
               
-              <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-6">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
                 <span className="flex items-center">
-                  <BookOpen className="h-4 w-4 mr-1" />
-                  {course.title}
+                  <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
+                  <span className="truncate">{course.title}</span>
                 </span>
                 <span className="flex items-center">
-                  <Clock className="h-4 w-4 mr-1" />
+                  <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
                   {formatDuration(lesson.duration)}
                 </span>
                 {lesson.type === "video" && (
                   <span className="flex items-center">
-                    <PlayCircle className="h-4 w-4 mr-1" />
+                    <PlayCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
                     Video Lesson
                   </span>
                 )}
                 {lesson.type === "quiz" && (
                   <span className="flex items-center">
-                    <Trophy className="h-4 w-4 mr-1" />
+                    <Trophy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
                     Quiz
                   </span>
                 )}
                 {lesson.type === "text" && (
                   <span className="flex items-center">
-                    <FileText className="h-4 w-4 mr-1" />
+                    <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
                     Text Lesson
                   </span>
                 )}
@@ -244,8 +247,8 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
             </div>
 
             {/* Lesson Content */}
-            <Card className="mb-8">
-              <CardContent className="p-8">
+            <Card className="mb-6 sm:mb-8">
+              <CardContent className="p-4 sm:p-8">
                 {lesson.type === "quiz" ? (
                   // Quiz Content
                   <div>
@@ -443,31 +446,33 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
             </Card>
 
             {/* Lesson Actions */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0">
+              <div className="flex items-center space-x-2 sm:space-x-3 order-2 sm:order-1">
                 {previousLesson && (
                   <Link href={`/courses/${courseId}/lessons/${previousLesson.id}`}>
-                    <Button variant="outline">
-                      <ArrowLeft className="mr-2 h-4 w-4" />
+                    <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                      <ArrowLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                       Previous
                     </Button>
                   </Link>
                 )}
               </div>
 
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 sm:space-x-3 order-1 sm:order-2">
                 {!lessonCompleted && (
-                  <Button onClick={handleCompleteLesson} className="bg-emerald-600 hover:bg-emerald-700">
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Mark Complete
+                  <Button onClick={handleCompleteLesson} className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm flex-1 sm:flex-none">
+                    <CheckCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Mark Complete</span>
+                    <span className="sm:hidden">Complete</span>
                   </Button>
                 )}
                 
                 {nextLesson && (
-                  <Link href={`/courses/${courseId}/lessons/${nextLesson.id}`}>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      Next Lesson
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                  <Link href={`/courses/${courseId}/lessons/${nextLesson.id}`} className="flex-1 sm:flex-none">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm w-full">
+                      <span className="hidden sm:inline">Next Lesson</span>
+                      <span className="sm:hidden">Next</span>
+                      <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </Link>
                 )}
@@ -477,26 +482,26 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-24 space-y-6">
+            <div className="sticky top-20 sm:top-24 space-y-4 sm:space-y-6">
               {/* Course Progress */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Course Progress</CardTitle>
+                <CardHeader className="pb-3 sm:pb-4">
+                  <CardTitle className="text-base sm:text-lg">Course Progress</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
-                      <div className="flex justify-between text-sm mb-2">
+                      <div className="flex justify-between text-xs sm:text-sm mb-2">
                         <span>Overall Progress</span>
                         <span>{courseLessons.length > 0 ? Math.round(((userProgress?.completedLessons.length || 0) / courseLessons.length) * 100) : 0}%</span>
                       </div>
                       <Progress 
                         value={courseLessons.length > 0 ? ((userProgress?.completedLessons.length || 0) / courseLessons.length) * 100 : 0} 
-                        className="h-2" 
+                        className="h-1.5 sm:h-2" 
                       />
                     </div>
                     
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-xs sm:text-sm text-muted-foreground">
                       {userProgress?.completedLessons.length || 0} of {courseLessons.length} lessons completed
                     </div>
                   </div>

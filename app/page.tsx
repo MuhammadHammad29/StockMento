@@ -21,6 +21,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescri
 import { BookOpen, Play, Trophy, Users, TrendingUp, Shield, Clock, Menu, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import Logo from "@/components/ui/logo"
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -32,8 +33,14 @@ export default function HomePage() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Brand Logo and Name */}
           <div className="flex items-center space-x-2">
-            <TrendingUp className="h-8 w-8 text-emerald-600" />
-            <span className="text-xl font-bold text-foreground">StockMento</span>
+            {/* Mobile: Small logo */}
+            <div className="block md:hidden">
+              <Logo size="sm" className="h-auto" />
+            </div>
+            {/* Desktop: Medium logo */}
+            <div className="hidden md:block">
+              <Logo size="md" className="h-auto" />
+            </div>
           </div>
           
           {/* Desktop Navigation Links */}
@@ -80,8 +87,7 @@ export default function HomePage() {
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                 <SheetHeader className="border-b pb-4">
                   <SheetTitle className="flex items-center gap-2 text-left">
-                    <TrendingUp className="h-5 w-5 text-emerald-600" />
-                    <span className="font-bold text-emerald-600">StockMento</span>
+                    <Logo size="sm" className="h-auto" />
                   </SheetTitle>
                   <SheetDescription className="text-left">
                     Pakistan's Premier Stock Market Education Platform
@@ -317,8 +323,7 @@ export default function HomePage() {
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             <div className="sm:col-span-2 lg:col-span-1">
               <div className="mb-4 flex items-center space-x-2">
-                <TrendingUp className="h-6 w-6 text-emerald-500" />
-                <span className="text-lg font-bold text-white dark:text-foreground">StockMento</span>
+                <Logo size="sm" className="h-auto" />
               </div>
               <p className="text-slate-300 dark:text-muted-foreground">
                 Pakistan's premier platform for stock market education and trading knowledge.

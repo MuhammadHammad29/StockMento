@@ -30,7 +30,8 @@ import {
 import Link from "next/link"
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { getAvatarById } from "@/lib/mock-data"
+import { getAvatarPath } from "@/lib/mock-data"
+import Logo from "@/components/ui/logo"
 
 export default function ProgressPage() {
   const { user, logout } = useAuth()
@@ -146,12 +147,17 @@ export default function ProgressPage() {
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Back to Dashboard</span>
-                <span className="sm:hidden">Back</span>
               </Button>
             </Link>
             <div className="flex items-center space-x-2">
-              <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
-              <span className="text-lg sm:text-xl font-bold text-foreground">StockMento</span>
+              {/* Mobile: Small logo */}
+              <div className="block md:hidden">
+                <Logo size="sm" className="h-auto" />
+              </div>
+              {/* Desktop: Medium logo */}
+              <div className="hidden md:block">
+                <Logo size="md" className="h-auto" />
+              </div>
             </div>
           </div>
           
@@ -180,7 +186,7 @@ export default function ProgressPage() {
                 </Button>
                 <Link href="/dashboard/profile">
                   <Avatar className="h-8 w-8 cursor-pointer">
-                    <AvatarImage src={getAvatarById(user.avatarId)?.imagePath} alt={`${user.firstName} ${user.lastName}`} />
+                    <AvatarImage src={getAvatarPath(user.avatarId)} alt={`${user.firstName} ${user.lastName}`} />
                     <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                       {user.firstName[0]}
                       {user.lastName[0]}
@@ -202,7 +208,7 @@ export default function ProgressPage() {
                     <SheetHeader className="border-b pb-4">
                       <SheetTitle className="flex items-center gap-3 text-left">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={getAvatarById(user.avatarId)?.imagePath} alt={`${user.firstName} ${user.lastName}`} />
+                          <AvatarImage src={getAvatarPath(user.avatarId)} alt={`${user.firstName} ${user.lastName}`} />
                           <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                             {user.firstName[0]}
                             {user.lastName[0]}

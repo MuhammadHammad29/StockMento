@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, ArrowLeft, Save, Eye } from "lucide-react"
+import Logo from '@/components/ui/logo'
 import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -52,8 +53,8 @@ export default function CreateCoursePage() {
           <div className="flex justify-between items-center h-14 sm:h-16">
             <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
               <Link href="/admin" className="flex items-center space-x-1 sm:space-x-2 min-w-0">
-                <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600 flex-shrink-0" />
-                <span className="text-sm sm:text-lg lg:text-xl font-bold text-foreground truncate">StockMento</span>
+                <Logo size="sm" className="sm:hidden" />
+                <Logo size="md" className="hidden sm:block" />
                 <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300 text-xs flex-shrink-0">Admin</Badge>
               </Link>
               <span className="text-muted-foreground hidden lg:inline">/</span>

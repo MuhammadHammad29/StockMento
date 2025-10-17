@@ -152,6 +152,51 @@ export interface AdminActivity {
   metadata?: Record<string, any>;
 }
 
+/**
+ * Review Interface
+ * User reviews and ratings for completed courses
+ */
+export interface Review {
+  id: string;
+  userId: string; // User who wrote the review
+  courseId: string; // Course being reviewed
+  userName: string; // Display name for the review
+  userAvatarId: string; // User's avatar for display
+  rating: number; // 1-5 star rating
+  comment: string; // Review comment/text
+  isVerifiedCompletion: boolean; // Whether user completed the course
+  helpfulVotes?: number; // Number of users who found this helpful
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Review Submission Interface
+ * Data structure for submitting new reviews
+ */
+export interface ReviewSubmission {
+  courseId: string;
+  rating: number;
+  comment: string;
+}
+
+/**
+ * Review Summary Interface
+ * Aggregated review data for courses
+ */
+export interface ReviewSummary {
+  courseId: string;
+  totalReviews: number;
+  averageRating: number;
+  ratingDistribution: {
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+    5: number;
+  };
+}
+
 // Authentication types
 export interface AuthUser {
   id: string;

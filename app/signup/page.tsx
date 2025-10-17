@@ -15,6 +15,7 @@ import { toast } from "sonner"
 import { validateEmail, validatePassword } from "@/lib/data-utils"
 import AvatarPicker from "@/components/avatar-picker"
 import { getDefaultAvatarId, getAvatarPath } from "@/lib/mock-data"
+import Logo from "@/components/ui/logo"
 
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -91,9 +92,8 @@ export default function SignUpPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center space-x-2">
-            <TrendingUp className="h-8 w-8 text-emerald-600" />
-            <span className="text-2xl font-bold text-foreground">StockMento</span>
+          <Link href="/" className="inline-flex items-center justify-center">
+            <Logo size="lg" className="h-auto" />
           </Link>
           <p className="text-muted-foreground mt-2">Start your stock market journey today</p>
         </div>

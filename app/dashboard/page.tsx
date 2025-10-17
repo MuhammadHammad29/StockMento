@@ -41,6 +41,7 @@ import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { mockCourses, mockUserProgress, getUserCourses, getCourseById, getAvatarPath } from "@/lib/mock-data"
 import { formatTimeAgo, getActivitySummary } from "@/lib/data-utils"
+import Logo from "@/components/ui/logo"
 
 export default function DashboardPage() {
   const { user, logout } = useAuth()
@@ -116,30 +117,30 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-14 sm:h-16 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-2">
-            <TrendingUp className="h-8 w-8 text-emerald-600" />
-            <span className="text-xl font-bold text-foreground">StockMento</span>
+            <Logo size="sm" className="sm:hidden" />
+            <Logo size="md" className="hidden sm:block" />
           </div>
 
           {/* Desktop Navigation & User Menu */}
-          <div className="hidden items-center space-x-8 md:flex">
+          <div className="hidden items-center space-x-6 sm:space-x-8 md:flex">
             {/* Navigation Links */}
-            <nav className="flex items-center space-x-6">
-              <Link href="/courses" className="text-muted-foreground transition-colors hover:text-emerald-600 dark:hover:text-emerald-400">
+            <nav className="flex items-center space-x-4 sm:space-x-6">
+              <Link href="/courses" className="text-muted-foreground transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 text-sm">
                 Courses
               </Link>
-              <Link href="/progress" className="text-muted-foreground transition-colors hover:text-emerald-600 dark:hover:text-emerald-400">
+              <Link href="/progress" className="text-muted-foreground transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 text-sm">
                 Progress
               </Link>
             </nav>
             
             {/* User Menu */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 sm:space-x-4">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="text-muted-foreground hover:text-red-600 dark:hover:text-red-400"
+                className="text-muted-foreground hover:text-red-600 dark:hover:text-red-400 h-8 w-8"
                 onClick={logout}
                 title="Logout"
               >
@@ -224,36 +225,36 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_320px] lg:px-8">
-        <div className="space-y-6">
+      <div className="mx-auto grid max-w-7xl gap-4 sm:gap-6 px-3 sm:px-6 py-6 sm:py-10 grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_320px] lg:px-8">
+        <div className="space-y-4 sm:space-y-6">
           {/* Welcome Card with Quick Actions */}
           <Card className="border border-border/60 bg-card/90">
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6">
               <div>
-                <CardTitle className="text-2xl font-semibold text-foreground">Welcome back, {user.firstName}</CardTitle>
-                <CardDescription className="text-muted-foreground">
+                <CardTitle className="text-xl sm:text-2xl font-semibold text-foreground">Welcome back, {user.firstName}</CardTitle>
+                <CardDescription className="text-sm sm:text-base text-muted-foreground">
                   Track your progress and continue learning about the Pakistan Stock Exchange.
                 </CardDescription>
               </div>
-              <div className="flex gap-2">
-                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs sm:text-sm">
                   {activitySummary.totalCourses} active courses
                 </Badge>
                 <Link href="/courses">
-                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                    <BookOpen className="mr-2 h-4 w-4" />
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm w-full sm:w-auto">
+                    <BookOpen className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                     Browse All Courses
                   </Button>
                 </Link>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid gap-6 md:grid-cols-3">
+            <CardContent className="p-4 sm:p-6">
+              <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3">
                 <div>
-                  <p className="text-sm text-muted-foreground">Overall Progress</p>
-                  <div className="mt-2 flex items-center gap-3">
-                    <div className="text-3xl font-semibold text-foreground">{activitySummary.averageProgress}%</div>
-                    <Progress value={activitySummary.averageProgress} className="h-2 flex-1" />
+                  <p className="text-xs sm:text-sm text-muted-foreground">Overall Progress</p>
+                  <div className="mt-2 flex items-center gap-2 sm:gap-3">
+                    <div className="text-2xl sm:text-3xl font-semibold text-foreground">{activitySummary.averageProgress}%</div>
+                    <Progress value={activitySummary.averageProgress} className="h-1.5 sm:h-2 flex-1" />
                   </div>
                 </div>
                 <div>
@@ -269,16 +270,16 @@ export default function DashboardPage() {
           </Card>
 
           {/* Enrolled Courses */}
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <BookOpen className="h-5 w-5 text-emerald-500" />
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg">
+                  <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
                   Current Courses
                 </CardTitle>
-                <CardDescription>Your ongoing learning journey</CardDescription>
+                <CardDescription className="text-sm">Your ongoing learning journey</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0">
                 {enrolledCourses.length > 0 ? (
                   enrolledCourses.map((course) => {
                     const progress = userProgressData.find((p) => p.courseId === course.id)
@@ -287,33 +288,33 @@ export default function DashboardPage() {
                     return (
                       <div
                         key={course.id}
-                        className="rounded-xl border border-border/50 bg-background/70 p-4 backdrop-blur-sm transition-colors hover:bg-background/90"
+                        className="rounded-lg border border-border/40 bg-background/70 p-3 sm:p-4 backdrop-blur-sm transition-colors hover:bg-background/90"
                       >
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h3 className="text-lg font-semibold text-foreground">{course.title}</h3>
-                            <p className="text-sm text-muted-foreground">{course.description}</p>
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground line-clamp-2">{course.title}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mt-1">{course.description}</p>
                           </div>
-                          <Badge variant="outline" className="border-emerald-200 text-emerald-600 dark:border-emerald-400/40 dark:text-emerald-300">
+                          <Badge variant="outline" className="border-emerald-200 text-emerald-600 dark:border-emerald-400/40 dark:text-emerald-300 text-xs self-start sm:self-center flex-shrink-0">
                             {course.level}
                           </Badge>
                         </div>
-                        <div className="mt-4 flex flex-wrap items-center gap-4">
+                        <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                           <div className="flex-1">
                             <p className="text-xs uppercase tracking-wide text-muted-foreground">Progress</p>
-                            <div className="flex items-center gap-2">
-                              <Progress value={progress?.overallProgress ?? 0} className="h-2 w-32" />
-                              <span className="text-sm font-medium text-foreground">{progress?.overallProgress ?? 0}%</span>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Progress value={progress?.overallProgress ?? 0} className="h-1.5 sm:h-2 flex-1 max-w-24 sm:max-w-32" />
+                              <span className="text-xs sm:text-sm font-medium text-foreground">{progress?.overallProgress ?? 0}%</span>
                             </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-xs sm:text-sm text-muted-foreground">
                             {progress?.completedLessons.length ?? 0} / {course.totalLessons} lessons
                           </div>
                         </div>
-                        <div className="mt-4 flex items-center justify-end">
-                          <div className="flex gap-3">
-                            <Link href={`/courses/${course.id}`}>
-                              <Button variant="outline" size="sm" className="px-4">
+                        <div className="mt-3 sm:mt-4 flex items-center justify-end">
+                          <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
+                            <Link href={`/courses/${course.id}`} className="flex-1 sm:flex-none">
+                              <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-4 w-full sm:w-auto">
                                 View Course
                               </Button>
                             </Link>
@@ -321,9 +322,9 @@ export default function DashboardPage() {
                               progress?.currentLesson 
                                 ? `/courses/${course.id}/lessons/${progress.currentLesson}`
                                 : `/courses/${course.id}`
-                            }>
-                              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 px-4">
-                                <Play className="mr-2 h-4 w-4" />
+                            } className="flex-1 sm:flex-none">
+                              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-2 sm:px-4 w-full sm:w-auto">
+                                <Play className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                 Continue
                               </Button>
                             </Link>
@@ -362,21 +363,21 @@ export default function DashboardPage() {
 
             {/* Recent Activity */}
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <BarChart3 className="h-5 w-5 text-blue-500" />
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg">
+                  <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                   Recent Activity
                 </CardTitle>
-                <CardDescription>Your learning progress over time</CardDescription>
+                <CardDescription className="text-sm">Your learning progress over time</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <div className="space-y-3 sm:space-y-4">
                   {recentActivity.map((activity) => (
                     <div key={activity.id} className="flex items-start space-x-3">
-                      <div className="mt-2 h-2 w-2 rounded-full bg-emerald-500"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">{activity.title}</p>
-                        <p className="text-xs text-muted-foreground">{activity.course}</p>
+                      <div className="mt-2 h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground line-clamp-2">{activity.title}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{activity.course}</p>
                         <p className="mt-1 text-xs text-muted-foreground">{formatTimeAgo(activity.time)}</p>
                       </div>
                     </div>
@@ -389,9 +390,9 @@ export default function DashboardPage() {
           {/* Available Courses Section */}
           {availableCourses.length > 0 && (
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 p-4 sm:p-6">
                 <div>
-                  <CardTitle className="flex items-center gap-2 text-foreground">
+                  <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg">
                     <BookOpen className="h-5 w-5 text-emerald-600" />
                     Explore More Courses
                   </CardTitle>
@@ -533,33 +534,6 @@ export default function DashboardPage() {
                   Great job!
                 </Badge>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card className="border border-border/60 bg-card/90">
-            <CardHeader>
-              <CardTitle className="text-lg text-foreground">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Link href="/courses">
-                <Button variant="outline" className="w-full justify-start hover:bg-emerald-50 hover:border-emerald-200">
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Explore Courses
-                </Button>
-              </Link>
-              <Link href="/courses?filter=beginner">
-                <Button variant="outline" className="w-full justify-start hover:bg-blue-50 hover:border-blue-200">
-                  <Target className="mr-2 h-4 w-4" />
-                  Beginner Courses
-                </Button>
-              </Link>
-              <Link href="/dashboard/profile">
-                <Button variant="outline" className="w-full justify-start hover:bg-gray-50 hover:border-gray-200">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Profile Settings
-                </Button>
-              </Link>
             </CardContent>
           </Card>
         </div>
