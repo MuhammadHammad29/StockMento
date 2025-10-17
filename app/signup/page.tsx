@@ -114,8 +114,8 @@ export default function SignUpPage() {
                     <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input 
                       id="firstName" 
-                      placeholder="Ahmed" 
-                      className="pl-10" 
+                      placeholder="First Name" 
+                      className="pl-10 text-sm" 
                       value={formData.firstName}
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
                       required 
@@ -128,8 +128,8 @@ export default function SignUpPage() {
                     <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input 
                       id="lastName" 
-                      placeholder="Khan" 
-                      className="pl-10" 
+                      placeholder="Last Name" 
+                      className="pl-10 text-sm" 
                       value={formData.lastName}
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
                       required 
@@ -173,8 +173,8 @@ export default function SignUpPage() {
                   <Input 
                     id="email" 
                     type="email" 
-                    placeholder="ahmed.khan@example.com" 
-                    className="pl-10" 
+                    placeholder="Email" 
+                    className="pl-10 text-sm" 
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     required 
@@ -184,21 +184,24 @@ export default function SignUpPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <div className="password-input-container">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Create a strong password"
-                    className="pl-10 pr-10"
+                    placeholder="Password"
+                    className="pl-10 pr-12 password-input text-sm"
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
                     required
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-muted-foreground hover:text-muted-foreground"
+                    className="password-toggle-btn text-muted-foreground hover:text-foreground focus:text-foreground focus:outline-none transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    tabIndex={0}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -207,21 +210,24 @@ export default function SignUpPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <div className="password-input-container">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
                   <Input
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm your password"
-                    className="pl-10 pr-10"
+                    placeholder="Confirm Password"
+                    className="pl-10 pr-12 password-input text-sm"
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                     required
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-3 text-muted-foreground hover:text-muted-foreground"
+                    className="password-toggle-btn text-muted-foreground hover:text-foreground focus:text-foreground focus:outline-none transition-colors"
+                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                    tabIndex={0}
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

@@ -123,4 +123,56 @@
     @apply bg-background text-foreground;
   }
 }
+/* Disable browser native password reveal buttons to prevent double eye icons */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-strong-password-auto-fill-button {
+  display: none !important;
+}
+
+/* Edge browser password reveal */
+input[type="password"]::-ms-reveal {
+  display: none;
+}
+
+/* Chrome/Safari password reveal */
+input[type="password"]::-webkit-inner-spin-button,
+input[type="password"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Additional browser-specific password controls */
+input[type="password"]::-webkit-textfield-decoration-container {
+  display: none !important;
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
+/* To ensure custom password toggle button is properly positioned */
+.password-input-container {
+  position: relative;
+}
+.password-input {
+  padding-right: 3rem !important; /* Ensure space for our button */
+}
+.password-toggle-btn {
+  position: absolute !important;
+  right: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 20 !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
 

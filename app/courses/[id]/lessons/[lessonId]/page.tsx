@@ -10,7 +10,6 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { getYouTubeEmbedUrl, isYouTubeUrl } from "@/lib/youtube-utils"
 import { 
-  TrendingUp, 
   ArrowLeft, 
   ArrowRight, 
   CheckCircle, 
@@ -28,7 +27,7 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { mockCourses, mockUserProgress, getLessonsByCourseId } from "@/lib/mock-data"
 import { formatDuration } from "@/lib/data-utils"
-import Logo from "@/components/ui/logo"
+import { UserNavbar } from "@/components/navigation"
 import { toast } from "sonner"
 
 export default function LessonPage({ params }: { params: { id: string; lessonId: string } }) {
@@ -173,32 +172,22 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16">
-            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
-              <Link href={`/courses/${courseId}`}>
-                <Button variant="ghost" size="sm" className="px-2 sm:px-3">
-                  <ArrowLeft className="mr-0 sm:mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Back to Course</span>
-                </Button>
-              </Link>
-              <div className="flex items-center space-x-2">
-                <Logo size="sm" className="sm:hidden" />
-                <Logo size="md" className="hidden sm:block" />
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-              <Badge variant="outline" className="text-xs sm:text-sm px-1 sm:px-2">
-                {lesson.type === "video" ? "Video" : lesson.type === "quiz" ? "Quiz" : "Text"}
-              </Badge>
-              <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">{formatDuration(lesson.duration)}</span>
-            </div>
+      <UserNavbar />
+
+      {/* Breadcrumb Section */}
+      <div className="border-b border-border/60 bg-background/80">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Link href="/courses" className="hover:text-foreground">Courses</Link>
+            <span className="mx-2">/</span>
+            <Link href={`/courses/${courseId}`} className="hover:text-foreground truncate max-w-[120px] sm:max-w-[200px]">
+              {course.title}
+            </Link>
+            <span className="mx-2">/</span>
+            <span className="text-foreground truncate max-w-[120px] sm:max-w-[200px]">{lesson.title}</span>
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">

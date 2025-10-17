@@ -47,7 +47,7 @@ export default function AvatarPicker({
               <Avatar className="h-16 w-16 mx-auto">
                 <AvatarImage 
                   src={getAvatarPath(avatarId)} 
-                  alt={`Avatar ${avatarId.split('-')[1]}`}
+                  alt={`Avatar ${avatarId.split('_')[1]}`}
                   className="object-cover"
                 />
                 <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
@@ -62,7 +62,7 @@ export default function AvatarPicker({
               )}
               
               <p className="text-xs text-center mt-1 text-muted-foreground truncate">
-                Avatar {avatarId.split('-')[1]}
+                Avatar {avatarId.split('_')[1]}
               </p>
             </div>
           ))}

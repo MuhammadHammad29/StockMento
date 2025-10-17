@@ -76,8 +76,8 @@ export default function SignInPage() {
                   <Input 
                     id="email" 
                     type="email" 
-                    placeholder="Enter your email" 
-                    className="pl-10" 
+                    placeholder="Email"
+                    className="pl-10 text-sm" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required 
@@ -87,28 +87,33 @@ export default function SignInPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <div className="password-input-container">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    className="pl-10 pr-10"
+                    placeholder="Password"
+                    className="pl-10 pr-12 password-input text-sm"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    autoComplete="current-password"
+                    data-lpignore="true"
+                    data-form-type="password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-muted-foreground hover:text-muted-foreground"
+                    className="password-toggle-btn text-muted-foreground hover:text-foreground focus:text-foreground focus:outline-none transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    tabIndex={0}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="remember" 
@@ -117,9 +122,11 @@ export default function SignInPage() {
                   />
                   <Label htmlFor="remember" className="text-sm text-muted-foreground">Remember me</Label>
                 </div>
-                <Link href="/forgot-password" className="text-sm text-emerald-600 hover:text-emerald-700">
-                  Forgot password?
-                </Link>
+                <div>
+                  <Link href="/forgot-password" className="text-sm text-emerald-600 hover:text-emerald-700">
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
 
               <Button 

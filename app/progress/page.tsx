@@ -8,34 +8,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import {
-  TrendingUp,
   BookOpen,
   Clock,
-  Users,
   Star,
   Trophy,
   Target,
   Calendar,
-  ChevronRight,
   BarChart3,
-  Menu,
-  LogOut,
-  Play,
   CheckCircle,
   PlayCircle,
   Lock,
-  ArrowLeft,
-  Settings,
 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { getAvatarPath } from "@/lib/mock-data"
-import Logo from "@/components/ui/logo"
+import { UserNavbar } from "@/components/navigation"
 
 export default function ProgressPage() {
-  const { user, logout } = useAuth()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { user } = useAuth()
   const overallProgress = {
     completedCourses: 3,
     totalCourses: 12,
@@ -139,134 +130,7 @@ export default function ProgressPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Back to Dashboard</span>
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-2">
-              {/* Mobile: Small logo */}
-              <div className="block md:hidden">
-                <Logo size="sm" className="h-auto" />
-              </div>
-              {/* Desktop: Medium logo */}
-              <div className="hidden md:block">
-                <Logo size="md" className="h-auto" />
-              </div>
-            </div>
-          </div>
-          
-          {user ? (
-            <div className="flex items-center space-x-4">
-              {/* Desktop Navigation */}
-              <nav className="hidden items-center space-x-6 md:flex">
-                <Link href="/courses" className="text-muted-foreground transition-colors hover:text-emerald-600 dark:hover:text-emerald-400">
-                  Courses
-                </Link>
-                <Link href="/dashboard" className="text-muted-foreground transition-colors hover:text-emerald-600 dark:hover:text-emerald-400">
-                  Dashboard
-                </Link>
-              </nav>
-
-              {/* Desktop User Menu */}
-              <div className="hidden items-center space-x-4 md:flex">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="text-muted-foreground hover:text-red-600 dark:hover:text-red-400"
-                  onClick={logout}
-                  title="Logout"
-                >
-                  <LogOut className="h-5 w-5" />
-                </Button>
-                <Link href="/dashboard/profile">
-                  <Avatar className="h-8 w-8 cursor-pointer">
-                    <AvatarImage src={getAvatarPath(user.avatarId)} alt={`${user.firstName} ${user.lastName}`} />
-                    <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
-                      {user.firstName[0]}
-                      {user.lastName[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                </Link>
-              </div>
-
-              {/* Mobile Menu */}
-              <div className="flex items-center space-x-2 md:hidden">
-                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="icon" className="border-border/40 text-muted-foreground hover:text-emerald-600 hover:border-emerald-600/20">
-                      <Menu className="h-5 w-5" />
-                      <span className="sr-only">Toggle menu</span>
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                    <SheetHeader className="border-b pb-4">
-                      <SheetTitle className="flex items-center gap-3 text-left">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={getAvatarPath(user.avatarId)} alt={`${user.firstName} ${user.lastName}`} />
-                          <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
-                            {user.firstName[0]}
-                            {user.lastName[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{user.firstName} {user.lastName}</span>
-                      </SheetTitle>
-                      <SheetDescription className="text-left">
-                        {user.email}
-                      </SheetDescription>
-                    </SheetHeader>
-                    <nav className="flex flex-col gap-3 mt-6">
-                      <Link 
-                        href="/dashboard" 
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                        Dashboard
-                      </Link>
-                      <Link 
-                        href="/courses" 
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <BookOpen className="h-4 w-4" />
-                        Courses
-                      </Link>
-                      <Link 
-                        href="/dashboard/profile" 
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <Settings className="h-4 w-4" />
-                        Profile Settings
-                      </Link>
-                      <button
-                        onClick={() => {
-                          logout()
-                          setMobileMenuOpen(false)
-                        }}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 w-full text-left"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Logout
-                      </button>
-                    </nav>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            </div>
-          ) : (
-            <Link href="/signin">
-              <Button className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400">Sign In</Button>
-            </Link>
-          )}
-        </div>
-      </header>
+      <UserNavbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}

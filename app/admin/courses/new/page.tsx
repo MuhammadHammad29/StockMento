@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, ArrowLeft, Save, Eye } from "lucide-react"
-import Logo from '@/components/ui/logo'
+import { TrendingUp, Save, Eye } from "lucide-react"
+import { AdminNavbar } from "@/components/navigation"
 import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -47,33 +47,20 @@ export default function CreateCoursePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16">
-            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
-              <Link href="/admin" className="flex items-center space-x-1 sm:space-x-2 min-w-0">
-                <Logo size="sm" className="sm:hidden" />
-                <Logo size="md" className="hidden sm:block" />
-                <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300 text-xs flex-shrink-0">Admin</Badge>
-              </Link>
-              <span className="text-muted-foreground hidden lg:inline">/</span>
-              <span className="text-muted-foreground hidden lg:inline text-sm">Create Course</span>
-            </div>
-            
-            {/* Back Button for both Mobile and Desktop */}
-            <div className="flex">
-              <Link href="/admin/courses">
-                <Button variant="outline" className="flex items-center gap-1 sm:gap-2 bg-background/60 text-xs sm:text-sm px-2 sm:px-3 h-8 sm:h-9">
-                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Back to Courses</span>
-                  <span className="sm:hidden">Back</span>
-                </Button>
-              </Link>
+      <AdminNavbar />
+
+      {/* Breadcrumb Section */}
+      <div className="border-b border-border/60 bg-background/80">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+            <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+              <Link href="/admin/courses" className="hover:text-foreground">Courses</Link>
+              <span className="mx-1 sm:mx-2">/</span>
+              <span className="text-foreground">Create Course</span>
             </div>
           </div>
         </div>
-      </nav>
+      </div>
 
       <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}

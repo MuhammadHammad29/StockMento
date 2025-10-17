@@ -106,24 +106,28 @@ export default function AdminLoginPage() {
             
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <div className="relative">
+              <div className="password-input-container">
                 <Input
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
+                  className="pr-12 password-input"
                   value={formData.password}
                   onChange={handleInputChange}
                   required
                   disabled={isLoading}
+                  autoComplete="current-password"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="password-toggle-btn hover:bg-transparent focus:outline-none"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  tabIndex={0}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />

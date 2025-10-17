@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
-  TrendingUp,
   User,
   Mail,
   Calendar,
@@ -18,9 +17,7 @@ import {
   Settings,
   Camera,
   Save,
-  ArrowLeft,
   Trophy,
-  Clock,
   Star
 } from "lucide-react"
 import Link from "next/link"
@@ -30,10 +27,10 @@ import { mockUserProgress, getUserCourses, getAvatarPath, getUserReviews } from 
 import { getActivitySummary, formatTimeAgo } from "@/lib/data-utils"
 import { toast } from "sonner"
 import AvatarPicker from "@/components/avatar-picker"
-import Logo from "@/components/ui/logo"
+import { UserNavbar } from "@/components/navigation"
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [profileData, setProfileData] = useState({
@@ -125,42 +122,9 @@ export default function ProfilePage() {
     setShowAvatarPicker(false)
   }
 
-  const handleLogout = () => {
-    logout()
-    toast.success('Logged out successfully!')
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="px-2 sm:px-3">
-                  <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Back to Dashboard</span>
-                </Button>
-              </Link>
-              <div className="flex items-center space-x-2">
-                {/* Mobile: Small logo */}
-                <div className="block md:hidden">
-                  <Logo size="sm" className="h-auto" />
-                </div>
-                {/* Desktop: Medium logo */}
-                <div className="hidden md:block">
-                  <Logo size="md" className="h-auto" />
-                </div>
-              </div>
-            </div>
-            
-            <Button onClick={handleLogout} variant="outline" size="sm" className="px-3 sm:px-4">
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
+      <UserNavbar />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Profile Header */}

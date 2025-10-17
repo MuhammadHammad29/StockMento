@@ -18,10 +18,10 @@ import { comprehensiveLessons } from './lessons-data';
  * Backend will serve these images directly from /public/avatars/
  */
 export const AVATAR_CONFIG = {
-  TOTAL_AVATARS: 15,
+  TOTAL_AVATARS: 6,
   BASE_PATH: '/avatars',
-  DEFAULT_AVATAR: 'avatar-1',
-  FILE_EXTENSION: '.jpg' // or .png depending on your images
+  DEFAULT_AVATAR: 'avatar_1',
+  FILE_EXTENSION: '.png'
 };
 
 /**
@@ -34,7 +34,7 @@ export const mockUsers: User[] = [
     email: 'john.doe@example.com',
     firstName: 'John',
     lastName: 'Doe',
-    avatarId: 'avatar-1',
+    avatarId: 'avatar_1',
     role: 'student',
     createdAt: new Date('2024-01-15'),
     lastLogin: new Date('2024-12-15'),
@@ -46,7 +46,7 @@ export const mockUsers: User[] = [
     email: 'admin@psxacademy.com',
     firstName: 'Admin',
     lastName: 'User',
-    avatarId: 'avatar-2',
+    avatarId: 'avatar_2',
     role: 'admin',
     createdAt: new Date('2024-01-01'),
     lastLogin: new Date('2024-12-17'),
@@ -58,7 +58,7 @@ export const mockUsers: User[] = [
     email: 'sarah.ahmed@example.com',
     firstName: 'Sarah',
     lastName: 'Ahmed',
-    avatarId: 'avatar-3',
+    avatarId: 'avatar_3',
     role: 'student',
     createdAt: new Date('2024-02-20'),
     lastLogin: new Date('2024-12-16'),
@@ -448,7 +448,7 @@ export const mockReviews: Review[] = [
     userId: 'user-2',
     courseId: 'course-1',
     userName: 'Sarah Ahmad',
-    userAvatarId: 'avatar-2',
+    userAvatarId: 'avatar_2',
     rating: 5,
     comment: 'Excellent course! The instructor explains complex concepts in a very simple way. I learned so much about stock market basics.',
     isVerifiedCompletion: true,
@@ -461,7 +461,7 @@ export const mockReviews: Review[] = [
     userId: 'user-3',
     courseId: 'course-1',
     userName: 'Ahmed Khan',
-    userAvatarId: 'avatar-3',
+    userAvatarId: 'avatar_3',
     rating: 4,
     comment: 'Great content and well-structured lessons. Would recommend to anyone starting their investment journey.',
     isVerifiedCompletion: true,
@@ -474,7 +474,7 @@ export const mockReviews: Review[] = [
     userId: 'user-4',
     courseId: 'course-2',
     userName: 'Fatima Sheikh',
-    userAvatarId: 'avatar-4',
+    userAvatarId: 'avatar_4',
     rating: 5,
     comment: 'Technical analysis made easy! The charts and examples are very helpful. This course is a must for serious traders.',
     isVerifiedCompletion: true,
@@ -487,7 +487,7 @@ export const mockReviews: Review[] = [
     userId: 'user-5',
     courseId: 'course-2',
     userName: 'Omar Hassan',
-    userAvatarId: 'avatar-5',
+    userAvatarId: 'avatar_5',
     rating: 4,
     comment: 'Good course with practical examples. The technical indicators section was particularly useful.',
     isVerifiedCompletion: true,
@@ -500,7 +500,7 @@ export const mockReviews: Review[] = [
     userId: 'user-6',
     courseId: 'course-3',
     userName: 'Zara Ali',
-    userAvatarId: 'avatar-6',
+    userAvatarId: 'avatar_6',
     rating: 5,
     comment: 'Perfect for understanding risk management. The portfolio diversification strategies are excellent.',
     isVerifiedCompletion: true,
@@ -573,7 +573,7 @@ export const getCourseReviewSummary = (courseId: string): ReviewSummary => {
 
 /**
  * Get avatar image path by avatar ID
- * @param avatarId - Avatar ID (e.g., 'avatar-1', 'avatar-2')
+ * @param avatarId - Avatar ID (e.g., 'avatar_1', 'avatar_2')
  * @returns Full path to avatar image
  */
 export const getAvatarPath = (avatarId: string): string => {
@@ -588,7 +588,7 @@ export const getAvatarPath = (avatarId: string): string => {
 export const getAvailableAvatars = (): string[] => {
   const avatars: string[] = [];
   for (let i = 1; i <= AVATAR_CONFIG.TOTAL_AVATARS; i++) {
-    avatars.push(`avatar-${i}`);
+    avatars.push(`avatar_${i}`);
   }
   return avatars;
 };

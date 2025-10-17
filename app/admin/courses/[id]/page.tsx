@@ -8,7 +8,6 @@ import { Progress } from "@/components/ui/progress"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { 
   TrendingUp, 
-  ArrowLeft, 
   Edit, 
   Plus, 
   BookOpen, 
@@ -31,7 +30,7 @@ import { useState, useEffect } from "react"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { mockCourses, mockUserProgress, getLessonsByCourseId } from "@/lib/mock-data"
 import { toast } from "@/components/ui/use-toast"
-import Logo from "@/components/ui/logo"
+import { AdminNavbar } from "@/components/navigation"
 
 export default function AdminCourseDetailPage({ params }: { params: { id: string } }) {
   const { adminUser } = useAdminAuth()
@@ -138,22 +137,16 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16">
-            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
-              <Link href="/admin" className="flex items-center space-x-1 sm:space-x-2 min-w-0">
-                <Logo size="sm" className="sm:hidden" />
-                <Logo size="md" className="hidden sm:block" />
-                <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300 text-xs flex-shrink-0">Admin</Badge>
-              </Link>
-              <span className="text-muted-foreground hidden lg:inline">/</span>
-              <Link href="/admin/courses" className="text-muted-foreground hover:text-foreground hidden lg:inline">
-                Courses
-              </Link>
-              <span className="text-muted-foreground hidden lg:inline">/</span>
-              <span className="text-muted-foreground truncate max-w-xs hidden lg:inline">{course.title}</span>
+      <AdminNavbar />
+
+      {/* Breadcrumb Section */}
+      <div className="border-b border-border/60 bg-background/80">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+            <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+              <Link href="/admin/courses" className="hover:text-foreground">Courses</Link>
+              <span className="mx-1 sm:mx-2">/</span>
+              <span className="text-foreground truncate max-w-[200px] sm:max-w-none">{course?.title || 'Course Details'}</span>
             </div>
             <div className="flex items-center gap-1 sm:gap-2">
               <Link href={`/admin/courses/${courseId}/edit`}>
@@ -163,16 +156,10 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                   <span className="sm:hidden">Edit</span>
                 </Button>
               </Link>
-              <Link href="/admin/courses">
-                <Button variant="outline" className="bg-background/60 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9">
-                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Back</span>
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
-      </nav>
+      </div>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Course Header */}

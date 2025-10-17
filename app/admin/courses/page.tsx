@@ -4,18 +4,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { TrendingUp, Search, Filter, Plus, Edit, Trash2, Eye, ArrowLeft, BookOpen, Users, Clock, PlayCircle, FileText, Menu, BarChart3, LogOut } from "lucide-react"
+import { TrendingUp, Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Users, Clock, PlayCircle, FileText } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { mockCourses, mockUserProgress, getLessonsByCourseId } from "@/lib/mock-data"
 import { useAdminAuth } from "@/lib/admin-auth-context"
-import Logo from "@/components/ui/logo"
+import { AdminNavbar } from "@/components/navigation"
 
 export default function AdminCoursesPage() {
   const { adminUser, adminLogout } = useAdminAuth()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   // Transform real course data for admin display
   const courses = mockCourses.map(course => {
     const lessons = getLessonsByCourseId(course.id)
@@ -50,95 +47,7 @@ export default function AdminCoursesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16">
-            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
-              <Link href="/admin" className="flex items-center space-x-1 sm:space-x-2 min-w-0">
-                <Logo size="sm" className="sm:hidden" />
-                <Logo size="md" className="hidden sm:block" />
-                <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300 text-xs flex-shrink-0">Admin</Badge>
-              </Link>
-              <span className="text-muted-foreground hidden md:inline">/</span>
-              <span className="text-muted-foreground hidden md:inline text-sm">Courses</span>
-            </div>
-            
-            {/* Desktop Navigation */}
-            <div className="hidden sm:flex">
-              <Link href="/admin">
-                <Button variant="outline" className="flex items-center gap-2 bg-background/60 text-sm">
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Back to Dashboard</span>
-                  <span className="sm:hidden">Back</span>
-                </Button>
-              </Link>
-            </div>
-
-            {/* Mobile Menu */}
-            <div className="sm:hidden">
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="icon" className="border-border/40 text-muted-foreground hover:text-emerald-600 hover:border-emerald-600/20 h-8 w-8">
-                    <Menu className="h-4 w-4" />
-                    <span className="sr-only">Open menu</span>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-[280px] sm:w-[350px]">
-                  <SheetHeader className="border-b pb-4">
-                    <SheetTitle className="flex items-center gap-3 text-left">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
-                          {adminUser?.name?.charAt(0) || "AD"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{adminUser?.name || "Admin"}</span>
-                    </SheetTitle>
-                    <SheetDescription className="text-left">
-                      <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300 text-xs">Admin Panel</Badge>
-                    </SheetDescription>
-                  </SheetHeader>
-                  <nav className="flex flex-col gap-3 mt-6">
-                    <Link 
-                      href="/admin" 
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      Dashboard
-                    </Link>
-                    <div className="flex items-center gap-3 rounded-lg px-3 py-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20">
-                      <BookOpen className="h-4 w-4" />
-                      Manage Courses
-                    </div>
-                    <Link 
-                      href="/admin/analytics" 
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      Analytics
-                    </Link>
-                  </nav>
-                  <div className="mt-auto pt-6 border-t">
-                    <Button
-                      onClick={() => {
-                        setMobileMenuOpen(false)
-                        adminLogout()
-                      }}
-                      variant="outline"
-                      className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:hover:bg-red-950/20"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </Button>
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AdminNavbar />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}

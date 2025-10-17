@@ -13,26 +13,19 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import {
-  TrendingUp,
   Users,
   BookOpen,
-  PlayCircle,
   BarChart3,
   FileText,
-  LogOut,
-  Menu,
 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
-import { mockUsers, mockCourses, mockUserProgress, mockLessons } from "@/lib/mock-data"
+import { mockUsers, mockCourses, mockUserProgress, mockLessons, getAvatarPath } from "@/lib/mock-data"
 import { useAdminAuth } from "@/lib/admin-auth-context"
-import Logo from "@/components/ui/logo"
+import AdminNavbar from "@/components/navigation/AdminNavbar"
 
 export default function AdminDashboard() {
   const { adminUser, adminLogout } = useAdminAuth()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Calculate dashboard metrics from mock data
   const activeUsers = mockUsers.filter((user) => user.isActive).length
@@ -67,6 +60,7 @@ export default function AdminDashboard() {
       email: user.email,
       joinDate: user.createdAt.toISOString().split("T")[0],
       status: user.isActive ? "active" : "inactive",
+      avatarId: user.avatarId,
     }));
 
   const recentActivity = [
@@ -78,97 +72,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 overflow-hidden">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70 overflow-hidden">
-        <div className="mx-auto flex h-12 sm:h-14 lg:h-16 max-w-7xl items-center justify-between px-2 sm:px-3 lg:px-8">
-          <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4 min-w-0 flex-1">
-            <div className="flex items-center space-x-1 min-w-0">
-              <Logo size="sm" className="sm:hidden" />
-              <Logo size="md" className="hidden sm:block" />
-              <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300 text-xs flex-shrink-0">Admin</Badge>
-            </div>
-          </div>
-          
-          {/* Desktop Actions */}
-          <div className="hidden sm:flex items-center space-x-2 lg:space-x-4">
-            <span className="text-xs sm:text-sm text-muted-foreground hidden md:block">Welcome, {adminUser?.name}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={adminLogout}
-              className="text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 p-2"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="sr-only">Logout</span>
-            </Button>
-            <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
-              <AvatarImage src="/admin-avatar.png" />
-              <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs">
-                {adminUser?.name?.charAt(0) || "AD"}
-              </AvatarFallback>
-            </Avatar>
-          </div>
-
-          {/* Mobile Menu */}
-          <div className="flex items-center space-x-2 sm:hidden">
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-emerald-600 h-8 w-8">
-                  <Menu className="h-4 w-4" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[280px] sm:w-[350px]">
-                <SheetHeader className="border-b pb-4">
-                  <SheetTitle className="flex items-center gap-3 text-left">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="/admin-avatar.png" />
-                      <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
-                        {adminUser?.name?.charAt(0) || "AD"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{adminUser?.name || "Admin"}</span>
-                  </SheetTitle>
-                  <SheetDescription className="text-left">
-                    <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300 text-xs">Admin Panel</Badge>
-                  </SheetDescription>
-                </SheetHeader>
-                <nav className="flex flex-col gap-3 mt-6">
-                  <Link 
-                    href="/admin/courses" 
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    Manage Courses
-                  </Link>
-                  <Link 
-                    href="/admin/analytics" 
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    Analytics
-                  </Link>
-                </nav>
-                <div className="mt-auto pt-6 border-t">
-                  <Button
-                    onClick={() => {
-                      setMobileMenuOpen(false)
-                      adminLogout()
-                    }}
-                    variant="outline"
-                    className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:hover:bg-red-950/20"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </Button>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
-      </nav>
+      <AdminNavbar />
 
       <div className="mx-auto max-w-7xl px-1.5 py-2 sm:px-3 sm:py-4 lg:px-8 lg:py-8 min-w-0 overflow-hidden">
         {/* Header */}
@@ -328,6 +232,10 @@ export default function AdminDashboard() {
                     <div key={user.id} className="flex items-center justify-between gap-1.5 sm:gap-2">
                       <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0 flex-1">
                         <Avatar className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 flex-shrink-0">
+                          <AvatarImage 
+                            src={getAvatarPath(user.avatarId)} 
+                            alt={`${user.name} Avatar`}
+                          />
                           <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs">
                             {user.name
                               .split(" ")

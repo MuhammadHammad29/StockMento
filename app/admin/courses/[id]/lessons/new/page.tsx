@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
   TrendingUp, 
-  ArrowLeft, 
   Save, 
   FileText,
   PlayCircle,
@@ -25,7 +24,7 @@ import { useRouter } from "next/navigation"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { mockCourses, getLessonsByCourseId } from "@/lib/mock-data"
 import { toast } from "sonner"
-import Logo from "@/components/ui/logo"
+import { AdminNavbar } from "@/components/navigation"
 
 interface NewLessonFormData {
   title: string
@@ -131,38 +130,22 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16">
-            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
-              <Link href="/admin" className="flex items-center space-x-1 sm:space-x-2 min-w-0">
-                <Logo size="sm" className="sm:hidden" />
-                <Logo size="md" className="hidden sm:block" />
-                <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300 text-xs flex-shrink-0">Admin</Badge>
-              </Link>
-              <span className="text-muted-foreground hidden lg:inline">/</span>
-              <Link href="/admin/courses" className="text-muted-foreground hover:text-foreground hidden lg:inline">
-                Courses
-              </Link>
-              <span className="text-muted-foreground hidden lg:inline">/</span>
-              <Link href={`/admin/courses/${courseId}`} className="text-muted-foreground hover:text-foreground truncate max-w-32 hidden lg:inline">
-                {course.title}
-              </Link>
-              <span className="text-muted-foreground hidden lg:inline">/</span>
-              <span className="text-muted-foreground hidden lg:inline">New Lesson</span>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Link href={`/admin/courses/${courseId}`}>
-                <Button variant="outline" className="bg-background/60 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9">
-                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Back</span>
-                </Button>
-              </Link>
+      <AdminNavbar />
+
+      {/* Breadcrumb Section */}
+      <div className="border-b border-border/60 bg-background/80">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+            <div className="flex items-center text-xs sm:text-sm text-muted-foreground overflow-hidden">
+              <Link href="/admin/courses" className="hover:text-foreground flex-shrink-0">Courses</Link>
+              <span className="mx-1 sm:mx-2 flex-shrink-0">/</span>
+              <Link href={`/admin/courses/${courseId}`} className="hover:text-foreground truncate max-w-[100px] sm:max-w-[150px] lg:max-w-none">{course.title}</Link>
+              <span className="mx-1 sm:mx-2 flex-shrink-0">/</span>
+              <span className="text-foreground flex-shrink-0">New Lesson</span>
             </div>
           </div>
         </div>
-      </nav>
+      </div>
 
       <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
