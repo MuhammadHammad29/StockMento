@@ -17,14 +17,11 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
-import { BookOpen, Play, Target, Users, Shield, Clock, Menu, Sparkles } from "lucide-react"
+import { BookOpen, Play, Target, Users, Shield, Clock } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
 import Logo from "@/components/ui/logo"
 
 export default function HomePage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
@@ -70,64 +67,18 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Mobile Menu */}
+          {/* Mobile Menu - Authentication Buttons Only */}
           <div className="flex items-center space-x-2 md:hidden">
             <Link href="/signin">
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
                 Sign In
               </Button>
             </Link>
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="border-border/40 text-muted-foreground hover:text-emerald-600 hover:border-emerald-600/20">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                <SheetHeader className="border-b pb-4">
-                  <SheetTitle className="flex items-center gap-2 text-left">
-                    <Logo size="sm" className="h-auto" />
-                  </SheetTitle>
-                  <SheetDescription className="text-left">
-                    Pakistan&apos;s Premier Stock Market Education Platform
-                  </SheetDescription>
-                </SheetHeader>
-                <nav className="flex flex-col gap-3 mt-6">
-                  <Link 
-                    href="#features" 
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    Features
-                  </Link>
-                  <Link 
-                    href="#courses" 
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    Courses
-                  </Link>
-                  <Link 
-                    href="#about" 
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Users className="h-4 w-4" />
-                    About
-                  </Link>
-                </nav>
-                <div className="mt-auto pt-6 border-t">
-                  <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400">
-                      Get Started
-                    </Button>
-                  </Link>
-                </div>
-              </SheetContent>
-            </Sheet>
+            <Link href="/signup">
+              <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400">
+                Get Started
+              </Button>
+            </Link>
           </div>
         </div>
       </nav>

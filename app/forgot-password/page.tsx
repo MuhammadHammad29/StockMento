@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { TrendingUp, Mail, ArrowLeft, Loader2 } from "lucide-react"
+import { Mail, ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 import { validateEmail } from "@/lib/data-utils"
+import Logo from "@/components/ui/logo"
 
 /**
  * Forgot-password flow entry point. Collects the email and triggers the reset email.
@@ -47,9 +48,8 @@ export default function ForgotPasswordPage() {
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center space-x-2">
-              <TrendingUp className="h-8 w-8 text-emerald-600" />
-              <span className="text-2xl font-bold text-foreground">StockMento</span>
+            <Link href="/" className="inline-flex items-center justify-center">
+              <Logo size="lg" className="h-auto" />
             </Link>
           </div>
 
@@ -96,9 +96,8 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center space-x-2">
-            <TrendingUp className="h-8 w-8 text-emerald-600" />
-            <span className="text-2xl font-bold text-foreground">StockMento</span>
+          <Link href="/" className="inline-flex items-center justify-center">
+            <Logo size="lg" className="h-auto" />
           </Link>
           <p className="text-muted-foreground mt-2">Reset your password</p>
         </div>

@@ -163,22 +163,7 @@ export default function SignInPage() {
               </Button>
             </form>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Demo Accounts</span>
-              </div>
-            </div>
-
-            <div className="space-y-2 text-xs text-muted-foreground bg-muted/40 dark:bg-muted/30 p-3 rounded-md">
-              <p className="font-medium">Try these demo accounts:</p>
-              <p><strong>Student:</strong> john.doe@example.com (any password)</p>
-              <p><strong>Admin:</strong> admin@psxacademy.com (any password)</p>
-            </div>
-
-            <div className="text-center text-sm text-muted-foreground">
+            <div className="text-center text-sm text-muted-foreground pt-4">
               Don&apos;t have an account?{" "}
               <Link href="/signup" className="text-emerald-600 hover:underline font-medium">
                 Sign up
