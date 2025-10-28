@@ -2,14 +2,14 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, Users, BookOpen, Trophy } from "lucide-react"
+import { TrendingUp, Users, BookOpen, Target } from "lucide-react"
 import { mockUsers, mockCourses, mockUserProgress, mockLessons } from "@/lib/mock-data"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { AdminNavbar } from "@/components/navigation"
-import Link from "next/link"
 
 export default function AdminAnalyticsPage() {
-  const { adminUser, adminLogout } = useAdminAuth()
+  const { adminUser } = useAdminAuth()
+  void adminUser
   const totalUsers = mockUsers.length
   const activeUsers = mockUsers.filter((user) => user.isActive).length
   const newUsersThisMonth = mockUsers.filter((user) => {
@@ -54,14 +54,6 @@ export default function AdminAnalyticsPage() {
     .sort((a, b) => b.students - a.students)
     .slice(0, 4)
 
-  const userActivity = [
-    { month: "Jan", users: Math.round(totalUsers * 0.7), active: Math.round(activeUsers * 0.7) },
-    { month: "Feb", users: Math.round(totalUsers * 0.8), active: Math.round(activeUsers * 0.8) },
-    { month: "Mar", users: Math.round(totalUsers * 0.85), active: Math.round(activeUsers * 0.85) },
-    { month: "Apr", users: Math.round(totalUsers * 0.95), active: Math.round(activeUsers * 0.95) },
-    { month: "May", users: totalUsers, active: activeUsers },
-  ]
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       <AdminNavbar />
@@ -99,7 +91,7 @@ export default function AdminAnalyticsPage() {
               title: "Avg Completion",
               value: `${metrics.avgCompletionRate}%`,
               subtitle: "Avg progress %",
-              icon: <Trophy className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-amber-500" />,
+              icon: <Target className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-amber-500" />,
             },
           ].map((item) => (
             <Card key={item.title} className="border border-border/60 bg-card/90 shadow-sm dark:shadow-none">
@@ -308,9 +300,9 @@ export default function AdminAnalyticsPage() {
                     icon: "⚡"
                   },
                   {
-                    metric: "Course Reviews",
-                    value: "45",
-                    detail: "This Month",
+                    metric: "Completion Milestones",
+                    value: "68%",
+                    detail: "Course Completion Rate",
                     icon: "💬"
                   },
                 ].map((item) => (
@@ -333,3 +325,6 @@ export default function AdminAnalyticsPage() {
     </div>
   )
 }
+
+
+

@@ -11,6 +11,10 @@ import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 import { validateEmail } from "@/lib/data-utils"
 
+/**
+ * Forgot-password flow entry point. Collects the email and triggers the reset email.
+ * Upon success shows a confirmation panel with retry and back-to-signin actions.
+ */
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
@@ -56,14 +60,14 @@ export default function ForgotPasswordPage() {
               </div>
               <CardTitle className="text-2xl font-bold">Check Your Email</CardTitle>
               <CardDescription>
-                We've sent password reset instructions to
+                We&apos;ve sent password reset instructions to
                 <br />
                 <strong>{email}</strong>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-sm text-muted-foreground text-center space-y-2">
-                <p>Didn't receive the email? Check your spam folder or</p>
+                <p>Didn&apos;t receive the email? Check your spam folder or</p>
                 <Button 
                   variant="link" 
                   onClick={() => setIsSubmitted(false)}
@@ -103,7 +107,7 @@ export default function ForgotPasswordPage() {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">Forgot Password</CardTitle>
             <CardDescription className="text-center">
-              Enter your email address and we'll send you instructions to reset your password
+              Enter your email address and we&apos;ll send you instructions to reset your password
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -154,4 +158,5 @@ export default function ForgotPasswordPage() {
     </div>
   )
 }
+
 

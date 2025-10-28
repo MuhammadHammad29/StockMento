@@ -1,222 +1,265 @@
-/**
- * Authentication Context Provider
- * 
- * Manages user authentication state throughout the StockMento application.
- * Provides login, logout, signup functionality with persistent storage.
- * Currently uses mock data but ready for backend integration.
- */
-
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
-import { AuthUser, LoginCredentials, SignupData, AuthContextType } from '@/lib/types';
-import { saveToStorage, loadFromStorage, removeFromStorage, STORAGE_KEYS } from '@/lib/data-utils';
-import { mockUsers } from '@/lib/mock-data';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react"
+import { useRouter } from "next/navigation"
+import { authApi } from "@/lib/api"
+import { AuthUser, AuthContextType, LoginCredentials, SignupData, AuthTokens } from "@/lib/types"
+import { saveToStorage, loadFromStorage, removeFromStorage, STORAGE_KEYS } from "@/lib/data-utils"
 
-// Create authentication context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 interface AuthProviderProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
+const isBrowser = () => typeof window !== "undefined"
+
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+
+  /**
+   * Persists the authenticated user and any tokens returned by the API.
+   */
+  const storeSession = useCallback((authUser: AuthUser, tokens?: AuthTokens) => {
+    setUser(authUser)
+    saveToStorage(STORAGE_KEYS.USER, authUser)
+
+    if (isBrowser() && tokens) {
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken)
+      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken)
+    }
+  }, [])
+
+  /**
+   * Clears all locally cached auth state and tokens.
+   */
+  const clearSession = useCallback(() => {
+    setUser(null)
+    removeFromStorage(STORAGE_KEYS.USER)
+    removeFromStorage(STORAGE_KEYS.PROGRESS)
+    removeFromStorage(STORAGE_KEYS.COURSES)
+    removeFromStorage(STORAGE_KEYS.PREFERENCES)
+
+    if (isBrowser()) {
+      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+    }
+  }, [])
+
+  /**
+   * Runs on app mount to fetch the current user if tokens already exist.
+   */
+  const restoreSession = useCallback(async () => {
+    if (!isBrowser()) {
+      setLoading(false)
+      return
+    }
+
+    const existingAccessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
+
+    if (!existingAccessToken) {
+      clearSession()
+      setLoading(false)
+      return
+    }
+
+    try {
+      const cachedUser = loadFromStorage<AuthUser>(STORAGE_KEYS.USER)
+      if (cachedUser) {
+        setUser(cachedUser)
+      } else {
+        const currentUser = await authApi.me()
+        storeSession(currentUser)
+      }
+    } catch (error) {
+      console.error("Failed to restore session:", error)
+      clearSession()
+    } finally {
+      setLoading(false)
+    }
+  }, [clearSession, storeSession])
 
   useEffect(() => {
-    // Check for existing user session on mount
-    checkAuthState();
-  }, []);
+    void restoreSession()
+  }, [restoreSession])
 
-  const checkAuthState = async () => {
-    setLoading(true);
-    try {
-      const savedUser = loadFromStorage<AuthUser>(STORAGE_KEYS.USER);
-      if (savedUser) {
-        setUser(savedUser);
+  /**
+   * Signs in the user and stores the returned session.
+   */
+  const login = useCallback(
+    async (credentials: LoginCredentials): Promise<void> => {
+      setLoading(true)
+      try {
+        const { user: authUser, tokens } = await authApi.userLogin(credentials)
+        storeSession(authUser, tokens)
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : "Unable to sign in. Please try again.")
+      } finally {
+        setLoading(false)
       }
-    } catch (error) {
-      console.error('Error checking auth state:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [storeSession]
+  )
 
-  const login = async (credentials: LoginCredentials): Promise<void> => {
-    setLoading(true);
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Mock authentication - find user by email
-      const foundUser = mockUsers.find(u => u.email === credentials.email);
-      
-      if (!foundUser) {
-        throw new Error('User not found');
+  /**
+   * Starts the signup flow; actual verification completes later.
+   */
+  const signup = useCallback(
+    async (data: SignupData): Promise<void> => {
+      setLoading(true)
+      try {
+        await authApi.userRegister({
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          avatarId: data.avatarId,
+          bio: data.bio,
+        })
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : "Unable to create account. Please try again.")
+      } finally {
+        setLoading(false)
       }
+    },
+    []
+  )
 
-      // In real app, password would be verified on backend
-      // For mock, we'll accept any password for existing users
-      
-      const authUser: AuthUser = {
-        id: foundUser.id,
-        email: foundUser.email,
-        firstName: foundUser.firstName,
-        lastName: foundUser.lastName,
-        role: foundUser.role,
-        avatarId: foundUser.avatarId,
-      };
-
-      setUser(authUser);
-      saveToStorage(STORAGE_KEYS.USER, authUser);
-      
-      // Update last login in mock data (in real app, this would be handled by backend)
-      foundUser.lastLogin = new Date();
-      
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const signup = async (data: SignupData): Promise<void> => {
-    setLoading(true);
+  /**
+   * Requests a verification code for the supplied email.
+   */
+  const sendVerificationCode = useCallback(async (email: string): Promise<void> => {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      await authApi.sendVerificationCode({ email })
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : "Failed to send verification code.")
+    }
+  }, [])
 
-      // Check if user already exists
-      const existingUser = mockUsers.find(u => u.email === data.email);
-      if (existingUser) {
-        throw new Error('User already exists with this email');
+  /**
+   * Confirms the OTP and stores the returned auth session.
+   */
+  const verifyEmail = useCallback(
+    async (email: string, code: string): Promise<void> => {
+      setLoading(true)
+      try {
+        const { user: authUser, tokens } = await authApi.verifyEmail({ email, code })
+        storeSession(authUser, tokens)
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : "Verification failed. Please try again.")
+      } finally {
+        setLoading(false)
       }
+    },
+    [storeSession]
+  )
 
-      // Create new user
-      const newUser = {
-        id: `user-${Date.now()}`,
-        email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        avatarId: data.avatarId,
-        role: 'student' as const,
-        createdAt: new Date(),
-        lastLogin: new Date(),
-        isActive: true,
-        profileCompleted: false,
-      };
-
-      // Add to mock users (in real app, this would be handled by backend)
-      mockUsers.push(newUser);
-
-      const authUser: AuthUser = {
-        id: newUser.id,
-        email: newUser.email,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        role: newUser.role,
-        avatarId: newUser.avatarId,
-      };
-
-      setUser(authUser);
-      saveToStorage(STORAGE_KEYS.USER, authUser);
-      
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Signup failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const logout = () => {
-    setUser(null);
-    removeFromStorage(STORAGE_KEYS.USER);
-    // Clear other user-specific data
-    removeFromStorage(STORAGE_KEYS.PROGRESS);
-    removeFromStorage(STORAGE_KEYS.PREFERENCES);
-    // Redirect to landing page
-    router.push('/');
-  };
-
-  const resetPassword = async (email: string): Promise<void> => {
-    setLoading(true);
+  /**
+   * Starts the password reset flow (emails the reset link).
+   */
+  const resetPassword = useCallback(async (email: string): Promise<void> => {
+    setLoading(true)
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await authApi.requestPasswordReset({ email })
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : "Unable to process password reset request.")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-      // Check if user exists
-      const foundUser = mockUsers.find(u => u.email === email);
-      if (!foundUser) {
-        throw new Error('No user found with this email address');
+  /**
+   * Refetches the authenticated user from the API and updates local storage.
+   */
+  const refreshUser = useCallback(async (): Promise<AuthUser | null> => {
+    if (!isBrowser()) {
+      return null
+    }
+
+    try {
+      const currentUser = await authApi.me()
+      storeSession(currentUser)
+      return currentUser
+    } catch (error) {
+      console.error("Failed to refresh session:", error)
+
+      if (error instanceof Error && /401|unauthorized/i.test(error.message)) {
+        clearSession()
       }
 
-      // In real app, this would send a password reset email
-      console.log('Password reset email sent to:', email);
-      
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Password reset failed');
-    } finally {
-      setLoading(false);
+      return null
     }
-  };
+  }, [clearSession, storeSession])
+
+  /**
+   * Logs out the user and redirects to the sign-in screen.
+   */
+  const logout = useCallback(async (): Promise<void> => {
+    try {
+      await authApi.logout()
+    } catch (error) {
+      console.warn("Logout request failed:", error)
+    } finally {
+      clearSession()
+      router.push("/signin")
+    }
+  }, [clearSession, router])
 
   const value: AuthContextType = {
     user,
     loading,
     login,
     signup,
+    verifyEmail,
+    sendVerificationCode,
     logout,
     resetPassword,
-  };
+    refreshUser,
+  }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
+  const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider")
   }
-  return context;
+  return context
 }
 
-// Hook for checking if user is authenticated
 export function useAuthGuard(): boolean {
-  const { user } = useAuth();
-  return !!user;
+  const { user } = useAuth()
+  return !!user
 }
 
-// Hook for checking if user has specific role
-export function useRole(role: 'student' | 'admin'): boolean {
-  const { user } = useAuth();
-  return user?.role === role;
+export function useRole(role: "student" | "admin"): boolean {
+  const { user } = useAuth()
+  return user?.role === role
 }
 
-// Higher-order component for protecting routes
 export function withAuth<P extends object>(
   Component: React.ComponentType<P>,
-  requiredRole?: 'student' | 'admin'
+  requiredRole?: "student" | "admin"
 ) {
   return function AuthenticatedComponent(props: P) {
-    const { user, loading } = useAuth();
+    const { user, loading } = useAuth()
 
     if (loading) {
       return (
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-500"></div>
         </div>
-      );
+      )
     }
 
     if (!user) {
-      // Redirect to signin page
-      if (typeof window !== 'undefined') {
-        window.location.href = '/signin';
+      if (isBrowser()) {
+        window.location.href = "/signin"
       }
-      return null;
+      return null
     }
 
     if (requiredRole && user.role !== requiredRole) {
@@ -224,12 +267,14 @@ export function withAuth<P extends object>(
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground mb-4">Access Denied</h1>
-            <p className="text-muted-foreground">You don't have permission to access this page.</p>
+            <p className="text-muted-foreground">You don&apos;t have permission to access this page.</p>
           </div>
         </div>
-      );
+      )
     }
 
-    return <Component {...props} />;
-  };
+    return <Component {...props} />
+  }
 }
+
+

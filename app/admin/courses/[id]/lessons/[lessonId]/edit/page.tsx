@@ -7,11 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
-  TrendingUp, 
   Save, 
   Eye, 
   FileText,
@@ -19,12 +16,10 @@ import {
   BookOpen,
   AlertCircle,
   Plus,
-  Trash2,
-  Upload
+  Trash2
 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { mockCourses, getLessonsByCourseId } from "@/lib/mock-data"
 import { toast } from "sonner"
@@ -59,7 +54,7 @@ export default function AdminLessonEditPage({
   params: { id: string; lessonId: string } 
 }) {
   const { adminUser } = useAdminAuth()
-  const router = useRouter()
+  void adminUser
   const { id: courseId, lessonId } = params
   
   // Find course and lesson - in future these will be API calls
@@ -116,7 +111,7 @@ export default function AdminLessonEditPage({
     )
   }
 
-  const handleInputChange = (field: keyof LessonFormData, value: any) => {
+  const handleInputChange = <K extends keyof LessonFormData>(field: K, value: LessonFormData[K]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -162,7 +157,7 @@ export default function AdminLessonEditPage({
     handleInputChange('quizQuestions', [...(formData.quizQuestions || []), newQuestion])
   }
 
-  const updateQuizQuestion = (index: number, field: keyof QuizQuestion, value: any) => {
+  const updateQuizQuestion = <K extends keyof QuizQuestion>(index: number, field: K, value: QuizQuestion[K]) => {
     const questions = [...(formData.quizQuestions || [])]
     questions[index] = { ...questions[index], [field]: value }
     handleInputChange('quizQuestions', questions)
@@ -224,7 +219,7 @@ export default function AdminLessonEditPage({
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              You have unsaved changes. Don't forget to save your progress.
+              You have unsaved changes. Don&apos;t forget to save your progress.
             </AlertDescription>
           </Alert>
         )}
@@ -262,7 +257,10 @@ export default function AdminLessonEditPage({
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="type">Lesson Type</Label>
-                  <Select value={formData.type} onValueChange={(value: any) => handleInputChange('type', value)}>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value) => handleInputChange('type', value as LessonFormData['type'])}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -435,9 +433,11 @@ export default function AdminLessonEditPage({
                         <div className="grid md:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>Question Type</Label>
-                            <Select 
-                              value={question.type} 
-                              onValueChange={(value: any) => updateQuizQuestion(index, 'type', value)}
+                            <Select
+                              value={question.type}
+                              onValueChange={(value) =>
+                                updateQuizQuestion(index, 'type', value as QuizQuestion['type'])
+                              }
                             >
                               <SelectTrigger>
                                 <SelectValue />
@@ -506,7 +506,7 @@ export default function AdminLessonEditPage({
                     <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
                       <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>No questions added yet</p>
-                      <p className="text-sm">Click "Add Question" to create your first quiz question</p>
+                      <p className="text-sm">Click &quot;Add Question&quot; to create your first quiz question</p>
                     </div>
                   )}
                 </div>

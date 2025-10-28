@@ -1,30 +1,22 @@
-"use client"
+﻿"use client"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
-import { TrendingUp, BookOpen, Clock, Users, Star, CheckCircle, Lock, FileText, Video, Play, Download, Trophy } from "lucide-react"
+import { BookOpen, Clock, Users, Star, CheckCircle, Lock, FileText, Video, Play } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { mockCourses, mockUserProgress, getUserCourses, getLessonsByCourseId, getAvatarPath, getCourseReviews, getCourseReviewSummary, hasUserReviewedCourse } from "@/lib/mock-data"
+import { mockCourses, mockUserProgress, getUserCourses, getLessonsByCourseId } from "@/lib/mock-data"
 import { calculateCourseProgress, formatDuration } from "@/lib/data-utils"
 import { toast } from "sonner"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import ReviewForm from "@/components/review-form"
-import ReviewDisplay from "@/components/review-display"
 import CourseCompletionDialog from "@/components/course-completion-dialog"
 import { UserNavbar } from "@/components/navigation"
 
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
   const { user } = useAuth()
-  const router = useRouter()
-  const [showReviewForm, setShowReviewForm] = useState(false)
   const [showCompletionDialog, setShowCompletionDialog] = useState(false)
   const courseId = params.id
   
@@ -33,11 +25,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   
   // Get lessons for this course
   const lessons = getLessonsByCourseId(courseId)
-
-  // Get review data
-  const courseReviews = getCourseReviews(courseId)
-  const reviewSummary = getCourseReviewSummary(courseId)
-  const userHasReviewed = user ? hasUserReviewedCourse(user.id, courseId) : false
   
   if (!course) {
     return (
@@ -64,21 +51,12 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     0 // quizzes count
   ) : 0
 
-  const isCompleted = overallProgress >= 100
-  const canWriteReview = isEnrolled && isCompleted && !userHasReviewed
-
   const handleEnroll = () => {
     if (!user) {
       toast.error("Please sign in to enroll in courses")
       return
     }
     toast.success("Successfully enrolled in the course!")
-  }
-
-  const handleReviewSubmit = (review: { rating: number; comment: string }) => {
-    // In a real app, this would submit to the backend
-    toast.success("Review submitted successfully!")
-    setShowReviewForm(false)
   }
 
   const getLessonIcon = (type: string) => {
@@ -139,14 +117,12 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   <span className="truncate">{course.enrollmentCount || Math.floor(Math.random() * 2000) + 500} students</span>
                 </div>
                 <div className="flex items-center">
-                  <Star className="h-4 w-4 mr-1 text-yellow-400 fill-current flex-shrink-0" />
+                  <Star className="h-4 w-4 mr-1 flex-shrink-0 text-yellow-400" />
                   <span className="truncate">
-                    {reviewSummary.totalReviews > 0 ? reviewSummary.averageRating : course.rating}
-                    {reviewSummary.totalReviews > 0 && (
-                      <span className="ml-1 text-muted-foreground">
-                        ({reviewSummary.totalReviews})
-                      </span>
-                    )}
+                    {course.rating.toFixed(1)}
+                    <span className="ml-1 text-muted-foreground">
+                      ({course.totalStudents.toLocaleString()} learners)
+                    </span>
                   </span>
                 </div>
               </div>
@@ -162,86 +138,70 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
               )}
             </div>
 
-            {/* Course Content Tabs */}
-            <Tabs defaultValue="curriculum" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="curriculum" className="text-sm">Curriculum</TabsTrigger>
-                <TabsTrigger value="reviews" className="text-sm">Reviews</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="curriculum" className="space-y-4 sm:space-y-6">
-                {lessons && lessons.length > 0 ? (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base sm:text-lg">Course Lessons</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 sm:space-y-3">
-                        {lessons.map((lesson, index) => {
-                          const status = getLessonStatus(lesson.id)
-                          const LessonIcon = getLessonIcon(lesson.type)
-                          
-                          return (
-                            <div
-                              key={lesson.id}
-                              className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border ${
-                                status === "current" ? "bg-emerald-50 border-emerald-200" : "bg-background"
-                              }`}
-                            >
-                              <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-                                <div className="flex-shrink-0">
-                                  {status === "completed" ? (
-                                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
-                                  ) : status === "current" ? (
-                                    <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-emerald-600 flex items-center justify-center">
-                                      <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-background" />
-                                    </div>
-                                  ) : (
-                                    <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-                                  )}
-                                </div>
-                                <div className="flex items-center space-x-1 sm:space-x-2 min-w-0 flex-1">
-                                  <LessonIcon className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${lesson.type === "video" ? "text-blue-600" : "text-muted-foreground"}`} />
-                                  <span className={`font-medium text-sm sm:text-base truncate ${status === "current" ? "text-emerald-700" : ""}`}>
-                                    {lesson.title}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-                                <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">{formatDuration(lesson.duration)}</span>
-                                {isEnrolled && (status === "completed" || status === "current") && (
-                                  <Link href={`/courses/${course.id}/lessons/${lesson.id}`}>
-                                    <Button size="sm" variant={status === "current" ? "default" : "outline"} className="text-xs sm:text-sm px-2 sm:px-3">
-                                      <span className="hidden sm:inline">{status === "completed" ? "Review" : "Start"}</span>
-                                      <Play className="h-3 w-3 sm:ml-1" />
-                                    </Button>
-                                  </Link>
+            {/* Course Curriculum */}
+            <div className="space-y-4 sm:space-y-6">
+              {lessons && lessons.length > 0 ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base sm:text-lg">Course Lessons</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 sm:space-y-3">
+                      {lessons.map((lesson) => {
+                        const status = getLessonStatus(lesson.id)
+                        const LessonIcon = getLessonIcon(lesson.type)
+                        
+                        return (
+                          <div
+                            key={lesson.id}
+                            className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border ${
+                              status === "current" ? "bg-emerald-50 border-emerald-200" : "bg-background"
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                              <div className="flex-shrink-0">
+                                {status === "completed" ? (
+                                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
+                                ) : status === "current" ? (
+                                  <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-emerald-600 flex items-center justify-center">
+                                    <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-background" />
+                                  </div>
+                                ) : (
+                                  <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                                 )}
                               </div>
+                              <div className="flex items-center space-x-1 sm:space-x-2 min-w-0 flex-1">
+                                <LessonIcon className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${lesson.type === "video" ? "text-blue-600" : "text-muted-foreground"}`} />
+                                <span className={`font-medium text-sm sm:text-base truncate ${status === "current" ? "text-emerald-700" : ""}`}>
+                                  {lesson.title}
+                                </span>
+                              </div>
                             </div>
-                          )
-                        })}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card className="p-8 text-center">
-                    <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-foreground mb-2">Course Content Coming Soon</h3>
-                    <p className="text-muted-foreground">The curriculum for this course is being prepared.</p>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="reviews">
-                <ReviewDisplay
-                  reviews={courseReviews}
-                  summary={reviewSummary}
-                  showWriteButton={canWriteReview}
-                  onWriteReview={() => setShowReviewForm(true)}
-                />
-              </TabsContent>
-            </Tabs>
+                            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                              <span className="hidden text-xs text-muted-foreground sm:block sm:text-sm">{formatDuration(lesson.duration)}</span>
+                              {isEnrolled && (status === "completed" || status === "current") && (
+                                <Link href={`/courses/${course.id}/lessons/${lesson.id}`}>
+                                  <Button size="sm" variant={status === "current" ? "default" : "outline"} className="text-xs sm:text-sm px-2 sm:px-3">
+                                    <span className="hidden sm:inline">{status === "completed" ? "Review" : "Start"}</span>
+                                    <Play className="h-3 w-3 sm:ml-1" />
+                                  </Button>
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="p-8 text-center">
+                  <BookOpen className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <h3 className="mb-2 text-lg font-medium text-foreground">Course Content Coming Soon</h3>
+                  <p className="text-muted-foreground">The curriculum for this course is being prepared.</p>
+                </Card>
+              )}
+            </div>
           </div>
 
           {/* Sidebar */}
@@ -326,14 +286,16 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     .map((relatedCourse) => (
                       <Link key={relatedCourse.id} href={`/courses/${relatedCourse.id}`}>
                         <div className="flex space-x-3 hover:bg-muted/40 dark:hover:bg-muted/30 p-2 rounded-lg transition-colors">
-                          <img
+                          <Image
                             src={relatedCourse.thumbnail}
                             alt={relatedCourse.title}
-                            className="w-20 h-15 object-cover rounded"
+                            width={80}
+                            height={60}
+                            className="h-15 w-20 rounded object-cover"
                           />
                           <div className="flex-1">
                             <h4 className="font-medium text-sm line-clamp-2">{relatedCourse.title}</h4>
-                            <p className="text-xs text-muted-foreground">{relatedCourse.level} • {formatDuration(relatedCourse.duration)}</p>
+                            <p className="text-xs text-muted-foreground">{relatedCourse.level} - {formatDuration(relatedCourse.duration)}</p>
                           </div>
                         </div>
                       </Link>
@@ -349,23 +311,9 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       <CourseCompletionDialog
         isOpen={showCompletionDialog}
         onClose={() => setShowCompletionDialog(false)}
-        courseId={courseId}
         courseTitle={course.title}
-        onReviewSubmit={handleReviewSubmit}
-        hasAlreadyReviewed={userHasReviewed}
       />
 
-      {/* Review Form Dialog */}
-      <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
-        <DialogContent className="sm:max-w-md">
-          <ReviewForm
-            courseId={courseId}
-            courseTitle={course.title}
-            onSubmit={handleReviewSubmit}
-            onCancel={() => setShowReviewForm(false)}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

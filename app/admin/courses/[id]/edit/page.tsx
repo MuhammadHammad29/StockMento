@@ -9,14 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { 
-  TrendingUp, 
-  Save, 
-  Eye, 
-  Upload,
-  AlertCircle,
-  CheckCircle
-} from "lucide-react"
+import { Save, Eye, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -40,6 +33,8 @@ interface CourseFormData {
 export default function AdminCourseEditPage({ params }: { params: { id: string } }) {
   const { adminUser } = useAdminAuth()
   const router = useRouter()
+  void adminUser
+  void router
   const courseId = params.id
   
   // Find the course - in future this will be an API call
@@ -92,7 +87,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
     )
   }
 
-  const handleInputChange = (field: keyof CourseFormData, value: any) => {
+  const handleInputChange = <K extends keyof CourseFormData>(field: K, value: CourseFormData[K]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -186,7 +181,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              You have unsaved changes. Don't forget to save your progress.
+              You have unsaved changes. Don&apos;t forget to save your progress.
             </AlertDescription>
           </Alert>
         )}
@@ -235,7 +230,10 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="level">Difficulty Level</Label>
-                  <Select value={formData.level} onValueChange={(value: any) => handleInputChange('level', value)}>
+                  <Select
+                    value={formData.level}
+                    onValueChange={(value) => handleInputChange('level', value as CourseFormData['level'])}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

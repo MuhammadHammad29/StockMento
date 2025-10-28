@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { TrendingUp, Eye, EyeOff, Shield } from "lucide-react"
+import { Eye, EyeOff, Shield } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useAdminAuth } from "@/lib/admin-auth-context"
@@ -59,7 +59,8 @@ export default function AdminLoginPage() {
       } else {
         setError("Invalid email or password. Please try again.")
       }
-    } catch (err) {
+    } catch (error) {
+      console.error(error)
       setError("An error occurred during login. Please try again.")
     } finally {
       setIsLoading(false)

@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Clock, Trophy } from "lucide-react"
+import { CheckCircle, Clock, Target } from "lucide-react"
 
 interface ProgressTrackerProps {
   courseId: string
@@ -16,6 +16,9 @@ export function ProgressTracker({ courseId, lessonId, type, onProgressUpdate }: 
   const [progress, setProgress] = useState(0)
   const [timeSpent, setTimeSpent] = useState(0)
   const [isCompleted, setIsCompleted] = useState(false)
+  const progressRef = useRef(progress)
+  const timeSpentRef = useRef(timeSpent)
+  const completedRef = useRef(isCompleted)
 
   useEffect(() => {
     const savedProgress = localStorage.getItem(`progress_${courseId}_${lessonId || "course"}`)
@@ -25,13 +28,41 @@ export function ProgressTracker({ courseId, lessonId, type, onProgressUpdate }: 
       setTimeSpent(data.timeSpent || 0)
       setIsCompleted(data.completed || false)
     }
+  }, [courseId, lessonId])
 
-    const startTime = Date.now()
+  useEffect(() => {
+    progressRef.current = progress
+  }, [progress])
+
+  useEffect(() => {
+    timeSpentRef.current = timeSpent
+  }, [timeSpent])
+
+  useEffect(() => {
+    completedRef.current = isCompleted
+  }, [isCompleted])
+
+  const saveProgress = useCallback(
+    (currentProgress: number, currentTime: number, completed: boolean) => {
+      const progressData = {
+        progress: currentProgress,
+        timeSpent: currentTime,
+        completed,
+        lastUpdated: Date.now(),
+      }
+      localStorage.setItem(`progress_${courseId}_${lessonId || "course"}`, JSON.stringify(progressData))
+      onProgressUpdate?.(currentProgress)
+    },
+    [courseId, lessonId, onProgressUpdate],
+  )
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setTimeSpent((prev) => {
         const newTime = prev + 1
+        timeSpentRef.current = newTime
         if (newTime % 60 === 0) {
-          saveProgress(progress, newTime, isCompleted)
+          saveProgress(progressRef.current, newTime, completedRef.current)
         }
         return newTime
       })
@@ -39,26 +70,17 @@ export function ProgressTracker({ courseId, lessonId, type, onProgressUpdate }: 
 
     return () => {
       clearInterval(interval)
-      saveProgress(progress, timeSpent, isCompleted)
+      saveProgress(progressRef.current, timeSpentRef.current, completedRef.current)
     }
-  }, [courseId, lessonId])
-
-  const saveProgress = (currentProgress: number, currentTime: number, completed: boolean) => {
-    const progressData = {
-      progress: currentProgress,
-      timeSpent: currentTime,
-      completed,
-      lastUpdated: Date.now(),
-    }
-    localStorage.setItem(`progress_${courseId}_${lessonId || "course"}`, JSON.stringify(progressData))
-    onProgressUpdate?.(currentProgress)
-  }
+  }, [saveProgress])
 
   const updateProgress = (newProgress: number) => {
+    progressRef.current = newProgress
     setProgress(newProgress)
     const completed = newProgress >= 100
     setIsCompleted(completed)
-    saveProgress(newProgress, timeSpent, completed)
+    completedRef.current = completed
+    saveProgress(newProgress, timeSpentRef.current, completed)
   }
 
   const formatTime = (seconds: number) => {
@@ -99,7 +121,7 @@ export function ProgressTracker({ courseId, lessonId, type, onProgressUpdate }: 
         </div>
         {type === "quiz" && (
           <div className="flex items-center space-x-1">
-            <Trophy className="h-4 w-4" />
+            <Target className="h-4 w-4" />
             <span>Best: 85%</span>
           </div>
         )}

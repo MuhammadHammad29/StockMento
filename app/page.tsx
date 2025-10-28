@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
-import { BookOpen, Play, Trophy, Users, TrendingUp, Shield, Clock, Menu, Sparkles } from "lucide-react"
+import { BookOpen, Play, Target, Users, Shield, Clock, Menu, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import Logo from "@/components/ui/logo"
@@ -90,7 +90,7 @@ export default function HomePage() {
                     <Logo size="sm" className="h-auto" />
                   </SheetTitle>
                   <SheetDescription className="text-left">
-                    Pakistan's Premier Stock Market Education Platform
+                    Pakistan&apos;s Premier Stock Market Education Platform
                   </SheetDescription>
                 </SheetHeader>
                 <nav className="flex flex-col gap-3 mt-6">
@@ -137,7 +137,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl text-center">
           {/* Platform Badge */}
           <Badge className="mb-6 bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-200 dark:hover:bg-emerald-500/20">
-            Pakistan's Premier Stock Market Education Platform
+            Pakistan&apos;s Premier Stock Market Education Platform
           </Badge>
           
           {/* Main Hero Heading */}
@@ -220,12 +220,12 @@ export default function HomePage() {
               {
                 icon: <Shield className="mb-4 h-10 w-10 sm:h-12 sm:w-12 text-red-600 dark:text-red-400" />,
                 title: "Progress Tracking",
-                description: "Monitor your learning journey with detailed progress reports and achievements",
+                description: "Monitor your learning journey with detailed progress reports and actionable insights",
               },
               {
-                icon: <Trophy className="mb-4 h-10 w-10 sm:h-12 sm:w-12 text-amber-500 dark:text-amber-300" />,
+                icon: <Target className="mb-4 h-10 w-10 sm:h-12 sm:w-12 text-emerald-500 dark:text-emerald-300" />,
                 title: "Trading Mastery",
-                description: "Achieve trading mastery with progressive skill validation and recognition",
+                description: "Achieve trading mastery with progressive skill validation and feedback",
               },
               {
                 icon: <Clock className="mb-4 h-10 w-10 sm:h-12 sm:w-12 text-teal-600 dark:text-teal-400" />,
@@ -326,7 +326,7 @@ export default function HomePage() {
                 <Logo size="sm" className="h-auto" />
               </div>
               <p className="text-slate-300 dark:text-muted-foreground">
-                Pakistan's premier platform for stock market education and trading knowledge.
+                Pakistan&apos;s premier platform for stock market education and trading knowledge.
               </p>
             </div>
             {[
@@ -365,3 +365,4 @@ export default function HomePage() {
     </div>
   )
 }
+

@@ -14,11 +14,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { TrendingUp, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import Logo from "@/components/ui/logo"
 
@@ -32,6 +32,16 @@ export default function SignInPage() {
   // Auth context and routing
   const { login, loading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const hasShownVerifiedToast = useRef(false)
+
+  // React Strict Mode mounts twice in development, so guard the success toast.
+  useEffect(() => {
+    if (searchParams.get('verified') === 'true' && !hasShownVerifiedToast.current) {
+      toast.success('Email verified successfully! You can now sign in.')
+      hasShownVerifiedToast.current = true
+    }
+  }, [searchParams])
 
   // Handle form submission with validation
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,7 +57,15 @@ export default function SignInPage() {
       toast.success('Successfully signed in!')
       router.push('/dashboard')
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to sign in')
+      const message = error instanceof Error ? error.message : 'Failed to sign in'
+
+      if (message.toLowerCase().includes('verify your email')) {
+        toast.error('Please verify your email to continue.')
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+        return
+      }
+
+      toast.error(message)
     }
   }
 
@@ -161,7 +179,7 @@ export default function SignInPage() {
             </div>
 
             <div className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link href="/signup" className="text-emerald-600 hover:underline font-medium">
                 Sign up
               </Link>
@@ -176,6 +194,8 @@ export default function SignInPage() {
     </div>
   )
 }
+
+
 
 
 

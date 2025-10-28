@@ -17,9 +17,7 @@ import {
   FileText, 
   Clock,
   BookOpen,
-  MessageCircle,
-  Download,
-  Trophy,
+  Target,
   Timer,
 } from "lucide-react"
 import Link from "next/link"
@@ -38,7 +36,6 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
   const [lessonCompleted, setLessonCompleted] = useState(false)
   
   // Quiz-related state
-  const [currentQuestion, setCurrentQuestion] = useState(0)
   const [quizAnswers, setQuizAnswers] = useState<{ [key: number]: string }>({})
   const [quizSubmitted, setQuizSubmitted] = useState(false)
   const [quizScore, setQuizScore] = useState<number | null>(null)
@@ -47,7 +44,13 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
   const course = mockCourses.find(c => c.id === courseId)
   const courseLessons = course ? getLessonsByCourseId(courseId) : []
   const lesson = courseLessons.find(l => l.id === lessonId)
-  
+  const userProgress = user ? mockUserProgress.find(p => p.userId === user.id && p.courseId === courseId) : null
+  const isLessonCompleted = userProgress?.completedLessons.includes(lessonId) || false
+
+  useEffect(() => {
+    setLessonCompleted(isLessonCompleted)
+  }, [isLessonCompleted])
+
   if (!course || !lesson) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -60,10 +63,6 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
       </div>
     )
   }
-
-  // Get user progress
-  const userProgress = user ? mockUserProgress.find(p => p.userId === user.id && p.courseId === courseId) : null
-  const isLessonCompleted = userProgress?.completedLessons.includes(lessonId) || false
 
   // Mock quiz data for quiz-type lessons
   const mockQuizData = lesson.type === 'quiz' ? {
@@ -118,10 +117,6 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
   const previousLesson = currentIndex > 0 ? courseLessons[currentIndex - 1] : null
   const nextLesson = currentIndex < courseLessons.length - 1 ? courseLessons[currentIndex + 1] : null
 
-  useEffect(() => {
-    setLessonCompleted(isLessonCompleted)
-  }, [isLessonCompleted])
-
   const handleCompleteLesson = () => {
     if (!user) {
       toast.error("Please sign in to track your progress")
@@ -164,7 +159,6 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
   }
 
   const resetQuiz = () => {
-    setCurrentQuestion(0)
     setQuizAnswers({})
     setQuizSubmitted(false)
     setQuizScore(null)
@@ -222,7 +216,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                 )}
                 {lesson.type === "quiz" && (
                   <span className="flex items-center">
-                    <Trophy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
+                    <Target className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
                     Quiz
                   </span>
                 )}
@@ -253,7 +247,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                               {mockQuizData?.timeLimit} minutes
                             </span>
                             <span className="flex items-center">
-                              <Trophy className="h-4 w-4 mr-1" />
+                              <Target className="h-4 w-4 mr-1" />
                               Passing Score: {mockQuizData?.passingScore}%
                             </span>
                           </div>
@@ -289,7 +283,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                             className="bg-emerald-600 hover:bg-emerald-700"
                             disabled={Object.keys(quizAnswers).length < (mockQuizData?.questions.length || 0)}
                           >
-                            <Trophy className="mr-2 h-4 w-4" />
+                            <Target className="mr-2 h-4 w-4" />
                             Submit Quiz
                           </Button>
                         </div>
@@ -300,7 +294,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                         <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${
                           (quizScore || 0) >= (mockQuizData?.passingScore || 70) ? 'bg-green-100' : 'bg-red-100'
                         }`}>
-                          <Trophy className={`h-10 w-10 ${
+                          <Target className={`h-10 w-10 ${
                             (quizScore || 0) >= (mockQuizData?.passingScore || 70) ? 'text-green-600' : 'text-red-600'
                           }`} />
                         </div>
@@ -535,7 +529,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                                 {courseLesson.type === "video" ? (
                                   <PlayCircle className="h-4 w-4 text-blue-600 flex-shrink-0" />
                                 ) : courseLesson.type === "quiz" ? (
-                                  <Trophy className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                                  <Target className="h-4 w-4 text-yellow-600 flex-shrink-0" />
                                 ) : (
                                   <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                 )}
@@ -557,26 +551,6 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                 </CardContent>
               </Card>
 
-              {/* Lesson Resources */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Lesson Resources</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Notes
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Exercise Files
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Ask Questions
-                  </Button>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>
@@ -584,3 +558,5 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
     </div>
   )
 }
+
+

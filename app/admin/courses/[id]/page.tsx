@@ -1,9 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { 
@@ -18,22 +17,22 @@ import {
   Star,
   Trash2,
   Eye,
-  Settings,
   BarChart3,
-  Calendar,
   GripVertical,
   ArrowUp,
   ArrowDown
 } from "lucide-react"
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { mockCourses, mockUserProgress, getLessonsByCourseId } from "@/lib/mock-data"
 import { toast } from "@/components/ui/use-toast"
 import { AdminNavbar } from "@/components/navigation"
+import type { Lesson } from "@/lib/types"
 
 export default function AdminCourseDetailPage({ params }: { params: { id: string } }) {
   const { adminUser } = useAdminAuth()
+  void adminUser
   const courseId = params.id
   
   // Find the course - in future this will be an API call
@@ -51,6 +50,32 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
   const avgProgress = enrolledUsers.length > 0 
     ? Math.round(enrolledUsers.reduce((sum, p) => sum + (p.overallProgress || 0), 0) / enrolledUsers.length)
     : 0
+
+  // Lesson reordering functions
+  const moveLesson = useCallback(
+    async (index: number, direction: 'up' | 'down') => {
+      const newIndex = direction === 'up' ? index - 1 : index + 1
+      if (newIndex < 0 || newIndex >= orderedLessons.length) return
+
+      const newLessons = [...orderedLessons]
+      const [movedLesson] = newLessons.splice(index, 1)
+      newLessons.splice(newIndex, 0, movedLesson)
+
+      setOrderedLessons(newLessons)
+      
+      // TODO: Call API to save new order
+      // await lessonApi.reorderLessons(courseId, newLessons.map((lesson, idx) => ({
+      //   lessonId: lesson.id,
+      //   order: idx + 1
+      // })))
+      
+      toast({
+        title: "Lesson Order Updated",
+        description: `"${movedLesson.title}" moved ${direction}ward`,
+      })
+    },
+    [orderedLessons],
+  )
 
   // Keyboard shortcuts for lesson reordering
   useEffect(() => {
@@ -82,30 +107,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedLessonIndex, orderedLessons.length])
-
-  // Lesson reordering functions
-  const moveLesson = async (index: number, direction: 'up' | 'down') => {
-    const newIndex = direction === 'up' ? index - 1 : index + 1
-    if (newIndex < 0 || newIndex >= orderedLessons.length) return
-
-    const newLessons = [...orderedLessons]
-    const [movedLesson] = newLessons.splice(index, 1)
-    newLessons.splice(newIndex, 0, movedLesson)
-
-    setOrderedLessons(newLessons)
-    
-    // TODO: Call API to save new order
-    // await lessonApi.reorderLessons(courseId, newLessons.map((lesson, idx) => ({
-    //   lessonId: lesson.id,
-    //   order: idx + 1
-    // })))
-    
-    toast({
-      title: "Lesson Order Updated",
-      description: `"${movedLesson.title}" moved ${direction}ward`,
-    })
-  }
+  }, [moveLesson, orderedLessons.length, selectedLessonIndex])
 
   const deleteLesson = async (lessonId: string, lessonTitle: string) => {
     // TODO: Implement lesson deletion
@@ -279,7 +281,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
             ) : (
 
             <div className="space-y-4">
-              {orderedLessons.map((lesson: any, index: number) => (
+              {orderedLessons.map((lesson: Lesson, index: number) => (
                 <Card 
                   key={lesson.id} 
                   className={`hover:shadow-md transition-all cursor-pointer ${
@@ -412,7 +414,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                               <AlertDialogHeader>
                                 <AlertDialogTitle className="text-base sm:text-lg">Delete Lesson</AlertDialogTitle>
                                 <AlertDialogDescription className="text-sm">
-                                  Are you sure you want to delete "{lesson.title}"? This action cannot be undone and will permanently remove the lesson from the course.
+                                  Are you sure you want to delete &quot;{lesson.title}&quot;? This action cannot be undone and will permanently remove the lesson from the course.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter className="flex-col sm:flex-row gap-2">
@@ -503,7 +505,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                               <AlertDialogHeader>
                                 <AlertDialogTitle className="text-base sm:text-lg">Delete Lesson</AlertDialogTitle>
                                 <AlertDialogDescription className="text-sm">
-                                  Are you sure you want to delete "{lesson.title}"? This action cannot be undone and will permanently remove the lesson from the course.
+                                  Are you sure you want to delete &quot;{lesson.title}&quot;? This action cannot be undone and will permanently remove the lesson from the course.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter className="flex-col sm:flex-row gap-2">
@@ -540,12 +542,14 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                       <h4 className="text-sm font-medium text-emerald-800 dark:text-emerald-200 mb-1">
                         Lesson Reordering
                       </h4>
-                      <p className="text-xs text-emerald-700 dark:text-emerald-300">
-                        • Click on a lesson to select it, then use <kbd className="px-1 py-0.5 text-xs bg-emerald-200 dark:bg-emerald-800 rounded">Ctrl+↑</kbd>/<kbd className="px-1 py-0.5 text-xs bg-emerald-200 dark:bg-emerald-800 rounded">Ctrl+↓</kbd> to move it
-                        • Use the ↑↓ arrow buttons to move lessons up or down
-                        • Changes are saved automatically and will update the lesson sequence for students
-                        • You can also manually set lesson order when editing individual lessons
-                      </p>
+                      <ul className="list-disc space-y-1 pl-4 text-xs text-emerald-700 dark:text-emerald-300">
+                        <li>
+                          Click on a lesson to select it, then use <kbd className="px-1 py-0.5 text-xs bg-emerald-200 dark:bg-emerald-800 rounded">Ctrl + Up Arrow</kbd>/<kbd className="px-1 py-0.5 text-xs bg-emerald-200 dark:bg-emerald-800 rounded">Ctrl + Down Arrow</kbd> to move it.
+                        </li>
+                        <li>Use the on-card arrow buttons to move lessons up or down.</li>
+                        <li>Changes are saved automatically and update the lesson sequence for students.</li>
+                        <li>You can also manually set lesson order when editing individual lessons.</li>
+                      </ul>
                     </div>
                   </div>
                 </CardContent>
@@ -556,3 +560,4 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
     </div>
   )
 }
+

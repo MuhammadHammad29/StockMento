@@ -26,6 +26,8 @@ import AdminNavbar from "@/components/navigation/AdminNavbar"
 
 export default function AdminDashboard() {
   const { adminUser, adminLogout } = useAdminAuth()
+  void adminUser
+  void adminLogout
 
   // Calculate dashboard metrics from mock data
   const activeUsers = mockUsers.filter((user) => user.isActive).length

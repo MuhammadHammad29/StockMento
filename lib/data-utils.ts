@@ -1,8 +1,10 @@
-import { Course, Lesson, Quiz, UserProgress, User, CourseFilter } from './types';
+import { Course, UserProgress, CourseFilter } from './types';
 
 // Local storage keys
 export const STORAGE_KEYS = {
   USER: 'psx_user',
+  ACCESS_TOKEN: 'user_token',
+  REFRESH_TOKEN: 'user_refresh_token',
   PROGRESS: 'psx_progress',
   COURSES: 'psx_courses',
   PREFERENCES: 'psx_preferences',
@@ -299,3 +301,4 @@ export const getActivitySummary = (userProgress: UserProgress[]) => {
     averageProgress: calculateOverallProgress(userProgress),
   };
 };
+

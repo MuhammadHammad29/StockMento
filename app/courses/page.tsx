@@ -1,17 +1,8 @@
 /**
  * Courses Listing Page
- * 
+ *
  * Displays all available courses with filtering and search functionality.
- * Shows user enrollment                  <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                    <SheetTrigger asChild>
-                      <Button variant="ou                  <option value="Long">&gt;5h)</option>
-                </select>
-              </div>
-            </div>con" className="border-border/40 text-muted-foreground hover:text-emerald-600 hover:border-emerald-600/20">
-                        <Menu className="h-5 w-5" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </SheetTrigger>, progress tracking, and course details.
+ * Shows user enrollment, progress tracking, and course details.
  * Includes responsive grid layout with course cards and navigation.
  */
 
@@ -22,13 +13,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
-import { TrendingUp, BookOpen, Clock, Users, Star, Search, Filter, ChevronRight } from "lucide-react"
+import { BookOpen, Clock, Users, Star, Search, ChevronRight } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { useState, useMemo } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { mockCourses, getUserCourses, mockUserProgress, getAvatarPath } from "@/lib/mock-data"
+import { mockCourses, getUserCourses, mockUserProgress } from "@/lib/mock-data"
 import { calculateCourseProgress } from "@/lib/data-utils"
 import { UserNavbar } from "@/components/navigation"
 
@@ -41,8 +31,11 @@ export default function CoursesPage() {
   const [durationFilter, setDurationFilter] = useState("All")
 
   // Get user's enrolled courses and progress data
-  const enrolledCourses = user ? getUserCourses(user.id) : []
-  const userProgressData = user ? mockUserProgress.filter(p => p.userId === user.id) : []
+  const enrolledCourses = useMemo(() => (user ? getUserCourses(user.id) : []), [user])
+  const userProgressData = useMemo(
+    () => (user ? mockUserProgress.filter((p) => p.userId === user.id) : []),
+    [user],
+  )
 
   // Enhance courses with user-specific progress information
   const coursesWithProgress = useMemo(() => {
@@ -168,7 +161,7 @@ export default function CoursesPage() {
                   className="px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 >
                   <option value="All">Any Duration</option>
-                  <option value="Short">Short (≤2h)</option>
+                  <option value="Short">Short (&lt;2h)</option>
                   <option value="Medium">Medium (2-5h)</option>
                   <option value="Long">Long (&gt;5h)</option>
                 </select>
@@ -177,7 +170,7 @@ export default function CoursesPage() {
             
             {searchQuery && (
               <div className="mt-4 text-sm text-muted-foreground">
-                Found {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                Found {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''} matching &quot;{searchQuery}&quot;
               </div>
             )}
           </CardContent>
@@ -205,10 +198,12 @@ export default function CoursesPage() {
             {filteredCourses.map((course) => (
               <Card key={course.id} className="hover:shadow-lg transition-all duration-200 overflow-hidden group flex flex-col h-full">
                 <div className="aspect-video bg-muted/70 relative overflow-hidden">
-                  <img
+                  <Image
                     src={course.thumbnail || "/placeholder.svg"}
                     alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    fill
+                    className="object-cover transition-transform duration-200 group-hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   />
                   <div className="absolute top-3 left-3">
                     <Badge variant={getLevelColor(course.level)} className="shadow-sm">
@@ -296,7 +291,7 @@ export default function CoursesPage() {
         {/* Load More - Hidden for now since we have all courses */}
         {filteredCourses.length > 0 && filteredCourses.length === mockCourses.length && (
           <div className="text-center mt-12">
-            <p className="text-muted-foreground mb-4">You've seen all available courses!</p>
+            <p className="text-muted-foreground mb-4">You&apos;ve seen all available courses!</p>
             <Link href="/dashboard">
               <Button variant="outline" size="lg">
                 Back to Dashboard
@@ -308,5 +303,7 @@ export default function CoursesPage() {
     </div>
   )
 }
+
+
 
 

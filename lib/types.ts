@@ -149,52 +149,7 @@ export interface AdminActivity {
   userName: string;
   description: string;
   timestamp: Date;
-  metadata?: Record<string, any>;
-}
-
-/**
- * Review Interface
- * User reviews and ratings for completed courses
- */
-export interface Review {
-  id: string;
-  userId: string; // User who wrote the review
-  courseId: string; // Course being reviewed
-  userName: string; // Display name for the review
-  userAvatarId: string; // User's avatar for display
-  rating: number; // 1-5 star rating
-  comment: string; // Review comment/text
-  isVerifiedCompletion: boolean; // Whether user completed the course
-  helpfulVotes?: number; // Number of users who found this helpful
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-/**
- * Review Submission Interface
- * Data structure for submitting new reviews
- */
-export interface ReviewSubmission {
-  courseId: string;
-  rating: number;
-  comment: string;
-}
-
-/**
- * Review Summary Interface
- * Aggregated review data for courses
- */
-export interface ReviewSummary {
-  courseId: string;
-  totalReviews: number;
-  averageRating: number;
-  ratingDistribution: {
-    1: number;
-    2: number;
-    3: number;
-    4: number;
-    5: number;
-  };
+  metadata?: Record<string, unknown>;
 }
 
 // Authentication types
@@ -204,7 +159,34 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   role: 'student' | 'admin';
-  avatarId: string;
+  avatarId: string | null;
+  status: 'active' | 'disabled' | 'pending';
+}
+
+export interface ProfileDetails {
+  id: string;
+  email: string;
+  status: 'active' | 'disabled' | 'pending';
+  firstName: string;
+  lastName: string;
+  avatarId: string | null;
+  bio: string | null;
+  meta: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateProfilePayload {
+  firstName?: string;
+  lastName?: string;
+  bio?: string | null;
+  avatarId?: string | null;
+  meta?: Record<string, unknown>;
+}
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface LoginCredentials {
@@ -218,6 +200,7 @@ export interface SignupData {
   firstName: string;
   lastName: string;
   avatarId: string;
+  bio?: string;
 }
 
 export interface AuthContextType {
@@ -225,8 +208,15 @@ export interface AuthContextType {
   loading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   signup: (data: SignupData) => Promise<void>;
-  logout: () => void;
+  verifyEmail: (email: string, code: string) => Promise<void>;
+  sendVerificationCode: (email: string) => Promise<void>;
+  logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  refreshUser: () => Promise<AuthUser | null>;
+}
+
+export interface DeleteAccountPayload {
+  password: string;
 }
 
 // API Response types

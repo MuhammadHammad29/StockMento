@@ -9,7 +9,7 @@ StockMento is a comprehensive online learning platform designed specifically for
 ### Core Learning Features
 - **Interactive Courses**: Structured learning paths for different skill levels
 - **Video Lessons**: Expert-led video content covering trading strategies
-- **Progress Tracking**: Detailed learning analytics and achievements
+- **Progress Tracking**: Detailed learning analytics and personalized insights
 - **Quiz System**: Knowledge assessment and skill validation
 
 ### User Management

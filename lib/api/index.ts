@@ -1,42 +1,83 @@
-// API service functions ready for NestJS backend integration
+﻿// API service functions ready for NestJS backend integration
 // These functions will replace the mock data calls when backend is implemented
 
-import { Course, Lesson, User, UserProgress } from '../types'
+import { Course, Lesson, User, UserProgress, AuthUser, ProfileDetails, UpdateProfilePayload, DeleteAccountPayload } from '../types'
+import { STORAGE_KEYS } from '../data-utils'
 
-// Base configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+type ApiJson = Record<string, unknown>
 
-// Helper function for API calls
+type AuthSuccessResponse = {
+  user: AuthUser
+  tokens: {
+    accessToken: string
+    refreshToken: string
+  }
+}
+
+type MessageResponse = {
+  message: string
+}
+
+type UpdatePasswordPayload = {
+  currentPassword: string
+  newPassword: string
+}
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const isBrowser = typeof window !== 'undefined'
+
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  // Base fetch wrapper used across the app to ensure consistent headers + error parsing.
   const url = `${API_BASE_URL}${endpoint}`
-  
-  const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
+  const { headers, body, ...rest } = options
+  const requestHeaders = new Headers(headers as HeadersInit | undefined)
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
+
+  if (!isFormData && !requestHeaders.has('Content-Type')) {
+    requestHeaders.set('Content-Type', 'application/json')
   }
 
-  // Add authentication token if available
-  const token = localStorage.getItem('admin_token') || localStorage.getItem('user_token')
-  if (token) {
-    defaultHeaders['Authorization'] = `Bearer ${token}`
-  }
-
-  const config: RequestInit = {
-    headers: { ...defaultHeaders, ...options.headers },
-    ...options,
-  }
-
-  try {
-    const response = await fetch(url, config)
-    
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`)
+  if (isBrowser) {
+    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || localStorage.getItem('admin_token')
+    if (token) {
+      requestHeaders.set('Authorization', `Bearer ${token}`)
     }
-    
-    return await response.json()
-  } catch (error) {
-    console.error('API call failed:', error)
-    throw error
   }
+
+  const response = await fetch(url, {
+    ...rest,
+    headers: requestHeaders,
+    body,
+  })
+
+  if (!response.ok) {
+    // Try to surface backend-supplied messages so the UI can show specific errors (e.g. "Please verify your email").
+    const errorText = await response.text().catch(() => '')
+
+    let message = `${response.status} ${response.statusText}`
+
+    if (errorText) {
+      try {
+        const parsed = JSON.parse(errorText)
+        if (parsed && typeof parsed === 'object' && 'message' in parsed && parsed.message) {
+          message = String(parsed.message)
+        } else {
+          message = errorText
+        }
+      } catch {
+        message = errorText
+      }
+    }
+
+    throw new Error(message)
+  }
+
+  if (response.status === 204) {
+    return undefined as T
+  }
+
+  const text = await response.text()
+  return (text ? JSON.parse(text) : undefined) as T
 }
 
 // Course Management APIs
@@ -75,8 +116,8 @@ export const courseApi = {
   },
 
   // Get course analytics
-  getCourseAnalytics: async (courseId: string): Promise<any> => {
-    return apiCall<any>(`/admin/courses/${courseId}/analytics`)
+  getCourseAnalytics: async (courseId: string): Promise<ApiJson> => {
+    return apiCall<ApiJson>(`/admin/courses/${courseId}/analytics`)
   },
 
   // Get course students
@@ -132,24 +173,24 @@ export const lessonApi = {
 // Analytics APIs
 export const analyticsApi = {
   // Get dashboard stats
-  getDashboardStats: async (): Promise<any> => {
-    return apiCall<any>('/admin/analytics/dashboard')
+  getDashboardStats: async (): Promise<ApiJson> => {
+    return apiCall<ApiJson>('/admin/analytics/dashboard')
   },
 
   // Get course analytics
-  getCourseAnalytics: async (courseId?: string): Promise<any> => {
+  getCourseAnalytics: async (courseId?: string): Promise<ApiJson> => {
     const endpoint = courseId ? `/admin/analytics/courses/${courseId}` : '/admin/analytics/courses'
-    return apiCall<any>(endpoint)
+    return apiCall<ApiJson>(endpoint)
   },
 
   // Get user analytics
-  getUserAnalytics: async (): Promise<any> => {
-    return apiCall<any>('/admin/analytics/users')
+  getUserAnalytics: async (): Promise<ApiJson> => {
+    return apiCall<ApiJson>('/admin/analytics/users')
   },
 
   // Get revenue analytics
-  getRevenueAnalytics: async (): Promise<any> => {
-    return apiCall<any>('/admin/analytics/revenue')
+  getRevenueAnalytics: async (): Promise<ApiJson> => {
+    return apiCall<ApiJson>('/admin/analytics/revenue')
   },
 }
 
@@ -195,40 +236,106 @@ export const fileApi = {
 // Authentication APIs (ready for JWT integration)
 export const authApi = {
   // Admin login
-  adminLogin: async (credentials: { email: string; password: string }): Promise<{ token: string; user: any }> => {
-    return apiCall<{ token: string; user: any }>('/auth/admin/login', {
+  adminLogin: async (credentials: { email: string; password: string }): Promise<AuthSuccessResponse> => {
+    return apiCall<AuthSuccessResponse>('/auth/admin/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     })
   },
 
   // User login
-  userLogin: async (credentials: { email: string; password: string }): Promise<{ token: string; user: any }> => {
-    return apiCall<{ token: string; user: any }>('/auth/login', {
+  userLogin: async (credentials: { email: string; password: string }): Promise<AuthSuccessResponse> => {
+    return apiCall<AuthSuccessResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     })
   },
 
   // User registration
-  userRegister: async (userData: { email: string; password: string; firstName: string; lastName: string }): Promise<{ token: string; user: any }> => {
-    return apiCall<{ token: string; user: any }>('/auth/register', {
+  userRegister: async (userData: { email: string; password: string; firstName: string; lastName: string; avatarId?: string; bio?: string }): Promise<MessageResponse> => {
+    return apiCall<MessageResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     })
   },
 
-  // Refresh token
-  refreshToken: async (): Promise<{ token: string }> => {
-    return apiCall<{ token: string }>('/auth/refresh', {
+  // Send verification code
+  sendVerificationCode: async (payload: { email: string }): Promise<MessageResponse> => {
+    return apiCall<MessageResponse>('/auth/verification/send', {
       method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  // Verify email with code and complete registration
+  verifyEmail: async (payload: { email: string; code: string }): Promise<AuthSuccessResponse> => {
+    return apiCall<AuthSuccessResponse>('/auth/verification/confirm', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  // Refresh token
+  refreshToken: async (refreshToken: string): Promise<AuthSuccessResponse> => {
+    return apiCall<AuthSuccessResponse>('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken }),
     })
   },
 
   // Logout
-  logout: async (): Promise<void> => {
-    return apiCall<void>('/auth/logout', {
+  logout: async (): Promise<MessageResponse> => {
+    return apiCall<MessageResponse>('/auth/logout', {
       method: 'POST',
+    })
+  },
+
+  // Password reset request
+  requestPasswordReset: async (payload: { email: string }): Promise<MessageResponse> => {
+    return apiCall<MessageResponse>('/auth/password/reset/request', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  // Password reset confirmation
+  confirmPasswordReset: async (payload: { email: string; token: string; password: string }): Promise<MessageResponse> => {
+    return apiCall<MessageResponse>('/auth/password/reset/confirm', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  // Fetch current user profile
+  me: async (): Promise<AuthUser> => {
+    return apiCall<AuthUser>('/auth/me')
+  },
+}
+
+// Profile APIs
+export const profileApi = {
+  getProfile: async (): Promise<ProfileDetails> => {
+    return apiCall<ProfileDetails>('/profile/me')
+  },
+
+  updateProfile: async (payload: UpdateProfilePayload): Promise<ProfileDetails> => {
+    return apiCall<ProfileDetails>('/profile/me', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  updatePassword: async (payload: UpdatePasswordPayload): Promise<MessageResponse> => {
+    return apiCall<MessageResponse>('/profile/password', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  deleteProfile: async (payload: DeleteAccountPayload): Promise<MessageResponse> => {
+    return apiCall<MessageResponse>('/profile/me', {
+      method: 'DELETE',
+      body: JSON.stringify(payload),
     })
   },
 }
@@ -265,7 +372,11 @@ export const api = {
   analytics: analyticsApi,
   files: fileApi,
   auth: authApi,
+  profile: profileApi,
   progress: progressApi,
 }
 
 export default api
+
+
+

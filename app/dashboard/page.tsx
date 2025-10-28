@@ -2,14 +2,8 @@
  * User Dashboard Page
  * 
  * Personal dashboard for logged-in users showing their learning progress,
- * enrolled courses, achievements, and recent             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="border-border/40 text-muted-foreground hover:text-emerald-600 hover:border-emerald-600/20">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </SheetTrigger>y. Includes navigation
- * to continue learning, view certificates, and manage profile settings.
+ * enrolled courses, and recent activity. Includes navigation
+ * to continue learning and manage profile settings.
  */
 
 "use client"
@@ -18,14 +12,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   BookOpen,
   Clock,
-  Trophy,
-  TrendingUp,
   Play,
-  Calendar,
   Target,
   BarChart3,
   Users,
@@ -34,12 +24,12 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { mockCourses, mockUserProgress, getUserCourses, getCourseById, getAvatarPath } from "@/lib/mock-data"
+import { mockCourses, mockUserProgress, getUserCourses } from "@/lib/mock-data"
 import { formatTimeAgo, getActivitySummary } from "@/lib/data-utils"
 import { UserNavbar } from "@/components/navigation"
 
 export default function DashboardPage() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
 
   if (!user) {
     return (
@@ -169,8 +159,6 @@ export default function DashboardPage() {
                 {enrolledCourses.length > 0 ? (
                   enrolledCourses.map((course) => {
                     const progress = userProgressData.find((p) => p.courseId === course.id)
-                    const detailedCourse = getCourseById(course.id)
-
                     return (
                       <div
                         key={course.id}
@@ -408,7 +396,7 @@ export default function DashboardPage() {
           <Card className="border border-border/60 bg-card/90">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg text-foreground">
-                <Trophy className="h-5 w-5 text-amber-500" />
+                <Target className="h-5 w-5 text-amber-500" />
                 Learning Streak
               </CardTitle>
             </CardHeader>
@@ -427,3 +415,4 @@ export default function DashboardPage() {
     </div>
   )
 }
+

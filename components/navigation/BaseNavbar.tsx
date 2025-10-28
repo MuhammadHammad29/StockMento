@@ -23,7 +23,7 @@ interface BaseNavbarProps {
     avatar?: string
     role?: 'admin' | 'user'
   }
-  onLogout?: () => void
+  onLogout?: () => void | Promise<void>
   mobileMenuContent?: React.ReactNode
   desktopActions?: React.ReactNode
   className?: string

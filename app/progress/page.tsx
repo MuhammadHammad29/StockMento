@@ -1,17 +1,14 @@
-"use client"
+﻿"use client"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import {
   BookOpen,
   Clock,
   Star,
-  Trophy,
   Target,
   Calendar,
   BarChart3,
@@ -20,13 +17,11 @@ import {
   Lock,
 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { getAvatarPath } from "@/lib/mock-data"
 import { UserNavbar } from "@/components/navigation"
 
 export default function ProgressPage() {
-  const { user } = useAuth()
+  useAuth()
   const overallProgress = {
     completedCourses: 3,
     totalCourses: 12,
@@ -35,7 +30,6 @@ export default function ProgressPage() {
     averageScore: 85,
     studyStreak: 12,
     totalStudyTime: 48, // hours
-    badgesEarned: 8,
   }
 
   const courseProgress = [
@@ -79,21 +73,6 @@ export default function ProgressPage() {
       avgScore: 0,
       timeSpent: 0,
     },
-  ]
-
-  const achievements = [
-    {
-      id: 1,
-      title: "First Course Complete",
-      description: "Completed your first course",
-      earned: true,
-      date: "2024-01-15",
-    },
-    { id: 2, title: "Course Achiever", description: "Completed all lessons in a course with 90+ average", earned: true, date: "2024-01-20" },
-    { id: 3, title: "Study Streak", description: "Studied for 7 consecutive days", earned: true, date: "2024-01-25" },
-    { id: 4, title: "Technical Expert", description: "Complete Technical Analysis course", earned: false, date: null },
-    { id: 5, title: "Perfect Student", description: "Get 100% completion on any course", earned: true, date: "2024-01-18" },
-    { id: 6, title: "Knowledge Seeker", description: "Complete 5 courses", earned: false, date: null },
   ]
 
   const weeklyActivity = [
@@ -172,7 +151,7 @@ export default function ProgressPage() {
                     <span className="text-sm text-muted-foreground">Excellent</span>
                   </div>
                 </div>
-                <Trophy className="h-8 w-8 text-yellow-600" />
+                <BarChart3 className="h-8 w-8 text-blue-600" />
               </div>
             </CardContent>
           </Card>
@@ -204,16 +183,15 @@ export default function ProgressPage() {
                     <span className="text-sm text-muted-foreground">This month</span>
                   </div>
                 </div>
-                <BarChart3 className="h-8 w-8 text-purple-600" />
+                <Clock className="h-8 w-8 text-purple-600" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         <Tabs defaultValue="courses" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="courses">Course Progress</TabsTrigger>
-            <TabsTrigger value="achievements">Achievements</TabsTrigger>
             <TabsTrigger value="activity">Weekly Activity</TabsTrigger>
           </TabsList>
 
@@ -278,31 +256,6 @@ export default function ProgressPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="achievements" className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              {achievements.map((achievement) => (
-                <Card key={achievement.id} className={achievement.earned ? "border-emerald-200" : "border-border/60"}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-4">
-                      <div className={`p-3 rounded-full ${achievement.earned ? "bg-emerald-100" : "bg-muted/60 dark:bg-muted/40"}`}>
-                        <Trophy className={`h-6 w-6 ${achievement.earned ? "text-emerald-600" : "text-muted-foreground"}`} />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-foreground mb-1">{achievement.title}</h3>
-                        <p className="text-sm text-muted-foreground mb-2">{achievement.description}</p>
-                        {achievement.earned ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200">Earned {achievement.date}</Badge>
-                        ) : (
-                          <Badge variant="secondary">Not earned yet</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
           <TabsContent value="activity" className="space-y-6">
             <Card className="border border-border/60 bg-card/90">
               <CardHeader>
@@ -321,7 +274,7 @@ export default function ProgressPage() {
                             <span>{day.lessons} lessons</span>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <Trophy className="h-4 w-4" />
+                            <Target className="h-4 w-4" />
                             <span>{day.quizzes} quizzes</span>
                           </div>
                           <div className="flex items-center space-x-2">
@@ -362,27 +315,6 @@ export default function ProgressPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border border-border/60 bg-card/90">
-                <CardHeader>
-                  <CardTitle className="text-lg">Badges</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Earned</span>
-                    <span className="font-medium">{overallProgress.badgesEarned}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Available</span>
-                    <span className="font-medium">{achievements.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Completion</span>
-                    <span className="font-medium">
-                      {Math.round((achievements.filter((a) => a.earned).length / achievements.length) * 100)}%
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
         </Tabs>
@@ -390,5 +322,6 @@ export default function ProgressPage() {
     </div>
   )
 }
+
 
 

@@ -1,5 +1,7 @@
 "use client"
 
+import Image from "next/image"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
+import {
   User,
   Mail,
   Calendar,
@@ -17,30 +19,110 @@ import {
   Settings,
   Camera,
   Save,
-  Trophy,
-  Star
+  BarChart3,
+  Star,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2,
+  Trash2,
 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { mockUserProgress, getUserCourses, getAvatarPath, getUserReviews } from "@/lib/mock-data"
+import { profileApi } from "@/lib/api"
+import { mockUserProgress, getUserCourses, getAvatarPath, getDefaultAvatarId } from "@/lib/mock-data"
 import { getActivitySummary, formatTimeAgo } from "@/lib/data-utils"
 import { toast } from "sonner"
 import AvatarPicker from "@/components/avatar-picker"
 import { UserNavbar } from "@/components/navigation"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
+const formatJoinedDate = (iso?: string | null) => {
+  if (!iso) return ""
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ""
+  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" })
+}
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { user, refreshUser, logout } = useAuth()
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [avatarUpdating, setAvatarUpdating] = useState(false)
+  const [passwordUpdating, setPasswordUpdating] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deletePassword, setDeletePassword] = useState("")
+  const [deletingAccount, setDeletingAccount] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
-  const [profileData, setProfileData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    bio: 'Passionate about learning the Pakistan Stock Exchange and building a strong investment portfolio.',
-    location: 'Karachi, Pakistan',
-    joinDate: 'January 2024'
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   })
+  const [profileData, setProfileData] = useState({
+    firstName: user?.firstName ?? "",
+    lastName: user?.lastName ?? "",
+    email: user?.email ?? "",
+    bio: "",
+    joinDate: "",
+    avatarId: user?.avatarId ?? null,
+  })
+
+  useEffect(() => {
+    if (!user) {
+      setProfileLoading(false)
+      return
+    }
+
+    let isMounted = true
+
+    const loadProfile = async () => {
+      setProfileLoading(true)
+      try {
+        const profile = await profileApi.getProfile()
+        if (!isMounted) return
+
+        setProfileData({
+          firstName: profile.firstName ?? "",
+          lastName: profile.lastName ?? "",
+          email: profile.email,
+          bio: profile.bio ?? "",
+          joinDate: formatJoinedDate(profile.createdAt),
+          avatarId: profile.avatarId ?? null,
+        })
+      } catch (error) {
+        if (!isMounted) return
+        console.error(error)
+        toast.error(error instanceof Error ? error.message : "Failed to load profile details")
+      } finally {
+        if (isMounted) {
+          setProfileLoading(false)
+        }
+      }
+    }
+
+    void loadProfile()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user])
 
   if (!user) {
     return (
@@ -48,78 +130,173 @@ export default function ProfilePage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Please sign in to access your profile</h1>
           <Link href="/signin">
-            <Button className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400">Sign In</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400">
+              Sign In
+            </Button>
           </Link>
         </div>
       </div>
     )
   }
 
-  const userProgressData = mockUserProgress.filter(p => p.userId === user.id)
+  const resolvedAvatarId = profileData.avatarId ?? user.avatarId ?? getDefaultAvatarId()
+
+  const userProgressData = mockUserProgress.filter((p) => p.userId === user.id)
   const enrolledCourses = getUserCourses(user.id)
   const activitySummary = getActivitySummary(userProgressData)
-
-  const achievements = [
-    {
-      id: 1,
-      title: 'First Course Complete',
-      description: 'Completed your first course',
-      icon: BookOpen,
-      earned: activitySummary.completedCourses > 0,
-      earnedDate: '2024-01-15'
-    },
-    {
-      id: 2,
-      title: 'Quiz Master',
-      description: 'Scored 90% or higher on 5 quizzes',
-      icon: Target,
-      earned: false,
-      earnedDate: null
-    },
-    {
-      id: 4,
-      title: 'Consistent Learner',
-      description: '7-day learning streak',
-      icon: Trophy,
-      earned: true,
-      earnedDate: '2024-02-10'
-    }
-  ]
 
   const recentActivity = [
     {
       id: 1,
-      type: 'course_complete',
-      title: 'Completed PSX Fundamentals',
+      type: "course_complete",
+      title: "Completed PSX Fundamentals",
       date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      details: 'Completed with 88% average score'
+      details: "Completed with 88% average score",
     },
     {
       id: 2,
-      type: 'quiz_complete',
-      title: 'Quiz: Support and Resistance',
+      type: "quiz_complete",
+      title: "Quiz: Support and Resistance",
       date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      details: 'Scored 92% (23/25 correct)'
+      details: "Scored 92% (23/25 correct)",
     },
     {
       id: 3,
-      type: 'lesson_complete',
-      title: 'Understanding Market Participants',
+      type: "lesson_complete",
+      title: "Understanding Market Participants",
       date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      details: 'Completed in 18 minutes'
-    }
+      details: "Completed in 18 minutes",
+    },
   ]
 
-  const handleSaveProfile = () => {
-    // In a real app, this would make an API call
-    toast.success('Profile updated successfully!')
-    setIsEditing(false)
+  const handleSaveProfile = async () => {
+    if (!profileData.firstName.trim() || !profileData.lastName.trim()) {
+      toast.error("Please provide both first and last name")
+      return
+    }
+
+    setSavingProfile(true)
+    try {
+      const updated = await profileApi.updateProfile({
+        firstName: profileData.firstName.trim(),
+        lastName: profileData.lastName.trim(),
+        bio: profileData.bio.trim() ? profileData.bio.trim() : null,
+        avatarId: profileData.avatarId ?? null,
+      })
+
+      setProfileData({
+        firstName: updated.firstName ?? "",
+        lastName: updated.lastName ?? "",
+        email: updated.email,
+        bio: updated.bio ?? "",
+        joinDate: formatJoinedDate(updated.createdAt),
+        avatarId: updated.avatarId ?? null,
+      })
+
+      await refreshUser()
+      toast.success("Profile updated successfully!")
+      setIsEditing(false)
+    } catch (error) {
+      console.error(error)
+      toast.error(error instanceof Error ? error.message : "Failed to update profile")
+    } finally {
+      setSavingProfile(false)
+    }
   }
 
-  const handleAvatarSelect = (avatarId: string) => {
-    // In a real app, this would update the user's avatar in the database
-    toast.success('Avatar updated successfully!')
-    setShowAvatarPicker(false)
+  const handleAvatarSelect = async (avatarId: string) => {
+    if (!avatarId) {
+      setShowAvatarPicker(false)
+      return
+    }
+
+    setAvatarUpdating(true)
+    try {
+      const updated = await profileApi.updateProfile({ avatarId })
+
+      setProfileData((prev) => ({
+        ...prev,
+        firstName: isEditing ? prev.firstName : updated.firstName ?? prev.firstName,
+        lastName: isEditing ? prev.lastName : updated.lastName ?? prev.lastName,
+        bio: isEditing ? prev.bio : updated.bio ?? "",
+        email: updated.email,
+        joinDate: formatJoinedDate(updated.createdAt),
+        avatarId: updated.avatarId ?? avatarId,
+      }))
+
+      await refreshUser()
+      toast.success("Avatar updated successfully!")
+      setShowAvatarPicker(false)
+    } catch (error) {
+      console.error(error)
+      toast.error(error instanceof Error ? error.message : "Failed to update avatar")
+    } finally {
+      setAvatarUpdating(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    if (!passwordData.currentPassword) {
+      toast.error("Please enter your current password")
+      return
+    }
+
+    if (!passwordData.newPassword) {
+      toast.error("Please enter a new password")
+      return
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters")
+      return
+    }
+
+    if (passwordData.newPassword === passwordData.currentPassword) {
+      toast.error("New password must be different from the current password")
+      return
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("New passwords do not match")
+      return
+    }
+
+    setPasswordUpdating(true)
+    try {
+      const response = await profileApi.updatePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      })
+      toast.success(response.message || "Password updated successfully!")
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+      setShowChangePassword(false)
+    } catch (error) {
+      console.error(error)
+      toast.error(error instanceof Error ? error.message : "Unable to update password")
+    } finally {
+      setPasswordUpdating(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast.error("Please enter your password to confirm")
+      return
+    }
+
+    setDeletingAccount(true)
+    try {
+      const response = await profileApi.deleteProfile({ password: deletePassword })
+      toast.success(response.message || "Account deleted successfully.")
+      setShowDeleteDialog(false)
+      setDeletePassword("")
+      await logout()
+    } catch (error) {
+      console.error(error)
+      toast.error(error instanceof Error ? error.message : "Failed to delete account")
+    } finally {
+      setDeletingAccount(false)
+    }
   }
 
   return (
@@ -127,28 +304,30 @@ export default function ProfilePage() {
       <UserNavbar />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {/* Profile Header */}
         <div className="mb-6 sm:mb-8">
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex flex-col space-y-4 sm:space-y-6">
                 <div className="relative flex justify-center sm:justify-start">
                   <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
-                    <AvatarImage src={getAvatarPath(user.avatarId)} alt={`${user.firstName} ${user.lastName}`} />
+                    <AvatarImage src={getAvatarPath(resolvedAvatarId)} alt={`${user.firstName} ${user.lastName}`} />
                     <AvatarFallback className="text-xl sm:text-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
-                      {user.firstName[0]}{user.lastName[0]}
+                      {user.firstName[0]}
+                      {user.lastName[0]}
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                
+
                 <div className="text-center sm:text-left space-y-3">
                   <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                       {user.firstName} {user.lastName}
                     </h1>
-                    <p className="text-sm sm:text-base text-muted-foreground mt-1 px-2 sm:px-0">{profileData.bio}</p>
+                    <p className="text-sm sm:text-base text-muted-foreground mt-1 px-2 sm:px-0">
+                      {profileData.bio || "Add a short bio to personalize your profile."}
+                    </p>
                   </div>
-                  
+
                   <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
                     <span className="flex items-center justify-center sm:justify-start">
                       <Mail className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
@@ -156,13 +335,13 @@ export default function ProfilePage() {
                     </span>
                     <span className="flex items-center justify-center sm:justify-start">
                       <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
-                      Joined {profileData.joinDate}
+                      Joined {profileData.joinDate || "Recently"}
                     </span>
                   </div>
-                  
+
                   <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-3">
                     <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200">
-                      {user.role === 'admin' ? 'Administrator' : 'Student'}
+                      {user.role === "admin" ? "Administrator" : "Student"}
                     </Badge>
                   </div>
                 </div>
@@ -172,12 +351,16 @@ export default function ProfilePage() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-            <TabsTrigger value="courses" className="text-xs sm:text-sm">Courses</TabsTrigger>
-            <TabsTrigger value="reviews" className="text-xs sm:text-sm">Reviews</TabsTrigger>
-            <TabsTrigger value="achievements" className="text-xs sm:text-sm">Awards</TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs sm:text-sm">Account</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 h-auto">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="courses" className="text-xs sm:text-sm">
+              Courses
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm">
+              Account
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -213,7 +396,7 @@ export default function ProfilePage() {
                       <p className="text-xs sm:text-sm font-medium text-muted-foreground">Average Progress</p>
                       <p className="text-2xl sm:text-3xl font-bold text-foreground">{activitySummary.averageProgress}%</p>
                     </div>
-                    <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
+                    <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
                   </div>
                 </CardContent>
               </Card>
@@ -255,17 +438,38 @@ export default function ProfilePage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Learning Streak</CardTitle>
-                  <CardDescription>Keep up the great work!</CardDescription>
+                  <CardTitle>Learning Progress</CardTitle>
+                  <CardDescription>Overall completion status</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-center py-6">
-                    <div className="text-6xl font-bold text-yellow-600 mb-4">7</div>
-                    <p className="text-lg font-medium text-foreground mb-2">Days in a row</p>
-                    <p className="text-muted-foreground mb-4">You're on fire! 🔥</p>
-                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-amber-500/20 dark:text-amber-200">
-                      Streak Master
-                    </Badge>
+                <CardContent className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2 text-sm">
+                      <span>Overall Completion</span>
+                      <span className="font-semibold">{activitySummary.averageProgress}%</span>
+                    </div>
+                    <Progress value={activitySummary.averageProgress} className="h-3" />
+                  </div>
+
+                  <div className="space-y-3">
+                    {enrolledCourses.slice(0, 3).map((course) => {
+                      const progress = userProgressData.find((p) => p.courseId === course.id)
+                      const completion = progress?.overallProgress ?? 0
+                      return (
+                        <div key={course.id} className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-foreground truncate">{course.title}</span>
+                            <span>{completion}%</span>
+                          </div>
+                          <Progress value={completion} className="h-2" />
+                        </div>
+                      )
+                    })}
+
+                    {enrolledCourses.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        Enroll in a course to start tracking your progress.
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -281,166 +485,43 @@ export default function ProfilePage() {
               <CardContent>
                 <div className="space-y-3 sm:space-y-4">
                   {enrolledCourses.map((course) => {
-                    const progress = userProgressData.find(p => p.courseId === course.id)
+                    const progress = userProgressData.find((p) => p.courseId === course.id)
                     return (
-                      <div key={course.id} className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 p-3 sm:p-4 border rounded-lg">
-                        <img 
-                          src={course.thumbnail} 
-                          alt={course.title}
-                          className="w-full sm:w-16 h-32 sm:h-16 rounded-lg object-cover flex-shrink-0"
-                        />
+                      <div
+                        key={course.id}
+                        className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 p-3 sm:p-4 border rounded-lg"
+                      >
+                        <div className="relative w-full sm:w-16 h-32 sm:h-16 rounded-lg overflow-hidden flex-shrink-0">
+                          <Image src={course.thumbnail} alt={course.title} fill className="object-cover" />
+                        </div>
                         <div className="flex-1 w-full space-y-2">
-                          <div>
-                            <h3 className="font-semibold text-foreground text-sm sm:text-base">{course.title}</h3>
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                            <h3 className="text-base font-semibold text-foreground truncate">{course.title}</h3>
+                            <span className="text-xs sm:text-sm text-muted-foreground">
+                              {progress?.overallProgress ?? 0}% complete
+                            </span>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <Progress value={progress?.overallProgress || 0} className="flex-1" />
-                            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">{progress?.overallProgress || 0}%</span>
-                          </div>
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0 text-xs text-muted-foreground">
-                            <span>{progress?.completedLessons.length || 0} lessons completed</span>
-                            <span>{progress?.completedQuizzes.length || 0} quizzes taken</span>
+                          <Progress value={progress?.overallProgress ?? 0} className="h-2" />
+                          <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-muted-foreground">
+                            <span>Lessons: {course.totalLessons}</span>
+                            <span>Quizzes: {course.totalQuizzes}</span>
+                            <span>Level: {course.level}</span>
                           </div>
                         </div>
-                        <Link href={`/courses/${course.id}`} className="w-full sm:w-auto">
-                          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
-                            Continue
-                          </Button>
-                        </Link>
                       </div>
                     )
                   })}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="reviews" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>My Reviews</CardTitle>
-                <CardDescription>Reviews you've written for completed courses</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {(() => {
-                  const userReviews = getUserReviews(user.id)
-                  
-                  if (userReviews.length === 0) {
-                    return (
-                      <div className="text-center py-8">
-                        <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-foreground mb-2">No Reviews Yet</h3>
-                        <p className="text-muted-foreground mb-4">
-                          Complete a course to write your first review
-                        </p>
-                        <Link href="/courses">
-                          <Button className="bg-emerald-600 hover:bg-emerald-700">
-                            Browse Courses
-                          </Button>
-                        </Link>
-                      </div>
-                    )
-                  }
-
-                  return (
-                    <div className="space-y-4">
-                      {userReviews.map((review) => {
-                        const course = enrolledCourses.find(c => c.id === review.courseId)
-                        return (
-                          <div key={review.id} className="p-4 border rounded-lg">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1">
-                                <Link href={`/courses/${review.courseId}`}>
-                                  <h3 className="font-semibold text-foreground hover:text-emerald-600 transition-colors">
-                                    {course?.title || 'Course Title'}
-                                  </h3>
-                                </Link>
-                                <div className="flex items-center space-x-2 mt-1">
-                                  <div className="flex space-x-1">
-                                    {Array.from({ length: 5 }, (_, index) => (
-                                      <Star
-                                        key={index}
-                                        className={`h-4 w-4 ${
-                                          index < review.rating ? 'text-yellow-500 fill-current' : 'text-gray-300'
-                                        }`}
-                                      />
-                                    ))}
-                                  </div>
-                                  <span className="text-sm text-muted-foreground">
-                                    {formatTimeAgo(review.createdAt)}
-                                  </span>
-                                </div>
-                              </div>
-                              {review.isVerifiedCompletion && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Verified
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-foreground">{review.comment}</p>
-                            {review.helpfulVotes && review.helpfulVotes > 0 && (
-                              <div className="mt-3 text-sm text-muted-foreground">
-                                {review.helpfulVotes} people found this helpful
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
+                  {enrolledCourses.length === 0 && (
+                    <div className="text-center py-10">
+                      <p className="text-sm text-muted-foreground mb-3">
+                        You haven&apos;t enrolled in any courses yet. Start your learning journey today!
+                      </p>
+                      <Link href="/courses">
+                        <Button className="bg-emerald-600 hover:bg-emerald-700">Browse Courses</Button>
+                      </Link>
                     </div>
-                  )
-                })()}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="achievements" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Achievements</CardTitle>
-                <CardDescription>Your learning milestones and accomplishments</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 gap-3 sm:gap-4">
-                  {achievements.map((achievement) => (
-                    <div 
-                      key={achievement.id} 
-                      className={`p-3 sm:p-4 border rounded-lg ${
-                        achievement.earned 
-                          ? 'bg-gradient-to-r from-emerald-50 to-blue-50 border-emerald-200 dark:from-emerald-500/10 dark:to-blue-500/10 dark:border-emerald-500/30' 
-                          : 'bg-muted/40 border-border/60 dark:bg-muted/30'
-                      }`}
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div className={`p-2 rounded-lg flex-shrink-0 ${
-                          achievement.earned ? 'bg-emerald-100 dark:bg-emerald-500/20 dark:text-emerald-200' : 'bg-muted/60 dark:bg-muted/40'
-                        }`}>
-                          <achievement.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${
-                            achievement.earned ? 'text-emerald-600 dark:text-emerald-300' : 'text-muted-foreground'
-                          }`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className={`font-semibold text-sm sm:text-base ${
-                            achievement.earned ? 'text-foreground' : 'text-muted-foreground'
-                          }`}>
-                            {achievement.title}
-                          </h3>
-                          <p className={`text-xs sm:text-sm ${
-                            achievement.earned ? 'text-muted-foreground' : 'text-muted-foreground'
-                          }`}>
-                            {achievement.description}
-                          </p>
-                          {achievement.earned && achievement.earnedDate && (
-                            <p className="text-xs text-emerald-600 mt-1">
-                              Earned on {achievement.earnedDate}
-                            </p>
-                          )}
-                        </div>
-                        {achievement.earned && (
-                          <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 flex-shrink-0" />
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -454,95 +535,293 @@ export default function ProfilePage() {
                     <CardTitle>Account Information</CardTitle>
                     <CardDescription>Manage your personal details and preferences</CardDescription>
                   </div>
-                  <Button onClick={() => setIsEditing(!isEditing)} variant="outline" size="sm">
+                  <Button
+                    onClick={() => setIsEditing(!isEditing)}
+                    variant="outline"
+                    size="sm"
+                    disabled={profileLoading || savingProfile}
+                  >
                     <Settings className="mr-2 h-4 w-4" />
-                    {isEditing ? 'Cancel' : 'Edit Profile'}
+                    {isEditing ? "Cancel" : "Edit Profile"}
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4">
-                {/* Avatar Section */}
                 <div className="space-y-2">
                   <Label className="text-sm">Profile Avatar</Label>
                   <div className="flex items-center space-x-4">
                     <Avatar className="h-16 w-16">
-                      <AvatarImage src={getAvatarPath(user.avatarId)} alt="Profile" />
+                      <AvatarImage src={getAvatarPath(resolvedAvatarId)} alt="Profile" />
                       <AvatarFallback>
                         <User className="h-8 w-8" />
                       </AvatarFallback>
                     </Avatar>
                     {isEditing && (
-                      <Button 
-                        onClick={() => setShowAvatarPicker(true)} 
-                        variant="outline" 
+                      <Button
+                        onClick={() => setShowAvatarPicker(true)}
+                        variant="outline"
                         size="sm"
+                        disabled={avatarUpdating}
                       >
-                        <Camera className="mr-2 h-4 w-4" />
-                        Change Avatar
+                        {avatarUpdating ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="mr-2 h-4 w-4" />
+                            Change Avatar
+                          </>
+                        )}
                       </Button>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName" className="text-sm">First Name</Label>
+                    <Label htmlFor="firstName" className="text-sm">
+                      First Name
+                    </Label>
                     <Input
                       id="firstName"
                       value={profileData.firstName}
-                      onChange={(e) => setProfileData({...profileData, firstName: e.target.value})}
+                      onChange={(event) => setProfileData({ ...profileData, firstName: event.target.value })}
                       disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lastName" className="text-sm">Last Name</Label>
+                    <Label htmlFor="lastName" className="text-sm">
+                      Last Name
+                    </Label>
                     <Input
                       id="lastName"
                       value={profileData.lastName}
-                      onChange={(e) => setProfileData({...profileData, lastName: e.target.value})}
+                      onChange={(event) => setProfileData({ ...profileData, lastName: event.target.value })}
                       disabled={!isEditing}
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm">Email</Label>
+                  <Label htmlFor="email" className="text-sm">
+                    Email Address
+                  </Label>
                   <Input
                     id="email"
                     type="email"
                     value={profileData.email}
-                    onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-                    disabled={!isEditing}
+                    disabled
+                    className="bg-muted/50 cursor-not-allowed"
                   />
+                  <p className="text-xs text-muted-foreground">Email changes require support assistance.</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bio" className="text-sm">Bio</Label>
+                  <Label htmlFor="bio" className="text-sm">
+                    Bio
+                  </Label>
                   <Input
                     id="bio"
                     value={profileData.bio}
-                    onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
+                    onChange={(event) => setProfileData({ ...profileData, bio: event.target.value })}
                     disabled={!isEditing}
+                    placeholder="Share a short introduction (optional)"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="location" className="text-sm">Location</Label>
-                  <Input
-                    id="location"
-                    value={profileData.location}
-                    onChange={(e) => setProfileData({...profileData, location: e.target.value})}
-                    disabled={!isEditing}
-                  />
+                <div className="pt-4 border-t">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <Label className="text-sm font-semibold">Password</Label>
+                      <p className="text-xs text-muted-foreground">Update your account password</p>
+                    </div>
+                    <Button
+                      onClick={() => setShowChangePassword(!showChangePassword)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Lock className="mr-2 h-4 w-4" />
+                      {showChangePassword ? "Cancel" : "Change Password"}
+                    </Button>
+                  </div>
+
+                  {showChangePassword && (
+                    <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                      <div className="space-y-2">
+                        <Label htmlFor="currentPassword" className="text-sm">
+                          Current Password
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="currentPassword"
+                            type={showCurrentPassword ? "text" : "password"}
+                            value={passwordData.currentPassword}
+                            onChange={(event) => setPasswordData({ ...passwordData, currentPassword: event.target.value })}
+                            placeholder="Enter current password"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="newPassword" className="text-sm">
+                          New Password
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="newPassword"
+                            type={showNewPassword ? "text" : "password"}
+                            value={passwordData.newPassword}
+                            onChange={(event) => setPasswordData({ ...passwordData, newPassword: event.target.value })}
+                            placeholder="Enter new password"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword" className="text-sm">
+                          Confirm New Password
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={passwordData.confirmPassword}
+                            onChange={(event) => setPasswordData({ ...passwordData, confirmPassword: event.target.value })}
+                            placeholder="Confirm new password"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <Button
+                        onClick={handleChangePassword}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700"
+                        disabled={passwordUpdating}
+                      >
+                        {passwordUpdating ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="mr-2 h-4 w-4" />
+                            Update Password
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4 border-t pt-4">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-foreground">Danger Zone</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Permanently delete your account and all associated data. This action cannot be undone.
+                    </p>
+                    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full sm:w-auto">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Account
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action will remove all of your data from the platform. Enter your password to confirm.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <div className="space-y-2">
+                          <Label htmlFor="delete-password" className="text-sm">
+                            Confirm with password
+                          </Label>
+                          <Input
+                            id="delete-password"
+                            type="password"
+                            value={deletePassword}
+                            onChange={(event) => setDeletePassword(event.target.value)}
+                            placeholder="Enter your current password"
+                          />
+                        </div>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel disabled={deletingAccount}>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                            disabled={deletingAccount}
+                            onClick={async (event) => {
+                              event.preventDefault()
+                              await handleDeleteAccount()
+                            }}
+                          >
+                            {deletingAccount ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Deleting...
+                              </>
+                            ) : (
+                              "Delete"
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
 
                 {isEditing && (
                   <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
-                    <Button onClick={handleSaveProfile} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Changes
+                    <Button
+                      onClick={handleSaveProfile}
+                      className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
+                      disabled={savingProfile || profileLoading}
+                    >
+                      {savingProfile ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save Changes
+                        </>
+                      )}
                     </Button>
-                    <Button onClick={() => setIsEditing(false)} variant="outline" className="w-full sm:w-auto">
+                    <Button
+                      onClick={() => setIsEditing(false)}
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      disabled={savingProfile}
+                    >
                       Cancel
                     </Button>
                   </div>
@@ -553,13 +832,14 @@ export default function ProfilePage() {
         </Tabs>
       </div>
 
-      {/* Avatar Picker Modal */}
       {showAvatarPicker && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="max-w-md w-full max-h-[90vh] overflow-auto">
             <AvatarPicker
-              selectedAvatarId={user.avatarId}
-              onAvatarSelect={handleAvatarSelect}
+              selectedAvatarId={resolvedAvatarId}
+              onAvatarSelect={(avatarId) => {
+                void handleAvatarSelect(avatarId)
+              }}
               onCancel={() => setShowAvatarPicker(false)}
             />
           </div>

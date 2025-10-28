@@ -6,17 +6,22 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { TrendingUp, Mail, Lock, User, Eye, EyeOff, Loader2, Camera } from "lucide-react"
+import { Mail, Lock, User, Eye, EyeOff, Loader2, Camera } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
-import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { validateEmail, validatePassword } from "@/lib/data-utils"
 import AvatarPicker from "@/components/avatar-picker"
 import { getDefaultAvatarId, getAvatarPath } from "@/lib/mock-data"
 import Logo from "@/components/ui/logo"
+import { useAuth } from "@/lib/auth-context"
+import { Textarea } from "@/components/ui/textarea"
 
+/**
+ * Signup form that initiates the email verification flow.
+ * Handles validation, avatar selection, and redirects to verify-email on success.
+ */
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -27,7 +32,8 @@ export default function SignUpPage() {
     lastName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    bio: ''
   })
   const [agreeToTerms, setAgreeToTerms] = useState(false)
   const { signup, loading } = useAuth()
@@ -79,10 +85,11 @@ export default function SignUpPage() {
         lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
-        avatarId: selectedAvatarId
+        avatarId: selectedAvatarId,
+        bio: formData.bio.trim() ? formData.bio.trim() : undefined
       })
-      toast.success('Account created successfully!')
-      router.push('/dashboard')
+      toast.success('Account created! Please verify your email.')
+      router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to create account')
     }
@@ -168,18 +175,32 @@ export default function SignUpPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="Email" 
-                    className="pl-10 text-sm" 
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    required 
-                  />
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="Email" 
+                  className="pl-10 text-sm" 
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  required 
+                />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio (optional)</Label>
+                <Textarea
+                  id="bio"
+                  placeholder="Tell us a little about yourself"
+                  value={formData.bio}
+                  onChange={(e) => handleInputChange("bio", e.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  disabled={loading}
+                />
+                <p className="text-xs text-muted-foreground">Optional: This appears on your profile.</p>
               </div>
 
               <div className="space-y-2">

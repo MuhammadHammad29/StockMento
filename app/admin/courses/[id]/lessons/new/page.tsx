@@ -9,15 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { 
-  TrendingUp, 
-  Save, 
-  FileText,
-  PlayCircle,
-  BookOpen,
-  AlertCircle,
-  Plus
-} from "lucide-react"
+import { Save, FileText, PlayCircle, BookOpen, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -39,6 +31,7 @@ interface NewLessonFormData {
 
 export default function AdminNewLessonPage({ params }: { params: { id: string } }) {
   const { adminUser } = useAdminAuth()
+  void adminUser
   const router = useRouter()
   const courseId = params.id
   
@@ -74,7 +67,7 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
     )
   }
 
-  const handleInputChange = (field: keyof NewLessonFormData, value: any) => {
+  const handleInputChange = <K extends keyof NewLessonFormData>(field: K, value: NewLessonFormData[K]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -152,7 +145,7 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-8 gap-3 sm:gap-4">
           <div className="min-w-0 flex-1">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-2">Create New Lesson</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">Add a new lesson to "{course.title}"</p>
+          <p className="text-sm sm:text-base text-muted-foreground">Add a new lesson to &quot;{course.title}&quot;</p>
           </div>
           <Button 
             onClick={handleCreate} 
@@ -200,7 +193,10 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="type">Lesson Type</Label>
-                  <Select value={formData.type} onValueChange={(value: any) => handleInputChange('type', value)}>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value) => handleInputChange('type', value as NewLessonFormData['type'])}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -337,7 +333,7 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
                   <Alert>
                     <BookOpen className="h-4 w-4" />
                     <AlertDescription>
-                      Quiz questions will be added after creating the lesson. You'll be able to add multiple questions with different types and explanations.
+                      Quiz questions will be added after creating the lesson. You&apos;ll be able to add multiple questions with different types and explanations.
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -347,9 +343,9 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
 
           {/* Course Context */}
           <Card>
-            <CardHeader>
-              <CardTitle>Course Context</CardTitle>
-              <CardDescription>This lesson will be added to "{course.title}"</CardDescription>
+          <CardHeader>
+            <CardTitle>Course Context</CardTitle>
+            <CardDescription>This lesson will be added to &quot;{course.title}&quot;</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-4 text-sm">

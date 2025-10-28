@@ -4,15 +4,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { TrendingUp, Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Users, Clock, PlayCircle, FileText } from "lucide-react"
+import { Search, Filter, Plus, Edit, Trash2, Eye, BookOpen, Users, Clock } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
 import { mockCourses, mockUserProgress, getLessonsByCourseId } from "@/lib/mock-data"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { AdminNavbar } from "@/components/navigation"
 
 export default function AdminCoursesPage() {
-  const { adminUser, adminLogout } = useAdminAuth()
+  const { adminUser } = useAdminAuth()
+  void adminUser
   // Transform real course data for admin display
   const courses = mockCourses.map(course => {
     const lessons = getLessonsByCourseId(course.id)
