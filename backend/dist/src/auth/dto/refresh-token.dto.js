@@ -17,6 +17,7 @@ class RefreshTokenDto {
 exports.RefreshTokenDto = RefreshTokenDto;
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], RefreshTokenDto.prototype, "refreshToken", void 0);
 //# sourceMappingURL=refresh-token.dto.js.map

@@ -12,7 +12,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Menu, LogOut } from "lucide-react"
 import Logo from "@/components/ui/logo"
 
@@ -117,7 +117,7 @@ export default function BaseNavbar({
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] sm:w-[350px]">
+            <SheetContent side="right" className="w-[280px] sm:w-[350px]" aria-describedby={undefined}>
               <SheetHeader className="border-b pb-4">
                 <SheetTitle className="flex items-center gap-3 text-left">
                   {userInfo && (
@@ -141,7 +141,7 @@ export default function BaseNavbar({
                   )}
                   <span className="font-medium">{userInfo?.name || "Menu"}</span>
                 </SheetTitle>
-                <SheetDescription className="text-left">
+                <div className="text-left text-sm text-muted-foreground">
                   {userInfo?.role === 'admin' && (
                     <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300 text-xs">
                       Admin Panel
@@ -152,7 +152,7 @@ export default function BaseNavbar({
                       Student Portal
                     </Badge>
                   )}
-                </SheetDescription>
+                </div>
               </SheetHeader>
               
               {mobileMenuContent}

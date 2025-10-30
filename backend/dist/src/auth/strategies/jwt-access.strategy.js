@@ -19,7 +19,7 @@ let JwtAccessStrategy = class JwtAccessStrategy extends (0, passport_1.PassportS
         super({
             jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: configService.get('JWT_ACCESS_SECRET'),
+            secretOrKey: configService.get('JWT_ACCESS_SECRET') ?? '',
         });
     }
     validate(payload) {

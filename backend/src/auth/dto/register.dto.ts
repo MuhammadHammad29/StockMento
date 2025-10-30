@@ -4,26 +4,25 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-  MinLength,
 } from 'class-validator';
+import { IsStrongPassword } from '../../common/validators/is-strong-password.validator';
 
 export class RegisterDto {
-  @IsNotEmpty()
-  @IsString()
-  @MaxLength(100)
+  @IsNotEmpty({ message: 'First name is required' })
+  @IsString({ message: 'First name must be a valid text' })
+  @MaxLength(100, { message: 'First name cannot exceed 100 characters' })
   firstName!: string;
 
-  @IsNotEmpty()
-  @IsString()
-  @MaxLength(100)
+  @IsNotEmpty({ message: 'Last name is required' })
+  @IsString({ message: 'Last name must be a valid text' })
+  @MaxLength(100, { message: 'Last name cannot exceed 100 characters' })
   lastName!: string;
 
-  @IsEmail()
+  @IsEmail({}, { message: 'Please provide a valid email address' })
   email!: string;
 
-  @IsString()
-  @MinLength(8)
-  @MaxLength(64)
+  @IsString({ message: 'Password must be a valid text' })
+  @IsStrongPassword()
   password!: string;
 
   @IsOptional()

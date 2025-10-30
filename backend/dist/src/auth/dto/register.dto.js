@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RegisterDto = void 0;
 const class_validator_1 = require("class-validator");
+const is_strong_password_validator_1 = require("../../common/validators/is-strong-password.validator");
 class RegisterDto {
     firstName;
     lastName;
@@ -21,25 +22,24 @@ class RegisterDto {
 }
 exports.RegisterDto = RegisterDto;
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MaxLength)(100),
+    (0, class_validator_1.IsNotEmpty)({ message: 'First name is required' }),
+    (0, class_validator_1.IsString)({ message: 'First name must be a valid text' }),
+    (0, class_validator_1.MaxLength)(100, { message: 'First name cannot exceed 100 characters' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "firstName", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MaxLength)(100),
+    (0, class_validator_1.IsNotEmpty)({ message: 'Last name is required' }),
+    (0, class_validator_1.IsString)({ message: 'Last name must be a valid text' }),
+    (0, class_validator_1.MaxLength)(100, { message: 'Last name cannot exceed 100 characters' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "lastName", void 0);
 __decorate([
-    (0, class_validator_1.IsEmail)(),
+    (0, class_validator_1.IsEmail)({}, { message: 'Please provide a valid email address' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "email", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(8),
-    (0, class_validator_1.MaxLength)(64),
+    (0, class_validator_1.IsString)({ message: 'Password must be a valid text' }),
+    (0, is_strong_password_validator_1.IsStrongPassword)(),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
 __decorate([

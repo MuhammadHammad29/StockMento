@@ -77,7 +77,7 @@ export default function VerifyEmailPage() {
 
     try {
       await verifyEmail(email, verificationCode)
-      toast.success('Email verified successfully! You can sign in now.')
+      // Don't show toast here - it will be shown on the signin page
       router.push('/signin?verified=true')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Invalid verification code')

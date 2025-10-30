@@ -26,6 +26,61 @@ type UpdatePasswordPayload = {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 const isBrowser = typeof window !== 'undefined'
 
+// Track if a token refresh is already in progress to avoid multiple simultaneous refresh attempts
+let isRefreshing = false
+let failedQueue: Array<{ resolve: (value?: unknown) => void; reject: (reason?: unknown) => void }> = []
+
+const processQueue = (error: Error | null, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token)
+    }
+  })
+  
+  failedQueue = []
+}
+
+async function refreshAccessToken(): Promise<string> {
+  // Refresh token is now in HttpOnly cookie, no need to send it in body
+  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include', // Send cookies with request
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to refresh token')
+  }
+
+  const data = await response.json() as AuthSuccessResponse
+  
+  // Store only the access token (refresh token is in HttpOnly cookie)
+  if (isBrowser) {
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.tokens.accessToken)
+  }
+
+  return data.tokens.accessToken
+}
+
+/**
+ * Checks if an endpoint is an authentication endpoint that should NOT trigger automatic token refresh.
+ * These endpoints return 401 for auth failures (wrong credentials, invalid tokens), not expired tokens.
+ */
+function isAuthenticationEndpoint(endpoint: string): boolean {
+  const authEndpoints = [
+    '/auth/login',           // User login - 401 means invalid credentials
+    '/auth/register',        // User registration - 401 means validation error
+    '/auth/refresh',         // Token refresh - 401 means refresh token invalid (prevents infinite loop)
+    '/admin/auth/login',     // Admin login - 401 means invalid credentials
+  ]
+  
+  return authEndpoints.some(authEndpoint => endpoint === authEndpoint)
+}
+
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   // Base fetch wrapper used across the app to ensure consistent headers + error parsing.
   const url = `${API_BASE_URL}${endpoint}`
@@ -44,11 +99,76 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
     }
   }
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     ...rest,
     headers: requestHeaders,
     body,
+    credentials: 'include', // Always include cookies (for refresh token)
   })
+
+  // Handle 401 Unauthorized - Token might be expired
+  // Don't try to refresh on authentication endpoints - those 401s are auth failures, not expired tokens
+  if (response.status === 401 && isBrowser && !isAuthenticationEndpoint(endpoint)) {
+    if (isRefreshing) {
+      // If already refreshing, queue this request
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject })
+      }).then(() => {
+        // Retry with new token
+        const newToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
+        if (newToken) {
+          requestHeaders.set('Authorization', `Bearer ${newToken}`)
+        }
+        return fetch(url, { ...rest, headers: requestHeaders, body, credentials: 'include' }).then(async (retryResponse) => {
+          if (!retryResponse.ok) {
+            const errorText = await retryResponse.text().catch(() => '')
+            let message = `${retryResponse.status} ${retryResponse.statusText}`
+            if (errorText) {
+              try {
+                const parsed = JSON.parse(errorText)
+                if (parsed && typeof parsed === 'object' && 'message' in parsed && parsed.message) {
+                  message = String(parsed.message)
+                }
+              } catch {
+                message = errorText
+              }
+            }
+            throw new Error(message)
+          }
+          if (retryResponse.status === 204) return undefined as T
+          const text = await retryResponse.text()
+          return (text ? JSON.parse(text) : undefined) as T
+        })
+      }) as Promise<T>
+    }
+
+    isRefreshing = true
+
+    try {
+      const newAccessToken = await refreshAccessToken()
+      requestHeaders.set('Authorization', `Bearer ${newAccessToken}`)
+      processQueue(null, newAccessToken)
+
+      // Retry the original request with new token
+      response = await fetch(url, {
+        ...rest,
+        headers: requestHeaders,
+        body,
+        credentials: 'include', // Include cookies for retry
+      })
+    } catch (refreshError) {
+      processQueue(refreshError as Error, null)
+      // Clear tokens and redirect to login
+      if (isBrowser) {
+        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
+        // No need to remove refresh token from localStorage (it's in HttpOnly cookie)
+        window.location.href = '/signin'
+      }
+      throw refreshError
+    } finally {
+      isRefreshing = false
+    }
+  }
 
   if (!response.ok) {
     // Try to surface backend-supplied messages so the UI can show specific errors (e.g. "Please verify your email").
@@ -237,18 +357,32 @@ export const fileApi = {
 export const authApi = {
   // Admin login
   adminLogin: async (credentials: { email: string; password: string }): Promise<AuthSuccessResponse> => {
-    return apiCall<AuthSuccessResponse>('/auth/admin/login', {
+    const response = await apiCall<AuthSuccessResponse>('/auth/admin/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     })
+    
+    // Store only access token (refresh token is in HttpOnly cookie)
+    if (isBrowser && response.tokens) {
+      localStorage.setItem('admin_token', response.tokens.accessToken)
+    }
+    
+    return response
   },
 
   // User login
   userLogin: async (credentials: { email: string; password: string }): Promise<AuthSuccessResponse> => {
-    return apiCall<AuthSuccessResponse>('/auth/login', {
+    const response = await apiCall<AuthSuccessResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     })
+    
+    // Store only access token (refresh token is in HttpOnly cookie)
+    if (isBrowser && response.tokens) {
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.tokens.accessToken)
+    }
+    
+    return response
   },
 
   // User registration
@@ -269,10 +403,17 @@ export const authApi = {
 
   // Verify email with code and complete registration
   verifyEmail: async (payload: { email: string; code: string }): Promise<AuthSuccessResponse> => {
-    return apiCall<AuthSuccessResponse>('/auth/verification/confirm', {
+    const response = await apiCall<AuthSuccessResponse>('/auth/verification/confirm', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
+    
+    // Store only access token after successful verification (refresh token is in HttpOnly cookie)
+    if (isBrowser && response.tokens) {
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.tokens.accessToken)
+    }
+    
+    return response
   },
 
   // Refresh token
@@ -285,9 +426,17 @@ export const authApi = {
 
   // Logout
   logout: async (): Promise<MessageResponse> => {
-    return apiCall<MessageResponse>('/auth/logout', {
+    const response = await apiCall<MessageResponse>('/auth/logout', {
       method: 'POST',
     })
+    
+    // Clear only access tokens (refresh token is in HttpOnly cookie and cleared by backend)
+    if (isBrowser) {
+      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
+      localStorage.removeItem('admin_token')
+    }
+    
+    return response
   },
 
   // Password reset request

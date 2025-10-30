@@ -3,7 +3,7 @@ import { JwtPayload } from '../../auth/auth.types';
 
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): JwtPayload | undefined => {
-    const request = ctx.switchToHttp().getRequest();
-    return request.user as JwtPayload | undefined;
+    const request = ctx.switchToHttp().getRequest<{ user?: JwtPayload }>();
+    return request.user;
   },
 );

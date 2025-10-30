@@ -1,14 +1,14 @@
-import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsString } from 'class-validator';
+import { IsStrongPassword } from '../../common/validators/is-strong-password.validator';
 
 export class ConfirmPasswordResetDto {
-  @IsEmail()
+  @IsEmail({}, { message: 'Please provide a valid email address' })
   email!: string;
 
-  @IsString()
+  @IsString({ message: 'Reset token is required' })
   token!: string;
 
-  @IsString()
-  @MinLength(8)
-  @MaxLength(64)
+  @IsString({ message: 'Password must be a valid text' })
+  @IsStrongPassword()
   password!: string;
 }

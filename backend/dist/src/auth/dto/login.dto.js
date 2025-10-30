@@ -17,13 +17,13 @@ class LoginDto {
 }
 exports.LoginDto = LoginDto;
 __decorate([
-    (0, class_validator_1.IsEmail)(),
+    (0, class_validator_1.IsEmail)({}, { message: 'Please provide a valid email address' }),
     __metadata("design:type", String)
 ], LoginDto.prototype, "email", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(8),
-    (0, class_validator_1.MaxLength)(64),
+    (0, class_validator_1.IsString)({ message: 'Password is required' }),
+    (0, class_validator_1.MinLength)(1, { message: 'Password cannot be empty' }),
+    (0, class_validator_1.MaxLength)(128, { message: 'Password is too long' }),
     __metadata("design:type", String)
 ], LoginDto.prototype, "password", void 0);
 //# sourceMappingURL=login.dto.js.map

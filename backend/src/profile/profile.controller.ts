@@ -7,7 +7,9 @@ import {
   Patch,
   Delete,
   UseGuards,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { ProfileService } from './profile.service';
 import { UpdatePasswordDto, UpdateProfileDto, DeleteAccountDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -46,7 +48,18 @@ export class ProfileController {
   async deleteAccount(
     @CurrentUser() user: JwtPayload,
     @Body() dto: DeleteAccountDto,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.profileService.deleteAccount(user.sub, dto);
+    const result = await this.profileService.deleteAccount(user.sub, dto);
+
+    // Clear the refresh token cookie after account deletion
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    return result;
   }
 }

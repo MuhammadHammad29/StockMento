@@ -18,7 +18,7 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (config: ConfigService) => {
+      useFactory: (config: ConfigService) => {
         const expiresSetting = config.get<string>('JWT_ACCESS_EXPIRES');
         const expiresIn =
           expiresSetting !== undefined ? Number(expiresSetting) : 900;

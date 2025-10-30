@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ConfirmPasswordResetDto = void 0;
 const class_validator_1 = require("class-validator");
+const is_strong_password_validator_1 = require("../../common/validators/is-strong-password.validator");
 class ConfirmPasswordResetDto {
     email;
     token;
@@ -18,17 +19,16 @@ class ConfirmPasswordResetDto {
 }
 exports.ConfirmPasswordResetDto = ConfirmPasswordResetDto;
 __decorate([
-    (0, class_validator_1.IsEmail)(),
+    (0, class_validator_1.IsEmail)({}, { message: 'Please provide a valid email address' }),
     __metadata("design:type", String)
 ], ConfirmPasswordResetDto.prototype, "email", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsString)({ message: 'Reset token is required' }),
     __metadata("design:type", String)
 ], ConfirmPasswordResetDto.prototype, "token", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(8),
-    (0, class_validator_1.MaxLength)(64),
+    (0, class_validator_1.IsString)({ message: 'Password must be a valid text' }),
+    (0, is_strong_password_validator_1.IsStrongPassword)(),
     __metadata("design:type", String)
 ], ConfirmPasswordResetDto.prototype, "password", void 0);
 //# sourceMappingURL=confirm-password-reset.dto.js.map

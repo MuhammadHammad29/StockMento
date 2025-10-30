@@ -30,7 +30,7 @@ exports.AuthModule = AuthModule = __decorate([
             jwt_1.JwtModule.registerAsync({
                 imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],
-                useFactory: async (config) => {
+                useFactory: (config) => {
                     const expiresSetting = config.get('JWT_ACCESS_EXPIRES');
                     const expiresIn = expiresSetting !== undefined ? Number(expiresSetting) : 900;
                     return {

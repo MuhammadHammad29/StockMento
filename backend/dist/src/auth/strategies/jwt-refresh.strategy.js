@@ -19,7 +19,7 @@ let JwtRefreshStrategy = class JwtRefreshStrategy extends (0, passport_1.Passpor
         super({
             jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: configService.get('JWT_REFRESH_SECRET'),
+            secretOrKey: configService.get('JWT_REFRESH_SECRET') ?? '',
         });
     }
     validate(payload) {

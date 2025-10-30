@@ -17,6 +17,8 @@ import Logo from "@/components/ui/logo"
 import { Lock, Shield, Loader2, ArrowLeft } from "lucide-react"
 import { authApi } from "@/lib/api"
 import { Eye, EyeOff } from "lucide-react"
+import { isPasswordValid } from "@/lib/password-utils"
+import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams()
@@ -58,8 +60,8 @@ export default function ResetPasswordPage() {
       return
     }
 
-    if (newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters long")
+    if (!isPasswordValid(newPassword)) {
+      toast.error("Password does not meet security requirements. Please check the password strength indicator.")
       return
     }
 
@@ -125,6 +127,12 @@ export default function ResetPasswordPage() {
                     {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                
+                {/* Password Strength Indicator */}
+                <PasswordStrengthIndicator 
+                  password={newPassword} 
+                  showRequirements={true}
+                />
               </div>
 
               <div className="space-y-2">

@@ -13,8 +13,8 @@ let PrismaService = class PrismaService extends client_1.PrismaClient {
     async onModuleInit() {
         await this.$connect();
     }
-    async enableShutdownHooks(app) {
-        await app.enableShutdownHooks();
+    enableShutdownHooks(app) {
+        app.enableShutdownHooks();
     }
     async onModuleDestroy() {
         await this.$disconnect();

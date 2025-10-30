@@ -1,3 +1,4 @@
+import type { Response } from 'express';
 import { ProfileService } from './profile.service';
 import { UpdatePasswordDto, UpdateProfileDto, DeleteAccountDto } from './dto';
 import type { JwtPayload } from '../auth/auth.types';
@@ -35,7 +36,7 @@ export declare class ProfileController {
     updatePassword(user: JwtPayload, dto: UpdatePasswordDto): Promise<{
         message: string;
     }>;
-    deleteAccount(user: JwtPayload, dto: DeleteAccountDto): Promise<{
+    deleteAccount(user: JwtPayload, dto: DeleteAccountDto, res: Response): Promise<{
         message: string;
     }>;
 }

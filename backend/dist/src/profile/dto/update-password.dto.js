@@ -11,18 +11,19 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdatePasswordDto = void 0;
 const class_validator_1 = require("class-validator");
+const is_strong_password_validator_1 = require("../../common/validators/is-strong-password.validator");
 class UpdatePasswordDto {
     currentPassword;
     newPassword;
 }
 exports.UpdatePasswordDto = UpdatePasswordDto;
 __decorate([
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsString)({ message: 'Current password is required' }),
     __metadata("design:type", String)
 ], UpdatePasswordDto.prototype, "currentPassword", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(8),
+    (0, class_validator_1.IsString)({ message: 'New password must be a valid text' }),
+    (0, is_strong_password_validator_1.IsStrongPassword)(),
     __metadata("design:type", String)
 ], UpdatePasswordDto.prototype, "newPassword", void 0);
 //# sourceMappingURL=update-password.dto.js.map

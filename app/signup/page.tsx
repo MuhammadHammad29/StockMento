@@ -11,7 +11,9 @@ import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { validateEmail, validatePassword } from "@/lib/data-utils"
+import { validateEmail } from "@/lib/data-utils"
+import { isPasswordValid } from "@/lib/password-utils"
+import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
 import AvatarPicker from "@/components/avatar-picker"
 import { getDefaultAvatarId, getAvatarPath } from "@/lib/mock-data"
 import Logo from "@/components/ui/logo"
@@ -54,7 +56,7 @@ export default function SignUpPage() {
     
     // Validation
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.confirmPassword) {
-      toast.error('Please fill in all fields')
+      toast.error('Please fill in all required fields')
       return
     }
 
@@ -63,9 +65,9 @@ export default function SignUpPage() {
       return
     }
 
-    const passwordValidation = validatePassword(formData.password)
-    if (!passwordValidation.isValid) {
-      toast.error(passwordValidation.errors[0])
+    // Use the new password strength validator
+    if (!isPasswordValid(formData.password)) {
+      toast.error('Password does not meet security requirements. Please check the password strength indicator.')
       return
     }
 
@@ -227,6 +229,12 @@ export default function SignUpPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                
+                {/* Password Strength Indicator */}
+                <PasswordStrengthIndicator 
+                  password={formData.password} 
+                  showRequirements={true}
+                />
               </div>
 
               <div className="space-y-2">

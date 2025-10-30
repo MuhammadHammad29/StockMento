@@ -6,7 +6,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto, UpdatePasswordDto, DeleteAccountDto } from './dto';
-import * as bcrypt from 'bcrypt';
+import { hash, compare } from 'bcrypt';
 
 type ProfileMeta = Record<string, unknown>;
 
@@ -147,7 +147,7 @@ export class ProfileService {
       throw new NotFoundException('User not found.');
     }
 
-    const currentPasswordMatches = await bcrypt.compare(
+    const currentPasswordMatches = await compare(
       dto.currentPassword,
       identity.passwordHash,
     );
@@ -156,7 +156,7 @@ export class ProfileService {
       throw new BadRequestException('Current password is incorrect.');
     }
 
-    const newPasswordMatches = await bcrypt.compare(
+    const newPasswordMatches = await compare(
       dto.newPassword,
       identity.passwordHash,
     );
@@ -167,7 +167,7 @@ export class ProfileService {
       );
     }
 
-    const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
+    const newPasswordHash = await hash(dto.newPassword, 10);
 
     await this.prisma.identity.update({
       where: { id: userId },
@@ -189,10 +189,7 @@ export class ProfileService {
       throw new NotFoundException('User not found.');
     }
 
-    const passwordMatches = await bcrypt.compare(
-      dto.password,
-      identity.passwordHash,
-    );
+    const passwordMatches = await compare(dto.password, identity.passwordHash);
 
     if (!passwordMatches) {
       throw new BadRequestException('Incorrect password.');

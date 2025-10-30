@@ -3,6 +3,8 @@ import {
   Injectable,
   Logger,
   UnauthorizedException,
+  InternalServerErrorException,
+  ConflictException,
 } from '@nestjs/common';
 import {
   IdentityStatus,
@@ -12,9 +14,10 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
+import { hash, compare } from 'bcrypt';
 import { randomBytes, createHash } from 'crypto';
 import { MailService } from '../mail/mail.service';
+import { Prisma } from '@prisma/client';
 import {
   RegisterDto,
   LoginDto,
@@ -52,58 +55,94 @@ export class AuthService {
    * Creates a new identity in a pending state and emails an OTP for verification.
    */
   async register(dto: RegisterDto): Promise<{ message: string }> {
-    const existing = await this.prisma.identity.findUnique({
-      where: { email: dto.email },
-    });
+    try {
+      const existing = await this.prisma.identity.findUnique({
+        where: { email: dto.email },
+      });
 
-    if (existing) {
-      if (existing.status === IdentityStatus.pending) {
-        await this.createAndSendVerification(existing.id, existing.email);
-        return {
-          message: 'Verification code re-sent. Please check your email.',
-        };
+      if (existing) {
+        if (existing.status === IdentityStatus.pending) {
+          await this.createAndSendVerification(existing.id, existing.email);
+          return {
+            message: 'Verification code re-sent. Please check your email.',
+          };
+        }
+        throw new ConflictException(
+          'An account with this email already exists. Please sign in instead.',
+        );
       }
-      throw new BadRequestException(
-        'An account with this email already exists.',
+
+      const passwordHash = await hash(dto.password, 10);
+      const trimmedFirstName = dto.firstName.trim();
+      const trimmedLastName = dto.lastName.trim();
+      const trimmedBio = dto.bio?.trim() ?? '';
+
+      const identity = await this.prisma.identity.create({
+        data: {
+          email: dto.email,
+          passwordHash,
+          status: IdentityStatus.pending,
+          profile: {
+            create: {
+              firstName: trimmedFirstName,
+              lastName: trimmedLastName,
+              avatarUrl: dto.avatarId ?? null,
+              bio: trimmedBio.length > 0 ? trimmedBio : null,
+            },
+          },
+          memberships: {
+            create: {
+              app: MembershipApp.lms,
+              status: MembershipStatus.active,
+            },
+          },
+        },
+        include: {
+          profile: true,
+        },
+      });
+
+      await this.createAndSendVerification(identity.id, identity.email);
+
+      return {
+        message:
+          'Account created successfully! Please check your email for the verification code.',
+      };
+    } catch (error) {
+      // Re-throw known exceptions
+      if (
+        error instanceof ConflictException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      // Handle Prisma-specific errors
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          // Unique constraint violation
+          throw new ConflictException(
+            'An account with this email already exists.',
+          );
+        }
+        this.logger.error(
+          `Prisma error during registration: ${error.message}`,
+          error.stack,
+        );
+        throw new InternalServerErrorException(
+          'A database error occurred. Please try again later.',
+        );
+      }
+
+      // Log unexpected errors
+      this.logger.error(
+        'Unexpected error during registration',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException(
+        'An unexpected error occurred. Please try again later.',
       );
     }
-
-    const passwordHash = await bcrypt.hash(dto.password, 10);
-    const trimmedFirstName = dto.firstName.trim();
-    const trimmedLastName = dto.lastName.trim();
-    const trimmedBio = dto.bio?.trim() ?? '';
-
-    const identity = await this.prisma.identity.create({
-      data: {
-        email: dto.email,
-        passwordHash,
-        status: IdentityStatus.pending,
-        profile: {
-          create: {
-            firstName: trimmedFirstName,
-            lastName: trimmedLastName,
-            avatarUrl: dto.avatarId ?? null,
-            bio: trimmedBio.length > 0 ? trimmedBio : null,
-          },
-        },
-        memberships: {
-          create: {
-            app: MembershipApp.lms,
-            status: MembershipStatus.active,
-          },
-        },
-      },
-      include: {
-        profile: true,
-      },
-    });
-
-    await this.createAndSendVerification(identity.id, identity.email);
-
-    return {
-      message:
-        'Account created in pending state. Please verify your email to activate it.',
-    };
   }
 
   /**
@@ -112,20 +151,39 @@ export class AuthService {
   async sendVerificationCode(
     dto: SendVerificationDto,
   ): Promise<{ message: string }> {
-    const identity = await this.prisma.identity.findUnique({
-      where: { email: dto.email },
-    });
+    try {
+      const identity = await this.prisma.identity.findUnique({
+        where: { email: dto.email },
+      });
 
-    if (!identity) {
-      throw new BadRequestException('Email is not registered.');
+      if (!identity) {
+        throw new BadRequestException(
+          'No account found with this email address.',
+        );
+      }
+
+      if (identity.status === IdentityStatus.active) {
+        return { message: 'Your account is already verified.' };
+      }
+
+      await this.createAndSendVerification(identity.id, identity.email);
+      return {
+        message:
+          'Verification code sent successfully. Please check your email.',
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      this.logger.error(
+        'Error sending verification code',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException(
+        'Failed to send verification code. Please try again later.',
+      );
     }
-
-    if (identity.status === IdentityStatus.active) {
-      return { message: 'Account is already verified.' };
-    }
-
-    await this.createAndSendVerification(identity.id, identity.email);
-    return { message: 'Verification code sent successfully.' };
   }
 
   /**
@@ -134,93 +192,136 @@ export class AuthService {
   async verifyEmail(
     dto: VerifyEmailDto,
   ): Promise<{ user: AuthUser; tokens: AuthTokens }> {
-    const tokenRecord = await this.prisma.emailOtpToken.findUnique({
-      where: { email: dto.email },
-    });
+    try {
+      const tokenRecord = await this.prisma.emailOtpToken.findUnique({
+        where: { email: dto.email },
+      });
 
-    if (!tokenRecord || tokenRecord.used) {
-      throw new BadRequestException('Invalid or expired verification code.');
+      if (!tokenRecord || tokenRecord.used) {
+        throw new BadRequestException(
+          'Invalid or expired verification code. Please request a new code.',
+        );
+      }
+
+      if (tokenRecord.expiresAt < new Date()) {
+        throw new BadRequestException(
+          'Verification code has expired. Please request a new code.',
+        );
+      }
+
+      const codeMatches = await compare(dto.code, tokenRecord.codeHash);
+      if (!codeMatches) {
+        throw new BadRequestException(
+          'Invalid verification code. Please check and try again.',
+        );
+      }
+
+      const identity = await this.prisma.identity.findUnique({
+        where: { email: dto.email },
+        include: { profile: true },
+      });
+
+      if (!identity) {
+        throw new BadRequestException(
+          'Account not found. Please register first.',
+        );
+      }
+
+      const updatedIdentity = await this.prisma.identity.update({
+        where: { id: identity.id },
+        data: {
+          status: IdentityStatus.active,
+          lastLoginAt: new Date(),
+        },
+        include: { profile: true },
+      });
+
+      await this.prisma.emailOtpToken.update({
+        where: { email: dto.email },
+        data: {
+          used: true,
+        },
+      });
+
+      const tokens = this.generateTokens(updatedIdentity);
+      return {
+        user: this.mapToAuthUser(updatedIdentity),
+        tokens,
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof UnauthorizedException
+      ) {
+        throw error;
+      }
+
+      this.logger.error(
+        'Error verifying email',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException(
+        'Failed to verify email. Please try again later.',
+      );
     }
-
-    if (tokenRecord.expiresAt < new Date()) {
-      throw new BadRequestException('Verification code has expired.');
-    }
-
-    const codeMatches = await bcrypt.compare(dto.code, tokenRecord.codeHash);
-    if (!codeMatches) {
-      throw new BadRequestException('Invalid verification code.');
-    }
-
-    const identity = await this.prisma.identity.findUnique({
-      where: { email: dto.email },
-      include: { profile: true },
-    });
-
-    if (!identity) {
-      throw new BadRequestException('Account not found.');
-    }
-
-    const updatedIdentity = await this.prisma.identity.update({
-      where: { id: identity.id },
-      data: {
-        status: IdentityStatus.active,
-        lastLoginAt: new Date(),
-      },
-      include: { profile: true },
-    });
-
-    await this.prisma.emailOtpToken.update({
-      where: { email: dto.email },
-      data: {
-        used: true,
-      },
-    });
-
-    const tokens = this.generateTokens(updatedIdentity);
-    return {
-      user: this.mapToAuthUser(updatedIdentity),
-      tokens,
-    };
   }
 
   /**
    * Authenticates an active user via email/password and returns JWTs.
    */
   async login(dto: LoginDto): Promise<{ user: AuthUser; tokens: AuthTokens }> {
-    const identity = await this.prisma.identity.findUnique({
-      where: { email: dto.email },
-      include: { profile: true },
-    });
+    try {
+      const identity = await this.prisma.identity.findUnique({
+        where: { email: dto.email },
+        include: { profile: true },
+      });
 
-    if (!identity) {
-      throw new UnauthorizedException('Invalid credentials.');
-    }
+      if (!identity) {
+        throw new UnauthorizedException(
+          'Invalid email or password. Please check your credentials and try again.',
+        );
+      }
 
-    const isValidPassword = await bcrypt.compare(
-      dto.password,
-      identity.passwordHash,
-    );
+      const isValidPassword = await compare(
+        dto.password,
+        identity.passwordHash,
+      );
 
-    if (!isValidPassword) {
-      throw new UnauthorizedException('Invalid credentials.');
-    }
+      if (!isValidPassword) {
+        throw new UnauthorizedException(
+          'Invalid email or password. Please check your credentials and try again.',
+        );
+      }
 
-    if (identity.status !== IdentityStatus.active) {
-      throw new UnauthorizedException(
-        'Please verify your email before signing in.',
+      if (identity.status !== IdentityStatus.active) {
+        throw new UnauthorizedException(
+          'Please verify your email before signing in. Check your inbox for the verification code.',
+        );
+      }
+
+      await this.prisma.identity.update({
+        where: { id: identity.id },
+        data: { lastLoginAt: new Date() },
+      });
+
+      const tokens = this.generateTokens(identity);
+      return {
+        user: this.mapToAuthUser(identity),
+        tokens,
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      this.logger.error(
+        'Error during login',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException(
+        'An error occurred during login. Please try again later.',
       );
     }
-
-    await this.prisma.identity.update({
-      where: { id: identity.id },
-      data: { lastLoginAt: new Date() },
-    });
-
-    const tokens = this.generateTokens(identity);
-    return {
-      user: this.mapToAuthUser(identity),
-      tokens,
-    };
   }
 
   /**
@@ -230,6 +331,11 @@ export class AuthService {
     dto: RefreshTokenDto,
   ): Promise<{ user: AuthUser; tokens: AuthTokens }> {
     try {
+      // Validate that refresh token is provided
+      if (!dto.refreshToken) {
+        throw new UnauthorizedException('Refresh token is required');
+      }
+
       const payload = await this.jwtService.verifyAsync<JwtPayload>(
         dto.refreshToken,
         {
@@ -264,7 +370,7 @@ export class AuthService {
   /**
    * Stateless logout handler – we respond with a consistent message.
    */
-  async logout(): Promise<{ message: string }> {
+  logout(): { message: string } {
     return { message: 'Logged out successfully.' };
   }
 
@@ -346,10 +452,7 @@ export class AuthService {
     }
 
     // Prevent users from reusing their current password.
-    const passwordMatches = await bcrypt.compare(
-      dto.password,
-      identity.passwordHash,
-    );
+    const passwordMatches = await compare(dto.password, identity.passwordHash);
 
     if (passwordMatches) {
       throw new BadRequestException(
@@ -357,7 +460,7 @@ export class AuthService {
       );
     }
 
-    const newPasswordHash = await bcrypt.hash(dto.password, 10);
+    const newPasswordHash = await hash(dto.password, 10);
 
     await this.prisma.$transaction([
       this.prisma.identity.update({
@@ -421,7 +524,7 @@ export class AuthService {
     email: string,
   ): Promise<void> {
     const code = this.generateOtpCode();
-    const codeHash = await bcrypt.hash(code, 10);
+    const codeHash = await hash(code, 10);
     const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MINUTES * 60 * 1000);
 
     await this.prisma.emailOtpToken.upsert({

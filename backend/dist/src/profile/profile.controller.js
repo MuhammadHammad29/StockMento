@@ -32,8 +32,15 @@ let ProfileController = class ProfileController {
     async updatePassword(user, dto) {
         return this.profileService.updatePassword(user.sub, dto);
     }
-    async deleteAccount(user, dto) {
-        return this.profileService.deleteAccount(user.sub, dto);
+    async deleteAccount(user, dto, res) {
+        const result = await this.profileService.deleteAccount(user.sub, dto);
+        res.clearCookie('refresh_token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/',
+        });
+        return result;
     }
 };
 exports.ProfileController = ProfileController;
@@ -66,8 +73,9 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, dto_1.DeleteAccountDto]),
+    __metadata("design:paramtypes", [Object, dto_1.DeleteAccountDto, Object]),
     __metadata("design:returntype", Promise)
 ], ProfileController.prototype, "deleteAccount", null);
 exports.ProfileController = ProfileController = __decorate([

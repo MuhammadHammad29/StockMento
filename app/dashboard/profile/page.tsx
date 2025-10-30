@@ -33,6 +33,8 @@ import { useAuth } from "@/lib/auth-context"
 import { profileApi } from "@/lib/api"
 import { mockUserProgress, getUserCourses, getAvatarPath, getDefaultAvatarId } from "@/lib/mock-data"
 import { getActivitySummary, formatTimeAgo } from "@/lib/data-utils"
+import { isPasswordValid } from "@/lib/password-utils"
+import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
 import { toast } from "sonner"
 import AvatarPicker from "@/components/avatar-picker"
 import { UserNavbar } from "@/components/navigation"
@@ -70,6 +72,7 @@ export default function ProfilePage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [showDeletePassword, setShowDeletePassword] = useState(false)
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -98,13 +101,25 @@ export default function ProfilePage() {
         const profile = await profileApi.getProfile()
         if (!isMounted) return
 
-        setProfileData({
-          firstName: profile.firstName ?? "",
-          lastName: profile.lastName ?? "",
-          email: profile.email,
-          bio: profile.bio ?? "",
-          joinDate: formatJoinedDate(profile.createdAt),
-          avatarId: profile.avatarId ?? null,
+        // Only update profile data if user is not actively editing
+        // This prevents losing unsaved changes when avatar updates trigger refreshUser()
+        setProfileData((prev) => {
+          if (isEditing) {
+            // Preserve edited fields, only update avatar if changed
+            return {
+              ...prev,
+              avatarId: profile.avatarId ?? prev.avatarId,
+            }
+          }
+          // Not editing, safe to load all data
+          return {
+            firstName: profile.firstName ?? "",
+            lastName: profile.lastName ?? "",
+            email: profile.email,
+            bio: profile.bio ?? "",
+            joinDate: formatJoinedDate(profile.createdAt),
+            avatarId: profile.avatarId ?? null,
+          }
         })
       } catch (error) {
         if (!isMounted) return
@@ -122,7 +137,7 @@ export default function ProfilePage() {
     return () => {
       isMounted = false
     }
-  }, [user])
+  }, [user, isEditing])
 
   if (!user) {
     return (
@@ -214,16 +229,13 @@ export default function ProfilePage() {
     try {
       const updated = await profileApi.updateProfile({ avatarId })
 
+      // Update local state with new avatar
       setProfileData((prev) => ({
         ...prev,
-        firstName: isEditing ? prev.firstName : updated.firstName ?? prev.firstName,
-        lastName: isEditing ? prev.lastName : updated.lastName ?? prev.lastName,
-        bio: isEditing ? prev.bio : updated.bio ?? "",
-        email: updated.email,
-        joinDate: formatJoinedDate(updated.createdAt),
         avatarId: updated.avatarId ?? avatarId,
       }))
 
+      // Refresh user context to update navbar without losing form data
       await refreshUser()
       toast.success("Avatar updated successfully!")
       setShowAvatarPicker(false)
@@ -246,8 +258,8 @@ export default function ProfilePage() {
       return
     }
 
-    if (passwordData.newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters")
+    if (!isPasswordValid(passwordData.newPassword)) {
+      toast.error("Password does not meet security requirements. Please check the password strength indicator.")
       return
     }
 
@@ -693,7 +705,12 @@ export default function ProfilePage() {
                             {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
-                        <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
+                        
+                        {/* Password Strength Indicator */}
+                        <PasswordStrengthIndicator 
+                          password={passwordData.newPassword} 
+                          showRequirements={true}
+                        />
                       </div>
 
                       <div className="space-y-2">
@@ -764,13 +781,23 @@ export default function ProfilePage() {
                           <Label htmlFor="delete-password" className="text-sm">
                             Confirm with password
                           </Label>
-                          <Input
-                            id="delete-password"
-                            type="password"
-                            value={deletePassword}
-                            onChange={(event) => setDeletePassword(event.target.value)}
-                            placeholder="Enter your current password"
-                          />
+                          <div className="relative">
+                            <Input
+                              id="delete-password"
+                              type={showDeletePassword ? "text" : "password"}
+                              value={deletePassword}
+                              onChange={(event) => setDeletePassword(event.target.value)}
+                              placeholder="Enter your current password"
+                              className="pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowDeletePassword(!showDeletePassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              {showDeletePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
                         </div>
                         <AlertDialogFooter>
                           <AlertDialogCancel disabled={deletingAccount}>Cancel</AlertDialogCancel>

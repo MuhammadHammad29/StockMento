@@ -30,9 +30,9 @@ export declare class AuthService {
         user: AuthUser;
         tokens: AuthTokens;
     }>;
-    logout(): Promise<{
+    logout(): {
         message: string;
-    }>;
+    };
     requestPasswordReset(dto: RequestPasswordResetDto): Promise<{
         message: string;
     }>;

@@ -26,9 +26,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(authUser)
     saveToStorage(STORAGE_KEYS.USER, authUser)
 
-    if (isBrowser() && tokens) {
+    if (isBrowser() && tokens?.accessToken) {
       localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken)
-      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken)
+      // Note: Refresh token is now stored in HttpOnly cookie by backend
     }
   }, [])
 
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     if (isBrowser()) {
       localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
-      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+      // Note: Refresh token is in HttpOnly cookie, cleared by backend on logout
     }
   }, [])
 

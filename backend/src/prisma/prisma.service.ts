@@ -15,8 +15,8 @@ export class PrismaService
     await this.$connect();
   }
 
-  async enableShutdownHooks(app: INestApplication): Promise<void> {
-    await app.enableShutdownHooks();
+  enableShutdownHooks(app: INestApplication): void {
+    app.enableShutdownHooks();
   }
 
   async onModuleDestroy(): Promise<void> {

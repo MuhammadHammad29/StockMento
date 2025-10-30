@@ -1,43 +1,10 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
@@ -49,9 +16,10 @@ const client_1 = require("@prisma/client");
 const prisma_service_1 = require("../prisma/prisma.service");
 const jwt_1 = require("@nestjs/jwt");
 const config_1 = require("@nestjs/config");
-const bcrypt = __importStar(require("bcrypt"));
+const bcrypt_1 = require("bcrypt");
 const crypto_1 = require("crypto");
 const mail_service_1 = require("../mail/mail.service");
+const client_2 = require("@prisma/client");
 const OTP_EXPIRATION_MINUTES = 10;
 const PASSWORD_RESET_EXPIRATION_MINUTES = 30;
 let AuthService = AuthService_1 = class AuthService {
@@ -67,132 +35,182 @@ let AuthService = AuthService_1 = class AuthService {
         this.mailService = mailService;
     }
     async register(dto) {
-        const existing = await this.prisma.identity.findUnique({
-            where: { email: dto.email },
-        });
-        if (existing) {
-            if (existing.status === client_1.IdentityStatus.pending) {
-                await this.createAndSendVerification(existing.id, existing.email);
-                return {
-                    message: 'Verification code re-sent. Please check your email.',
-                };
+        try {
+            const existing = await this.prisma.identity.findUnique({
+                where: { email: dto.email },
+            });
+            if (existing) {
+                if (existing.status === client_1.IdentityStatus.pending) {
+                    await this.createAndSendVerification(existing.id, existing.email);
+                    return {
+                        message: 'Verification code re-sent. Please check your email.',
+                    };
+                }
+                throw new common_1.ConflictException('An account with this email already exists. Please sign in instead.');
             }
-            throw new common_1.BadRequestException('An account with this email already exists.');
+            const passwordHash = await (0, bcrypt_1.hash)(dto.password, 10);
+            const trimmedFirstName = dto.firstName.trim();
+            const trimmedLastName = dto.lastName.trim();
+            const trimmedBio = dto.bio?.trim() ?? '';
+            const identity = await this.prisma.identity.create({
+                data: {
+                    email: dto.email,
+                    passwordHash,
+                    status: client_1.IdentityStatus.pending,
+                    profile: {
+                        create: {
+                            firstName: trimmedFirstName,
+                            lastName: trimmedLastName,
+                            avatarUrl: dto.avatarId ?? null,
+                            bio: trimmedBio.length > 0 ? trimmedBio : null,
+                        },
+                    },
+                    memberships: {
+                        create: {
+                            app: client_1.MembershipApp.lms,
+                            status: client_1.MembershipStatus.active,
+                        },
+                    },
+                },
+                include: {
+                    profile: true,
+                },
+            });
+            await this.createAndSendVerification(identity.id, identity.email);
+            return {
+                message: 'Account created successfully! Please check your email for the verification code.',
+            };
         }
-        const passwordHash = await bcrypt.hash(dto.password, 10);
-        const trimmedFirstName = dto.firstName.trim();
-        const trimmedLastName = dto.lastName.trim();
-        const trimmedBio = dto.bio?.trim() ?? '';
-        const identity = await this.prisma.identity.create({
-            data: {
-                email: dto.email,
-                passwordHash,
-                status: client_1.IdentityStatus.pending,
-                profile: {
-                    create: {
-                        firstName: trimmedFirstName,
-                        lastName: trimmedLastName,
-                        avatarUrl: dto.avatarId ?? null,
-                        bio: trimmedBio.length > 0 ? trimmedBio : null,
-                    },
-                },
-                memberships: {
-                    create: {
-                        app: client_1.MembershipApp.lms,
-                        status: client_1.MembershipStatus.active,
-                    },
-                },
-            },
-            include: {
-                profile: true,
-            },
-        });
-        await this.createAndSendVerification(identity.id, identity.email);
-        return {
-            message: 'Account created in pending state. Please verify your email to activate it.',
-        };
+        catch (error) {
+            if (error instanceof common_1.ConflictException ||
+                error instanceof common_1.BadRequestException) {
+                throw error;
+            }
+            if (error instanceof client_2.Prisma.PrismaClientKnownRequestError) {
+                if (error.code === 'P2002') {
+                    throw new common_1.ConflictException('An account with this email already exists.');
+                }
+                this.logger.error(`Prisma error during registration: ${error.message}`, error.stack);
+                throw new common_1.InternalServerErrorException('A database error occurred. Please try again later.');
+            }
+            this.logger.error('Unexpected error during registration', error instanceof Error ? error.stack : undefined);
+            throw new common_1.InternalServerErrorException('An unexpected error occurred. Please try again later.');
+        }
     }
     async sendVerificationCode(dto) {
-        const identity = await this.prisma.identity.findUnique({
-            where: { email: dto.email },
-        });
-        if (!identity) {
-            throw new common_1.BadRequestException('Email is not registered.');
+        try {
+            const identity = await this.prisma.identity.findUnique({
+                where: { email: dto.email },
+            });
+            if (!identity) {
+                throw new common_1.BadRequestException('No account found with this email address.');
+            }
+            if (identity.status === client_1.IdentityStatus.active) {
+                return { message: 'Your account is already verified.' };
+            }
+            await this.createAndSendVerification(identity.id, identity.email);
+            return {
+                message: 'Verification code sent successfully. Please check your email.',
+            };
         }
-        if (identity.status === client_1.IdentityStatus.active) {
-            return { message: 'Account is already verified.' };
+        catch (error) {
+            if (error instanceof common_1.BadRequestException) {
+                throw error;
+            }
+            this.logger.error('Error sending verification code', error instanceof Error ? error.stack : undefined);
+            throw new common_1.InternalServerErrorException('Failed to send verification code. Please try again later.');
         }
-        await this.createAndSendVerification(identity.id, identity.email);
-        return { message: 'Verification code sent successfully.' };
     }
     async verifyEmail(dto) {
-        const tokenRecord = await this.prisma.emailOtpToken.findUnique({
-            where: { email: dto.email },
-        });
-        if (!tokenRecord || tokenRecord.used) {
-            throw new common_1.BadRequestException('Invalid or expired verification code.');
+        try {
+            const tokenRecord = await this.prisma.emailOtpToken.findUnique({
+                where: { email: dto.email },
+            });
+            if (!tokenRecord || tokenRecord.used) {
+                throw new common_1.BadRequestException('Invalid or expired verification code. Please request a new code.');
+            }
+            if (tokenRecord.expiresAt < new Date()) {
+                throw new common_1.BadRequestException('Verification code has expired. Please request a new code.');
+            }
+            const codeMatches = await (0, bcrypt_1.compare)(dto.code, tokenRecord.codeHash);
+            if (!codeMatches) {
+                throw new common_1.BadRequestException('Invalid verification code. Please check and try again.');
+            }
+            const identity = await this.prisma.identity.findUnique({
+                where: { email: dto.email },
+                include: { profile: true },
+            });
+            if (!identity) {
+                throw new common_1.BadRequestException('Account not found. Please register first.');
+            }
+            const updatedIdentity = await this.prisma.identity.update({
+                where: { id: identity.id },
+                data: {
+                    status: client_1.IdentityStatus.active,
+                    lastLoginAt: new Date(),
+                },
+                include: { profile: true },
+            });
+            await this.prisma.emailOtpToken.update({
+                where: { email: dto.email },
+                data: {
+                    used: true,
+                },
+            });
+            const tokens = this.generateTokens(updatedIdentity);
+            return {
+                user: this.mapToAuthUser(updatedIdentity),
+                tokens,
+            };
         }
-        if (tokenRecord.expiresAt < new Date()) {
-            throw new common_1.BadRequestException('Verification code has expired.');
+        catch (error) {
+            if (error instanceof common_1.BadRequestException ||
+                error instanceof common_1.UnauthorizedException) {
+                throw error;
+            }
+            this.logger.error('Error verifying email', error instanceof Error ? error.stack : undefined);
+            throw new common_1.InternalServerErrorException('Failed to verify email. Please try again later.');
         }
-        const codeMatches = await bcrypt.compare(dto.code, tokenRecord.codeHash);
-        if (!codeMatches) {
-            throw new common_1.BadRequestException('Invalid verification code.');
-        }
-        const identity = await this.prisma.identity.findUnique({
-            where: { email: dto.email },
-            include: { profile: true },
-        });
-        if (!identity) {
-            throw new common_1.BadRequestException('Account not found.');
-        }
-        const updatedIdentity = await this.prisma.identity.update({
-            where: { id: identity.id },
-            data: {
-                status: client_1.IdentityStatus.active,
-                lastLoginAt: new Date(),
-            },
-            include: { profile: true },
-        });
-        await this.prisma.emailOtpToken.update({
-            where: { email: dto.email },
-            data: {
-                used: true,
-            },
-        });
-        const tokens = this.generateTokens(updatedIdentity);
-        return {
-            user: this.mapToAuthUser(updatedIdentity),
-            tokens,
-        };
     }
     async login(dto) {
-        const identity = await this.prisma.identity.findUnique({
-            where: { email: dto.email },
-            include: { profile: true },
-        });
-        if (!identity) {
-            throw new common_1.UnauthorizedException('Invalid credentials.');
+        try {
+            const identity = await this.prisma.identity.findUnique({
+                where: { email: dto.email },
+                include: { profile: true },
+            });
+            if (!identity) {
+                throw new common_1.UnauthorizedException('Invalid email or password. Please check your credentials and try again.');
+            }
+            const isValidPassword = await (0, bcrypt_1.compare)(dto.password, identity.passwordHash);
+            if (!isValidPassword) {
+                throw new common_1.UnauthorizedException('Invalid email or password. Please check your credentials and try again.');
+            }
+            if (identity.status !== client_1.IdentityStatus.active) {
+                throw new common_1.UnauthorizedException('Please verify your email before signing in. Check your inbox for the verification code.');
+            }
+            await this.prisma.identity.update({
+                where: { id: identity.id },
+                data: { lastLoginAt: new Date() },
+            });
+            const tokens = this.generateTokens(identity);
+            return {
+                user: this.mapToAuthUser(identity),
+                tokens,
+            };
         }
-        const isValidPassword = await bcrypt.compare(dto.password, identity.passwordHash);
-        if (!isValidPassword) {
-            throw new common_1.UnauthorizedException('Invalid credentials.');
+        catch (error) {
+            if (error instanceof common_1.UnauthorizedException) {
+                throw error;
+            }
+            this.logger.error('Error during login', error instanceof Error ? error.stack : undefined);
+            throw new common_1.InternalServerErrorException('An error occurred during login. Please try again later.');
         }
-        if (identity.status !== client_1.IdentityStatus.active) {
-            throw new common_1.UnauthorizedException('Please verify your email before signing in.');
-        }
-        await this.prisma.identity.update({
-            where: { id: identity.id },
-            data: { lastLoginAt: new Date() },
-        });
-        const tokens = this.generateTokens(identity);
-        return {
-            user: this.mapToAuthUser(identity),
-            tokens,
-        };
     }
     async refreshTokens(dto) {
         try {
+            if (!dto.refreshToken) {
+                throw new common_1.UnauthorizedException('Refresh token is required');
+            }
             const payload = await this.jwtService.verifyAsync(dto.refreshToken, {
                 secret: this.configService.getOrThrow('JWT_REFRESH_SECRET'),
             });
@@ -214,7 +232,7 @@ let AuthService = AuthService_1 = class AuthService {
             throw new common_1.UnauthorizedException('Invalid refresh token.');
         }
     }
-    async logout() {
+    logout() {
         return { message: 'Logged out successfully.' };
     }
     async requestPasswordReset(dto) {
@@ -264,11 +282,11 @@ let AuthService = AuthService_1 = class AuthService {
         if (!tokenRecord || tokenRecord.expiresAt < new Date()) {
             throw new common_1.BadRequestException('Invalid or expired password reset token.');
         }
-        const passwordMatches = await bcrypt.compare(dto.password, identity.passwordHash);
+        const passwordMatches = await (0, bcrypt_1.compare)(dto.password, identity.passwordHash);
         if (passwordMatches) {
             throw new common_1.BadRequestException('New password must be different from your current password.');
         }
-        const newPasswordHash = await bcrypt.hash(dto.password, 10);
+        const newPasswordHash = await (0, bcrypt_1.hash)(dto.password, 10);
         await this.prisma.$transaction([
             this.prisma.identity.update({
                 where: { id: identity.id },
@@ -310,7 +328,7 @@ let AuthService = AuthService_1 = class AuthService {
     }
     async createAndSendVerification(userId, email) {
         const code = this.generateOtpCode();
-        const codeHash = await bcrypt.hash(code, 10);
+        const codeHash = await (0, bcrypt_1.hash)(code, 10);
         const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MINUTES * 60 * 1000);
         await this.prisma.emailOtpToken.upsert({
             where: { email },
