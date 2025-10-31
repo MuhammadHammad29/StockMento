@@ -12,6 +12,7 @@ interface AdminAuthContextType {
   adminLogin: (credentials: { email: string; password: string }) => Promise<void>
   adminLogout: () => Promise<void>
   isLoading: boolean
+  isAuthenticating: boolean
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined)
@@ -30,6 +31,7 @@ const clearAdminStorage = () => {
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [adminUser, setAdminUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isAuthenticating, setIsAuthenticating] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -78,22 +80,27 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (isLoading) return
+    if (isLoading) {
+      return
+    }
 
     const isAdminRoute = pathname.startsWith('/admin')
     const isLoginPage = pathname === '/admin/login'
 
     if (isAdminRoute && !isLoginPage && !adminUser) {
-      router.push('/admin/login')
-    } else if (isLoginPage && adminUser) {
-      router.push('/admin')
+      router.replace('/admin/login')
     }
   }, [adminUser, pathname, router, isLoading])
 
   const adminLogin = useCallback(async (credentials: { email: string; password: string }) => {
+    setIsAuthenticating(true)
+
     try {
-      setIsLoading(true)
       const { user, tokens } = await authApi.adminLogin(credentials)
+
+      if (user.role !== 'admin') {
+        throw new Error('That account does not have administrator access.')
+      }
 
       setAdminUser(user)
       saveToStorage(STORAGE_KEYS.ADMIN_USER, user)
@@ -105,8 +112,18 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
         removeFromStorage(STORAGE_KEYS.USER)
       }
+    } catch (error) {
+      clearAdminStorage()
+      setAdminUser(null)
+
+      const message =
+        error instanceof Error
+          ? error.message || 'Unable to sign in with those credentials. Please try again.'
+          : 'Unable to sign in with those credentials. Please try again.'
+
+      throw new Error(message)
     } finally {
-      setIsLoading(false)
+      setIsAuthenticating(false)
     }
   }, [])
 
@@ -128,6 +145,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     adminLogin,
     adminLogout,
     isLoading,
+    isAuthenticating,
   }
 
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>

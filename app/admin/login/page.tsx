@@ -1,28 +1,30 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Shield } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import Logo from "@/components/ui/logo"
 
 export default function AdminLoginPage() {
   const router = useRouter()
-  const { toast } = useToast()
-  const { adminLogin } = useAdminAuth()
-  const [isLoading, setIsLoading] = useState(false)
+  const { adminLogin, adminUser, isAuthenticating } = useAdminAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
     password: ""
   })
-  const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (adminUser) {
+      router.replace("/admin")
+    }
+  }, [adminUser, router])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -30,40 +32,51 @@ export default function AdminLoginPage() {
       ...prev,
       [name]: value
     }))
-    setError("") // Clear error when user starts typing
+  }
+
+  if (adminUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border border-border/60 bg-card/95">
+          <CardHeader className="space-y-1 text-center">
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <Logo size="sm" className="sm:hidden" />
+              <Logo size="md" className="hidden sm:block" />
+            </div>
+            <CardTitle className="text-2xl">Redirecting…</CardTitle>
+            <CardDescription>Taking you to the admin dashboard.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center py-6">
+              <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-    setError("")
-
     try {
       await adminLogin({
         email: formData.email,
         password: formData.password,
       })
 
-      toast({
-        title: "Login successful",
-        description: "Welcome to StockMento Admin Dashboard",
-      })
+      toast.success('Successfully signed in as admin.')
 
-      router.push("/admin")
+      router.replace("/admin")
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
           : "Unable to sign in with those credentials. Please try again."
 
-      setError(message)
-      toast({
-        variant: "destructive",
-        title: "Unable to sign in",
-        description: message,
-      })
-    } finally {
-      setIsLoading(false)
+      toast.error(message)
+
+      // Reset password field for safety after a failed attempt
+      setFormData(prev => ({ ...prev, password: "" }))
     }
   }
 
@@ -85,12 +98,6 @@ export default function AdminLoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -101,7 +108,7 @@ export default function AdminLoginPage() {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                disabled={isLoading}
+                disabled={isAuthenticating}
               />
             </div>
             
@@ -113,23 +120,23 @@ export default function AdminLoginPage() {
                   name="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  className="pr-12 password-input"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                  autoComplete="current-password"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="password-toggle-btn hover:bg-transparent focus:outline-none"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={isLoading}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  tabIndex={0}
-                >
+                className="pr-12 password-input"
+                value={formData.password}
+                onChange={handleInputChange}
+                required
+                disabled={isAuthenticating}
+                autoComplete="current-password"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="password-toggle-btn hover:bg-transparent focus:outline-none"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={isAuthenticating}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                tabIndex={0}
+              >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
                   ) : (
@@ -142,9 +149,9 @@ export default function AdminLoginPage() {
             <Button
               type="submit"
               className="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
-              disabled={isLoading}
+              disabled={isAuthenticating}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isAuthenticating ? "Signing in..." : "Sign In"}
             </Button>
           </form>
           
