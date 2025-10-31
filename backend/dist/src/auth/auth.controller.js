@@ -14,10 +14,13 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
 const auth_service_1 = require("./auth.service");
 const dto_1 = require("./dto");
 const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
+const roles_guard_1 = require("../common/guards/roles.guard");
 const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
+const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const config_1 = require("@nestjs/config");
 let AuthController = class AuthController {
     authService;
@@ -70,6 +73,16 @@ let AuthController = class AuthController {
             },
         };
     }
+    async adminLogin(dto, res) {
+        const result = await this.authService.loginAdmin(dto);
+        this.setRefreshTokenCookie(res, result.tokens.refreshToken);
+        return {
+            user: result.user,
+            tokens: {
+                accessToken: result.tokens.accessToken,
+            },
+        };
+    }
     async refresh(dto, req, res) {
         const refreshToken = req.cookies?.refresh_token || dto.refreshToken;
         if (!refreshToken) {
@@ -89,7 +102,7 @@ let AuthController = class AuthController {
         return this.authService.logout();
     }
     async me(user) {
-        return this.authService.getCurrentUser(user.sub);
+        return this.authService.getCurrentUser(user);
     }
     async requestPasswordReset(dto) {
         return this.authService.requestPasswordReset(dto);
@@ -131,6 +144,16 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
+    (0, common_1.Post)('admin/login'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, throttler_1.Throttle)({ default: { limit: 5, ttl: 60 } }),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [dto_1.AdminLoginDto, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "adminLogin", null);
+__decorate([
     (0, common_1.Post)('refresh'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
@@ -142,7 +165,8 @@ __decorate([
 ], AuthController.prototype, "refresh", null);
 __decorate([
     (0, common_1.Post)('logout'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('student', 'admin'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
@@ -151,7 +175,8 @@ __decorate([
 ], AuthController.prototype, "logout", null);
 __decorate([
     (0, common_1.Get)('me'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('student', 'admin'),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),

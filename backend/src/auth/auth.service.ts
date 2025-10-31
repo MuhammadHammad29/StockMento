@@ -10,6 +10,8 @@ import {
   IdentityStatus,
   MembershipApp,
   MembershipStatus,
+  AdminStatus,
+  AdminIdentity,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -21,6 +23,7 @@ import { Prisma } from '@prisma/client';
 import {
   RegisterDto,
   LoginDto,
+  AdminLoginDto,
   SendVerificationDto,
   VerifyEmailDto,
   RequestPasswordResetDto,
@@ -243,7 +246,7 @@ export class AuthService {
         },
       });
 
-      const tokens = this.generateTokens(updatedIdentity);
+      const tokens = this.generateTokens(updatedIdentity, 'student');
       return {
         user: this.mapToAuthUser(updatedIdentity),
         tokens,
@@ -304,7 +307,7 @@ export class AuthService {
         data: { lastLoginAt: new Date() },
       });
 
-      const tokens = this.generateTokens(identity);
+      const tokens = this.generateTokens(identity, 'student');
       return {
         user: this.mapToAuthUser(identity),
         tokens,
@@ -316,6 +319,65 @@ export class AuthService {
 
       this.logger.error(
         'Error during login',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException(
+        'An error occurred during login. Please try again later.',
+      );
+    }
+  }
+
+  /**
+   * Authenticates the seeded admin user via email/password.
+   */
+  async loginAdmin(
+    dto: AdminLoginDto,
+  ): Promise<{ user: AuthUser; tokens: AuthTokens }> {
+    try {
+      const adminIdentity = await this.prisma.adminIdentity.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (!adminIdentity) {
+        throw new UnauthorizedException(
+          'Invalid email or password. Please check your credentials and try again.',
+        );
+      }
+
+      const isValidPassword = await compare(
+        dto.password,
+        adminIdentity.passwordHash,
+      );
+
+      if (!isValidPassword) {
+        throw new UnauthorizedException(
+          'Invalid email or password. Please check your credentials and try again.',
+        );
+      }
+
+      if (adminIdentity.status !== AdminStatus.active) {
+        throw new UnauthorizedException(
+          'This administrator account is disabled. Contact support for assistance.',
+        );
+      }
+
+      await this.prisma.adminIdentity.update({
+        where: { id: adminIdentity.id },
+        data: { lastLoginAt: new Date() },
+      });
+
+      const tokens = this.generateTokens(adminIdentity, 'admin');
+      return {
+        user: this.mapAdminToAuthUser(adminIdentity),
+        tokens,
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      this.logger.error(
+        'Error during admin login',
         error instanceof Error ? error.stack : undefined,
       );
       throw new InternalServerErrorException(
@@ -343,6 +405,23 @@ export class AuthService {
         },
       );
 
+      if (payload.role === 'admin') {
+        const adminIdentity = await this.prisma.adminIdentity.findUnique({
+          where: { id: payload.sub },
+        });
+
+        if (!adminIdentity || adminIdentity.status !== AdminStatus.active) {
+          throw new UnauthorizedException();
+        }
+
+        const tokens = this.generateTokens(adminIdentity, 'admin');
+
+        return {
+          user: this.mapAdminToAuthUser(adminIdentity),
+          tokens,
+        };
+      }
+
       const identity = await this.prisma.identity.findUnique({
         where: { id: payload.sub },
         include: { profile: true },
@@ -352,7 +431,7 @@ export class AuthService {
         throw new UnauthorizedException();
       }
 
-      const tokens = this.generateTokens(identity);
+      const tokens = this.generateTokens(identity, 'student');
 
       return {
         user: this.mapToAuthUser(identity),
@@ -481,13 +560,25 @@ export class AuthService {
   /**
    * Fetches the current user payload for downstream consumers.
    */
-  async getCurrentUser(userId: string): Promise<AuthUser> {
+  async getCurrentUser(payload: JwtPayload): Promise<AuthUser> {
+    if (payload.role === 'admin') {
+      const adminIdentity = await this.prisma.adminIdentity.findUnique({
+        where: { id: payload.sub },
+      });
+
+      if (!adminIdentity || adminIdentity.status !== AdminStatus.active) {
+        throw new UnauthorizedException();
+      }
+
+      return this.mapAdminToAuthUser(adminIdentity);
+    }
+
     const identity = await this.prisma.identity.findUnique({
-      where: { id: userId },
+      where: { id: payload.sub },
       include: { profile: true },
     });
 
-    if (!identity) {
+    if (!identity || identity.status !== IdentityStatus.active) {
       throw new UnauthorizedException();
     }
 
@@ -497,10 +588,14 @@ export class AuthService {
   /**
    * Issues both access and refresh JWTs for an identity.
    */
-  private generateTokens(identity: { id: string; email: string }): AuthTokens {
+  private generateTokens(
+    identity: { id: string; email: string },
+    role: 'student' | 'admin',
+  ): AuthTokens {
     const payload: JwtPayload = {
       sub: identity.id,
       email: identity.email,
+      role,
     };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -578,6 +673,21 @@ export class AuthService {
       avatarId: identity.profile?.avatarUrl ?? null,
       role: 'student',
       status: identity.status,
+    };
+  }
+
+  private mapAdminToAuthUser(admin: AdminIdentity): AuthUser {
+    return {
+      id: admin.id,
+      email: admin.email,
+      firstName: admin.name,
+      lastName: '',
+      avatarId: null,
+      role: 'admin',
+      status:
+        admin.status === AdminStatus.active
+          ? IdentityStatus.active
+          : IdentityStatus.disabled,
     };
   }
 }

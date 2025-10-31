@@ -41,6 +41,7 @@ export interface Course {
   totalStudents: number; // Number of enrolled students
   totalLessons: number; // Count of lessons in course
   totalQuizzes: number; // Number of quizzes in the course
+  sections?: CourseSection[]; // Optional array of sections (aligned with lms.course_sections)
   lessons?: Lesson[]; // Optional array of lessons for detailed views
   enrollmentCount?: number; // Current active enrollments
   tags: string[]; // Course tags for filtering/searching
@@ -51,12 +52,31 @@ export interface Course {
 }
 
 /**
+ * Course Section Interface
+ * Represents a section within a course containing grouped lessons
+ * Aligned with lms.course_sections table in database
+ */
+export interface CourseSection {
+  id: string;
+  courseId: string;
+  title: string;
+  position: number; // Order within the course
+  lessons?: Lesson[]; // Lessons within this section
+  totalLessons: number; // Count of lessons in this section
+  totalDuration: number; // Total duration in minutes
+  description?: string; // Optional section description
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
  * Lesson Interface
  * Individual lesson within a course containing learning materials and metadata
  */
 export interface Lesson {
   id: string;
   courseId: string;
+  sectionId?: string; // Section this lesson belongs to (aligned with lms.course_lessons.section_id)
   title: string;
   description: string;
   type: 'text' | 'video' | 'quiz'; // Lesson content type
@@ -64,7 +84,8 @@ export interface Lesson {
   videoUrl?: string; // YouTube URL for video lessons
   quizId?: string; // ID of embedded quiz for quiz lessons
   duration: number; // Duration in minutes
-  order: number; // Lesson order within course
+  order: number; // Lesson order within course or section
+  position: number; // Position within section (aligned with lms.course_lessons.position)
   isLocked: boolean; // Whether lesson requires prerequisites
   prerequisiteIds?: string[]; // IDs of prerequisite lessons
   createdAt: Date;
@@ -186,7 +207,7 @@ export interface UpdateProfilePayload {
 
 export interface AuthTokens {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string | null;
 }
 
 export interface LoginCredentials {

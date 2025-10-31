@@ -17,6 +17,7 @@ const prisma_module_1 = require("../prisma/prisma.module");
 const mail_module_1 = require("../mail/mail.module");
 const jwt_access_strategy_1 = require("./strategies/jwt-access.strategy");
 const jwt_refresh_strategy_1 = require("./strategies/jwt-refresh.strategy");
+const roles_guard_1 = require("../common/guards/roles.guard");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -43,7 +44,7 @@ exports.AuthModule = AuthModule = __decorate([
             }),
         ],
         controllers: [auth_controller_1.AuthController],
-        providers: [auth_service_1.AuthService, jwt_access_strategy_1.JwtAccessStrategy, jwt_refresh_strategy_1.JwtRefreshStrategy],
+        providers: [auth_service_1.AuthService, jwt_access_strategy_1.JwtAccessStrategy, jwt_refresh_strategy_1.JwtRefreshStrategy, roles_guard_1.RolesGuard],
         exports: [auth_service_1.AuthService],
     })
 ], AuthModule);

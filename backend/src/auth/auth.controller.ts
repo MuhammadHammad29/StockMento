@@ -10,11 +10,13 @@ import {
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import {
   RegisterDto,
   LoginDto,
+  AdminLoginDto,
   SendVerificationDto,
   VerifyEmailDto,
   RequestPasswordResetDto,
@@ -22,7 +24,9 @@ import {
   RefreshTokenDto,
 } from './dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
 import { ConfigService } from '@nestjs/config';
 import type { JwtPayload } from './auth.types';
 
@@ -103,6 +107,25 @@ export class AuthController {
     };
   }
 
+  @Post('admin/login')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60 } })
+  async adminLogin(
+    @Body() dto: AdminLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.loginAdmin(dto);
+
+    this.setRefreshTokenCookie(res, result.tokens.refreshToken);
+
+    return {
+      user: result.user,
+      tokens: {
+        accessToken: result.tokens.accessToken,
+      },
+    };
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
@@ -135,7 +158,8 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('student', 'admin')
   @HttpCode(HttpStatus.OK)
   logout(@Res({ passthrough: true }) res: Response) {
     // Clear the refresh token cookie
@@ -144,9 +168,10 @@ export class AuthController {
   }
 
   @Get('me')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('student', 'admin')
   async me(@CurrentUser() user: JwtPayload) {
-    return this.authService.getCurrentUser(user.sub);
+    return this.authService.getCurrentUser(user);
   }
 
   @Post('password/reset/request')

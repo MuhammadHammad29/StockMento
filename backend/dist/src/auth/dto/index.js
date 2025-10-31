@@ -16,6 +16,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./register.dto"), exports);
 __exportStar(require("./login.dto"), exports);
+__exportStar(require("./admin-login.dto"), exports);
 __exportStar(require("./send-verification.dto"), exports);
 __exportStar(require("./verify-email.dto"), exports);
 __exportStar(require("./request-password-reset.dto"), exports);

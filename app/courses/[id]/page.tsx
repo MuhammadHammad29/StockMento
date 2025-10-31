@@ -8,7 +8,7 @@ import { BookOpen, Clock, Users, Star, CheckCircle, Lock, FileText, Video, Play 
 import Image from "next/image"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { mockCourses, mockUserProgress, getUserCourses, getLessonsByCourseId } from "@/lib/mock-data"
+import { mockCourses, mockUserProgress, getUserCourses, getLessonsByCourseId, getSectionsByCourseId } from "@/lib/mock-data"
 import { calculateCourseProgress, formatDuration } from "@/lib/data-utils"
 import { toast } from "sonner"
 import { useState } from "react"
@@ -143,7 +143,15 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
               {lessons && lessons.length > 0 ? (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base sm:text-lg">Course Lessons</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base sm:text-lg">Course Lessons</CardTitle>
+                      <Link href={`/courses/${courseId}/sections`}>
+                        <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                          <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5" />
+                          View by Sections
+                        </Button>
+                      </Link>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2 sm:space-y-3">

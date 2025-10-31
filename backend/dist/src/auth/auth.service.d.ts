@@ -2,8 +2,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
-import { RegisterDto, LoginDto, SendVerificationDto, VerifyEmailDto, RequestPasswordResetDto, ConfirmPasswordResetDto, RefreshTokenDto } from './dto';
-import { AuthTokens } from './auth.types';
+import { RegisterDto, LoginDto, AdminLoginDto, SendVerificationDto, VerifyEmailDto, RequestPasswordResetDto, ConfirmPasswordResetDto, RefreshTokenDto } from './dto';
+import { AuthTokens, JwtPayload } from './auth.types';
 import { AuthUser } from './interfaces/auth-user.interface';
 export declare class AuthService {
     private readonly prisma;
@@ -26,6 +26,10 @@ export declare class AuthService {
         user: AuthUser;
         tokens: AuthTokens;
     }>;
+    loginAdmin(dto: AdminLoginDto): Promise<{
+        user: AuthUser;
+        tokens: AuthTokens;
+    }>;
     refreshTokens(dto: RefreshTokenDto): Promise<{
         user: AuthUser;
         tokens: AuthTokens;
@@ -39,11 +43,12 @@ export declare class AuthService {
     confirmPasswordReset(dto: ConfirmPasswordResetDto): Promise<{
         message: string;
     }>;
-    getCurrentUser(userId: string): Promise<AuthUser>;
+    getCurrentUser(payload: JwtPayload): Promise<AuthUser>;
     private generateTokens;
     private createAndSendVerification;
     private generateOtpCode;
     private hashToken;
     private getTokenExpiry;
     private mapToAuthUser;
+    private mapAdminToAuthUser;
 }

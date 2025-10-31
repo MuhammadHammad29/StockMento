@@ -9,7 +9,7 @@
  * This data will be replaced with database queries when backend is integrated.
  */
 
-import { Course, Lesson, Quiz, User, UserProgress } from './types';
+import { Course, Lesson, Quiz, User, UserProgress, CourseSection } from './types';
 import { comprehensiveLessons } from './lessons-data';
 
 /**
@@ -399,6 +399,117 @@ export const mockUserProgress: UserProgress[] = [
   }
 ];
 
+/**
+ * Mock Course Sections Data
+ * Represents sections within courses (aligned with lms.course_sections table)
+ */
+export const mockCourseSections: CourseSection[] = [
+  // PSX Fundamentals (course-1) Sections
+  {
+    id: 'section-1-1',
+    courseId: 'course-1',
+    title: 'Introduction to PSX',
+    position: 1,
+    totalLessons: 3,
+    totalDuration: 65, // Approx sum of first 3 lessons
+    description: 'Get started with the basics of Pakistan Stock Exchange, its history, and structure.',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-12-01'),
+  },
+  {
+    id: 'section-1-2',
+    courseId: 'course-1',
+    title: 'Market Mechanics',
+    position: 2,
+    totalLessons: 3,
+    totalDuration: 73,
+    description: 'Learn how trading works, order types, and market participants.',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-12-01'),
+  },
+  {
+    id: 'section-1-3',
+    courseId: 'course-1',
+    title: 'Getting Started with Trading',
+    position: 3,
+    totalLessons: 2,
+    totalDuration: 40,
+    description: 'Final steps to begin your trading journey on PSX.',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-12-01'),
+  },
+  
+  // Technical Analysis (course-2) Sections
+  {
+    id: 'section-2-1',
+    courseId: 'course-2',
+    title: 'Chart Fundamentals',
+    position: 1,
+    totalLessons: 4,
+    totalDuration: 90,
+    description: 'Master the basics of reading and interpreting price charts.',
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-12-01'),
+  },
+  {
+    id: 'section-2-2',
+    courseId: 'course-2',
+    title: 'Technical Indicators',
+    position: 2,
+    totalLessons: 3,
+    totalDuration: 75,
+    description: 'Understand moving averages, RSI, MACD, and other key indicators.',
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-12-01'),
+  },
+  {
+    id: 'section-2-3',
+    courseId: 'course-2',
+    title: 'Advanced Patterns',
+    position: 3,
+    totalLessons: 3,
+    totalDuration: 80,
+    description: 'Identify complex chart patterns and trading strategies.',
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-12-01'),
+  },
+
+  // Risk Management (course-3) Sections
+  {
+    id: 'section-3-1',
+    courseId: 'course-3',
+    title: 'Understanding Risk',
+    position: 1,
+    totalLessons: 3,
+    totalDuration: 55,
+    description: 'Learn the fundamentals of risk in trading and investing.',
+    createdAt: new Date('2024-02-01'),
+    updatedAt: new Date('2024-12-01'),
+  },
+  {
+    id: 'section-3-2',
+    courseId: 'course-3',
+    title: 'Risk Mitigation Strategies',
+    position: 2,
+    totalLessons: 4,
+    totalDuration: 85,
+    description: 'Practical strategies to manage and reduce risk exposure.',
+    createdAt: new Date('2024-02-01'),
+    updatedAt: new Date('2024-12-01'),
+  },
+  {
+    id: 'section-3-3',
+    courseId: 'course-3',
+    title: 'Portfolio Protection',
+    position: 3,
+    totalLessons: 2,
+    totalDuration: 45,
+    description: 'Advanced techniques for protecting your investment portfolio.',
+    createdAt: new Date('2024-02-01'),
+    updatedAt: new Date('2024-12-01'),
+  },
+];
+
 // Helper functions
 export const getCourseById = (id: string): Course | undefined => {
   return mockCourses.find(course => course.id === id);
@@ -406,6 +517,31 @@ export const getCourseById = (id: string): Course | undefined => {
 
 export const getLessonsByCourseId = (courseId: string): Lesson[] => {
   return mockLessons.filter(lesson => lesson.courseId === courseId);
+};
+
+export const getSectionsByCourseId = (courseId: string): CourseSection[] => {
+  return mockCourseSections.filter(section => section.courseId === courseId);
+};
+
+export const getSectionById = (sectionId: string): CourseSection | undefined => {
+  return mockCourseSections.find(section => section.id === sectionId);
+};
+
+export const getLessonsBySectionId = (sectionId: string): Lesson[] => {
+  // Find the section to get courseId and position info
+  const section = mockCourseSections.find(s => s.id === sectionId);
+  if (!section) return [];
+  
+  // Get all lessons for the course
+  const courseLessons = mockLessons.filter(lesson => lesson.courseId === section.courseId);
+  
+  // For demo purposes, distribute lessons across sections
+  // In real implementation, lessons would have sectionId field
+  const lessonsPerSection = Math.ceil(courseLessons.length / mockCourseSections.filter(s => s.courseId === section.courseId).length);
+  const startIndex = (section.position - 1) * lessonsPerSection;
+  const endIndex = startIndex + lessonsPerSection;
+  
+  return courseLessons.slice(startIndex, endIndex);
 };
 
 export const getQuizzesByCourseId = (courseId: string): Quiz[] => {

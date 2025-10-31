@@ -39,29 +39,29 @@ export default function AdminLoginPage() {
     setError("")
 
     try {
-      // Simulate admin authentication
-      // In a real app, this would be an API call to your admin authentication endpoint
-      if (formData.email === "admin@stockmento.com" && formData.password === "admin123") {
-        const adminUser = {
-          email: formData.email,
-          role: "admin",
-          name: "Admin User"
-        }
-        
-        adminLogin(adminUser)
-        
-        toast({
-          title: "Login successful",
-          description: "Welcome to StockMento Admin Dashboard",
-        })
-        
-        router.push("/admin")
-      } else {
-        setError("Invalid email or password. Please try again.")
-      }
+      await adminLogin({
+        email: formData.email,
+        password: formData.password,
+      })
+
+      toast({
+        title: "Login successful",
+        description: "Welcome to StockMento Admin Dashboard",
+      })
+
+      router.push("/admin")
     } catch (error) {
-      console.error(error)
-      setError("An error occurred during login. Please try again.")
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to sign in with those credentials. Please try again."
+
+      setError(message)
+      toast({
+        variant: "destructive",
+        title: "Unable to sign in",
+        description: message,
+      })
     } finally {
       setIsLoading(false)
     }
@@ -148,16 +148,8 @@ export default function AdminLoginPage() {
             </Button>
           </form>
           
-          <div className="mt-6 text-center">
-            <div className="text-sm text-muted-foreground">
-              Demo Credentials:
-            </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              Email: admin@stockmento.com
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Password: admin123
-            </div>
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            Use the administrator credentials provisioned via the backend seed configuration.
           </div>
         </CardContent>
       </Card>

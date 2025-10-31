@@ -18,6 +18,8 @@ const profile_service_1 = require("./profile.service");
 const dto_1 = require("./dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
+const roles_guard_1 = require("../common/guards/roles.guard");
+const roles_decorator_1 = require("../common/decorators/roles.decorator");
 let ProfileController = class ProfileController {
     profileService;
     constructor(profileService) {
@@ -80,7 +82,8 @@ __decorate([
 ], ProfileController.prototype, "deleteAccount", null);
 exports.ProfileController = ProfileController = __decorate([
     (0, common_1.Controller)('profile'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('student'),
     __metadata("design:paramtypes", [profile_service_1.ProfileService])
 ], ProfileController);
 //# sourceMappingURL=profile.controller.js.map

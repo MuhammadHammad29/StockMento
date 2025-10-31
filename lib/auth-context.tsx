@@ -26,9 +26,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(authUser)
     saveToStorage(STORAGE_KEYS.USER, authUser)
 
-    if (isBrowser() && tokens?.accessToken) {
-      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken)
-      // Note: Refresh token is now stored in HttpOnly cookie by backend
+    if (isBrowser()) {
+      localStorage.setItem(STORAGE_KEYS.SESSION_ROLE, 'student')
+      localStorage.removeItem(STORAGE_KEYS.ADMIN_ACCESS_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.ADMIN_USER)
+
+      if (tokens?.accessToken) {
+        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken)
+        // Note: Refresh token is now stored in HttpOnly cookie by backend
+      }
     }
   }, [])
 
@@ -44,6 +50,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     if (isBrowser()) {
       localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.SESSION_ROLE)
       // Note: Refresh token is in HttpOnly cookie, cleared by backend on logout
     }
   }, [])
@@ -53,6 +60,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const restoreSession = useCallback(async () => {
     if (!isBrowser()) {
+      setLoading(false)
+      return
+    }
+
+    const sessionRole = localStorage.getItem(STORAGE_KEYS.SESSION_ROLE)
+
+    if (sessionRole && sessionRole !== 'student') {
       setLoading(false)
       return
     }

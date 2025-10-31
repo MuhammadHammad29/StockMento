@@ -14,10 +14,13 @@ import { ProfileService } from './profile.service';
 import { UpdatePasswordDto, UpdateProfileDto, DeleteAccountDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import type { JwtPayload } from '../auth/auth.types';
 
 @Controller('profile')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('student')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 

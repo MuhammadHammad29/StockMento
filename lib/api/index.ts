@@ -1,4 +1,4 @@
-﻿// API service functions ready for NestJS backend integration
+// API service functions ready for NestJS backend integration
 // These functions will replace the mock data calls when backend is implemented
 
 import { Course, Lesson, User, UserProgress, AuthUser, ProfileDetails, UpdateProfilePayload, DeleteAccountPayload } from '../types'
@@ -10,7 +10,7 @@ type AuthSuccessResponse = {
   user: AuthUser
   tokens: {
     accessToken: string
-    refreshToken: string
+    refreshToken?: string
   }
 }
 
@@ -29,6 +29,20 @@ const isBrowser = typeof window !== 'undefined'
 // Track if a token refresh is already in progress to avoid multiple simultaneous refresh attempts
 let isRefreshing = false
 let failedQueue: Array<{ resolve: (value?: unknown) => void; reject: (reason?: unknown) => void }> = []
+
+const getStoredAccessToken = (): string | null => {
+  if (!isBrowser) {
+    return null
+  }
+
+  const sessionRole = localStorage.getItem(STORAGE_KEYS.SESSION_ROLE)
+
+  if (sessionRole === 'admin') {
+    return localStorage.getItem(STORAGE_KEYS.ADMIN_ACCESS_TOKEN)
+  }
+
+  return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
+}
 
 const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue.forEach(prom => {
@@ -57,10 +71,20 @@ async function refreshAccessToken(): Promise<string> {
   }
 
   const data = await response.json() as AuthSuccessResponse
-  
+
   // Store only the access token (refresh token is in HttpOnly cookie)
   if (isBrowser) {
-    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.tokens.accessToken)
+    if (data.user.role === 'admin') {
+      localStorage.setItem(STORAGE_KEYS.SESSION_ROLE, 'admin')
+      localStorage.setItem(STORAGE_KEYS.ADMIN_ACCESS_TOKEN, data.tokens.accessToken)
+      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.USER)
+    } else {
+      localStorage.setItem(STORAGE_KEYS.SESSION_ROLE, 'student')
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.tokens.accessToken)
+      localStorage.removeItem(STORAGE_KEYS.ADMIN_ACCESS_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.ADMIN_USER)
+    }
   }
 
   return data.tokens.accessToken
@@ -75,7 +99,7 @@ function isAuthenticationEndpoint(endpoint: string): boolean {
     '/auth/login',           // User login - 401 means invalid credentials
     '/auth/register',        // User registration - 401 means validation error
     '/auth/refresh',         // Token refresh - 401 means refresh token invalid (prevents infinite loop)
-    '/admin/auth/login',     // Admin login - 401 means invalid credentials
+    '/auth/admin/login',     // Admin login - 401 means invalid credentials
   ]
   
   return authEndpoints.some(authEndpoint => endpoint === authEndpoint)
@@ -93,7 +117,14 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   if (isBrowser) {
-    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || localStorage.getItem('admin_token')
+    let token = getStoredAccessToken()
+
+    if (!token) {
+      token =
+        localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ??
+        localStorage.getItem(STORAGE_KEYS.ADMIN_ACCESS_TOKEN)
+    }
+
     if (token) {
       requestHeaders.set('Authorization', `Bearer ${token}`)
     }
@@ -115,7 +146,7 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
         failedQueue.push({ resolve, reject })
       }).then(() => {
         // Retry with new token
-        const newToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
+        const newToken = getStoredAccessToken() ?? localStorage.getItem(STORAGE_KEYS.ADMIN_ACCESS_TOKEN)
         if (newToken) {
           requestHeaders.set('Authorization', `Bearer ${newToken}`)
         }
@@ -160,9 +191,20 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
       processQueue(refreshError as Error, null)
       // Clear tokens and redirect to login
       if (isBrowser) {
+        const sessionRole = localStorage.getItem(STORAGE_KEYS.SESSION_ROLE)
+
         localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
-        // No need to remove refresh token from localStorage (it's in HttpOnly cookie)
-        window.location.href = '/signin'
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_ACCESS_TOKEN)
+        localStorage.removeItem(STORAGE_KEYS.USER)
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_USER)
+
+        if (sessionRole === 'admin') {
+          window.location.href = '/admin/login'
+        } else {
+          window.location.href = '/signin'
+        }
+
+        localStorage.removeItem(STORAGE_KEYS.SESSION_ROLE)
       }
       throw refreshError
     } finally {
@@ -357,32 +399,18 @@ export const fileApi = {
 export const authApi = {
   // Admin login
   adminLogin: async (credentials: { email: string; password: string }): Promise<AuthSuccessResponse> => {
-    const response = await apiCall<AuthSuccessResponse>('/auth/admin/login', {
+    return apiCall<AuthSuccessResponse>('/auth/admin/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     })
-    
-    // Store only access token (refresh token is in HttpOnly cookie)
-    if (isBrowser && response.tokens) {
-      localStorage.setItem('admin_token', response.tokens.accessToken)
-    }
-    
-    return response
   },
 
   // User login
   userLogin: async (credentials: { email: string; password: string }): Promise<AuthSuccessResponse> => {
-    const response = await apiCall<AuthSuccessResponse>('/auth/login', {
+    return apiCall<AuthSuccessResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     })
-    
-    // Store only access token (refresh token is in HttpOnly cookie)
-    if (isBrowser && response.tokens) {
-      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.tokens.accessToken)
-    }
-    
-    return response
   },
 
   // User registration
@@ -403,21 +431,14 @@ export const authApi = {
 
   // Verify email with code and complete registration
   verifyEmail: async (payload: { email: string; code: string }): Promise<AuthSuccessResponse> => {
-    const response = await apiCall<AuthSuccessResponse>('/auth/verification/confirm', {
+    return apiCall<AuthSuccessResponse>('/auth/verification/confirm', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
-    
-    // Store only access token after successful verification (refresh token is in HttpOnly cookie)
-    if (isBrowser && response.tokens) {
-      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.tokens.accessToken)
-    }
-    
-    return response
   },
 
   // Refresh token
-  refreshToken: async (refreshToken: string): Promise<AuthSuccessResponse> => {
+  refreshToken: async (refreshToken?: string): Promise<AuthSuccessResponse> => {
     return apiCall<AuthSuccessResponse>('/auth/refresh', {
       method: 'POST',
       body: JSON.stringify({ refreshToken }),
@@ -426,17 +447,9 @@ export const authApi = {
 
   // Logout
   logout: async (): Promise<MessageResponse> => {
-    const response = await apiCall<MessageResponse>('/auth/logout', {
+    return apiCall<MessageResponse>('/auth/logout', {
       method: 'POST',
     })
-    
-    // Clear only access tokens (refresh token is in HttpOnly cookie and cleared by backend)
-    if (isBrowser) {
-      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
-      localStorage.removeItem('admin_token')
-    }
-    
-    return response
   },
 
   // Password reset request
@@ -526,6 +539,8 @@ export const api = {
 }
 
 export default api
+
+
 
 
 

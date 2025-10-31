@@ -1,6 +1,6 @@
 import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, SendVerificationDto, VerifyEmailDto, RequestPasswordResetDto, ConfirmPasswordResetDto, RefreshTokenDto } from './dto';
+import { RegisterDto, LoginDto, AdminLoginDto, SendVerificationDto, VerifyEmailDto, RequestPasswordResetDto, ConfirmPasswordResetDto, RefreshTokenDto } from './dto';
 import { ConfigService } from '@nestjs/config';
 import type { JwtPayload } from './auth.types';
 export declare class AuthController {
@@ -22,6 +22,12 @@ export declare class AuthController {
         };
     }>;
     login(dto: LoginDto, res: Response): Promise<{
+        user: import("./interfaces/auth-user.interface").AuthUser;
+        tokens: {
+            accessToken: string;
+        };
+    }>;
+    adminLogin(dto: AdminLoginDto, res: Response): Promise<{
         user: import("./interfaces/auth-user.interface").AuthUser;
         tokens: {
             accessToken: string;

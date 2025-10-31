@@ -1,95 +1,136 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-
-interface AdminUser {
-  email: string
-  role: string
-  name: string
-}
+import { authApi } from '@/lib/api'
+import { STORAGE_KEYS, saveToStorage, loadFromStorage, removeFromStorage } from '@/lib/data-utils'
+import type { AuthUser } from '@/lib/types'
 
 interface AdminAuthContextType {
-  adminUser: AdminUser | null
+  adminUser: AuthUser | null
   isAdminAuthenticated: boolean
-  adminLogin: (user: AdminUser) => void
-  adminLogout: () => void
+  adminLogin: (credentials: { email: string; password: string }) => Promise<void>
+  adminLogout: () => Promise<void>
   isLoading: boolean
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined)
 
+const clearAdminStorage = () => {
+  removeFromStorage(STORAGE_KEYS.ADMIN_USER)
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(STORAGE_KEYS.ADMIN_ACCESS_TOKEN)
+    const sessionRole = localStorage.getItem(STORAGE_KEYS.SESSION_ROLE)
+    if (sessionRole === 'admin') {
+      localStorage.removeItem(STORAGE_KEYS.SESSION_ROLE)
+    }
+  }
+}
+
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null)
+  const [adminUser, setAdminUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
 
   useEffect(() => {
-    // Check for existing admin session on mount
-    const checkAdminAuth = () => {
-      try {
-        const isAuthenticated = localStorage.getItem("admin_authenticated") === "true"
-        const storedUser = localStorage.getItem("admin_user")
-        
-        if (isAuthenticated && storedUser) {
-          const user = JSON.parse(storedUser)
-          setAdminUser(user)
-        }
-      } catch (error) {
-        console.error("Error checking admin auth:", error)
-        // Clear invalid session
-        localStorage.removeItem("admin_authenticated")
-        localStorage.removeItem("admin_user")
-      }
+    if (typeof window === 'undefined') {
       setIsLoading(false)
+      return
     }
 
-    checkAdminAuth()
+    const initialize = async () => {
+      try {
+        const sessionRole = localStorage.getItem(STORAGE_KEYS.SESSION_ROLE)
+        const adminToken = localStorage.getItem(STORAGE_KEYS.ADMIN_ACCESS_TOKEN)
+
+        if (sessionRole !== 'admin' || !adminToken) {
+          clearAdminStorage()
+          setAdminUser(null)
+          return
+        }
+
+        const cachedAdmin = loadFromStorage<AuthUser>(STORAGE_KEYS.ADMIN_USER)
+        if (cachedAdmin) {
+          setAdminUser(cachedAdmin)
+          return
+        }
+
+        const current = await authApi.me()
+        if (current.role !== 'admin') {
+          clearAdminStorage()
+          setAdminUser(null)
+          return
+        }
+
+        setAdminUser(current)
+        saveToStorage(STORAGE_KEYS.ADMIN_USER, current)
+      } catch (error) {
+        console.error('Failed to restore admin session:', error)
+        clearAdminStorage()
+        setAdminUser(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    void initialize()
   }, [])
 
   useEffect(() => {
-    // Redirect logic based on authentication state and current path
-    if (!isLoading) {
-      const isAdminRoute = pathname.startsWith('/admin')
-      const isLoginPage = pathname === '/admin/login'
-      
-      if (isAdminRoute && !isLoginPage && !adminUser) {
-        // User is on admin route but not authenticated, redirect to login
-        router.push('/admin/login')
-      } else if (isLoginPage && adminUser) {
-        // User is authenticated but on login page, redirect to dashboard
-        router.push('/admin')
-      }
+    if (isLoading) return
+
+    const isAdminRoute = pathname.startsWith('/admin')
+    const isLoginPage = pathname === '/admin/login'
+
+    if (isAdminRoute && !isLoginPage && !adminUser) {
+      router.push('/admin/login')
+    } else if (isLoginPage && adminUser) {
+      router.push('/admin')
     }
   }, [adminUser, pathname, router, isLoading])
 
-  const adminLogin = (user: AdminUser) => {
-    setAdminUser(user)
-    localStorage.setItem("admin_authenticated", "true")
-    localStorage.setItem("admin_user", JSON.stringify(user))
-  }
+  const adminLogin = useCallback(async (credentials: { email: string; password: string }) => {
+    try {
+      setIsLoading(true)
+      const { user, tokens } = await authApi.adminLogin(credentials)
 
-  const adminLogout = () => {
-    setAdminUser(null)
-    localStorage.removeItem("admin_authenticated")
-    localStorage.removeItem("admin_user")
-    router.push('/admin/login')
-  }
+      setAdminUser(user)
+      saveToStorage(STORAGE_KEYS.ADMIN_USER, user)
 
-  const value = {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEYS.SESSION_ROLE, 'admin')
+        localStorage.setItem(STORAGE_KEYS.ADMIN_ACCESS_TOKEN, tokens.accessToken)
+        // Clear any student session tokens to avoid conflicts
+        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
+        removeFromStorage(STORAGE_KEYS.USER)
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  const adminLogout = useCallback(async () => {
+    try {
+      await authApi.logout()
+    } catch (error) {
+      console.warn('Admin logout failed:', error)
+    } finally {
+      clearAdminStorage()
+      setAdminUser(null)
+      router.push('/admin/login')
+    }
+  }, [router])
+
+  const value: AdminAuthContextType = {
     adminUser,
     isAdminAuthenticated: !!adminUser,
     adminLogin,
     adminLogout,
-    isLoading
+    isLoading,
   }
 
-  return (
-    <AdminAuthContext.Provider value={value}>
-      {children}
-    </AdminAuthContext.Provider>
-  )
+  return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>
 }
 
 export function useAdminAuth() {

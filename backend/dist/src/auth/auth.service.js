@@ -157,7 +157,7 @@ let AuthService = AuthService_1 = class AuthService {
                     used: true,
                 },
             });
-            const tokens = this.generateTokens(updatedIdentity);
+            const tokens = this.generateTokens(updatedIdentity, 'student');
             return {
                 user: this.mapToAuthUser(updatedIdentity),
                 tokens,
@@ -192,7 +192,7 @@ let AuthService = AuthService_1 = class AuthService {
                 where: { id: identity.id },
                 data: { lastLoginAt: new Date() },
             });
-            const tokens = this.generateTokens(identity);
+            const tokens = this.generateTokens(identity, 'student');
             return {
                 user: this.mapToAuthUser(identity),
                 tokens,
@@ -206,6 +206,39 @@ let AuthService = AuthService_1 = class AuthService {
             throw new common_1.InternalServerErrorException('An error occurred during login. Please try again later.');
         }
     }
+    async loginAdmin(dto) {
+        try {
+            const adminIdentity = await this.prisma.adminIdentity.findUnique({
+                where: { email: dto.email },
+            });
+            if (!adminIdentity) {
+                throw new common_1.UnauthorizedException('Invalid email or password. Please check your credentials and try again.');
+            }
+            const isValidPassword = await (0, bcrypt_1.compare)(dto.password, adminIdentity.passwordHash);
+            if (!isValidPassword) {
+                throw new common_1.UnauthorizedException('Invalid email or password. Please check your credentials and try again.');
+            }
+            if (adminIdentity.status !== client_1.AdminStatus.active) {
+                throw new common_1.UnauthorizedException('This administrator account is disabled. Contact support for assistance.');
+            }
+            await this.prisma.adminIdentity.update({
+                where: { id: adminIdentity.id },
+                data: { lastLoginAt: new Date() },
+            });
+            const tokens = this.generateTokens(adminIdentity, 'admin');
+            return {
+                user: this.mapAdminToAuthUser(adminIdentity),
+                tokens,
+            };
+        }
+        catch (error) {
+            if (error instanceof common_1.UnauthorizedException) {
+                throw error;
+            }
+            this.logger.error('Error during admin login', error instanceof Error ? error.stack : undefined);
+            throw new common_1.InternalServerErrorException('An error occurred during login. Please try again later.');
+        }
+    }
     async refreshTokens(dto) {
         try {
             if (!dto.refreshToken) {
@@ -214,6 +247,19 @@ let AuthService = AuthService_1 = class AuthService {
             const payload = await this.jwtService.verifyAsync(dto.refreshToken, {
                 secret: this.configService.getOrThrow('JWT_REFRESH_SECRET'),
             });
+            if (payload.role === 'admin') {
+                const adminIdentity = await this.prisma.adminIdentity.findUnique({
+                    where: { id: payload.sub },
+                });
+                if (!adminIdentity || adminIdentity.status !== client_1.AdminStatus.active) {
+                    throw new common_1.UnauthorizedException();
+                }
+                const tokens = this.generateTokens(adminIdentity, 'admin');
+                return {
+                    user: this.mapAdminToAuthUser(adminIdentity),
+                    tokens,
+                };
+            }
             const identity = await this.prisma.identity.findUnique({
                 where: { id: payload.sub },
                 include: { profile: true },
@@ -221,7 +267,7 @@ let AuthService = AuthService_1 = class AuthService {
             if (!identity || identity.status !== client_1.IdentityStatus.active) {
                 throw new common_1.UnauthorizedException();
             }
-            const tokens = this.generateTokens(identity);
+            const tokens = this.generateTokens(identity, 'student');
             return {
                 user: this.mapToAuthUser(identity),
                 tokens,
@@ -301,20 +347,30 @@ let AuthService = AuthService_1 = class AuthService {
         ]);
         return { message: 'Password reset successfully.' };
     }
-    async getCurrentUser(userId) {
+    async getCurrentUser(payload) {
+        if (payload.role === 'admin') {
+            const adminIdentity = await this.prisma.adminIdentity.findUnique({
+                where: { id: payload.sub },
+            });
+            if (!adminIdentity || adminIdentity.status !== client_1.AdminStatus.active) {
+                throw new common_1.UnauthorizedException();
+            }
+            return this.mapAdminToAuthUser(adminIdentity);
+        }
         const identity = await this.prisma.identity.findUnique({
-            where: { id: userId },
+            where: { id: payload.sub },
             include: { profile: true },
         });
-        if (!identity) {
+        if (!identity || identity.status !== client_1.IdentityStatus.active) {
             throw new common_1.UnauthorizedException();
         }
         return this.mapToAuthUser(identity);
     }
-    generateTokens(identity) {
+    generateTokens(identity, role) {
         const payload = {
             sub: identity.id,
             email: identity.email,
+            role,
         };
         const accessToken = this.jwtService.sign(payload, {
             secret: this.configService.getOrThrow('JWT_ACCESS_SECRET'),
@@ -367,6 +423,19 @@ let AuthService = AuthService_1 = class AuthService {
             avatarId: identity.profile?.avatarUrl ?? null,
             role: 'student',
             status: identity.status,
+        };
+    }
+    mapAdminToAuthUser(admin) {
+        return {
+            id: admin.id,
+            email: admin.email,
+            firstName: admin.name,
+            lastName: '',
+            avatarId: null,
+            role: 'admin',
+            status: admin.status === client_1.AdminStatus.active
+                ? client_1.IdentityStatus.active
+                : client_1.IdentityStatus.disabled,
         };
     }
 };

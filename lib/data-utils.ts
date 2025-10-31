@@ -4,7 +4,9 @@ import { Course, UserProgress, CourseFilter } from './types';
 export const STORAGE_KEYS = {
   USER: 'psx_user',
   ACCESS_TOKEN: 'user_token',
-  REFRESH_TOKEN: 'user_refresh_token',
+  ADMIN_USER: 'psx_admin_user',
+  ADMIN_ACCESS_TOKEN: 'admin_token',
+  SESSION_ROLE: 'psx_session_role',
   PROGRESS: 'psx_progress',
   COURSES: 'psx_courses',
   PREFERENCES: 'psx_preferences',

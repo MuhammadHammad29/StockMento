@@ -1,5 +1,6 @@
 export * from './register.dto';
 export * from './login.dto';
+export * from './admin-login.dto';
 export * from './send-verification.dto';
 export * from './verify-email.dto';
 export * from './request-password-reset.dto';
