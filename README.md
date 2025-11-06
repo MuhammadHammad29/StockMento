@@ -1,235 +1,46 @@
-# StockMento - Pakistan Stock Exchange Learning Platform
+# StockMento Monorepo
 
-## 📚 Overview
+This repository hosts two separate apps:
 
-StockMento is a comprehensive online learning platform designed specifically for Pakistani investors who want to master the Pakistan Stock Exchange (PSX). The platform offers interactive courses, video lessons, and progress tracking to help users develop their trading and investment skills.
+- `frontend/` – Next.js UI (all previous `app/`, `components/`, `lib/`, etc.).
+- `backend/` – NestJS API with Prisma, mailer, and seeding logic.
 
-## 🚀 Features
-
-### Core Learning Features
-- **Interactive Courses**: Structured learning paths for different skill levels
-- **Video Lessons**: Expert-led video content covering trading strategies
-- **Progress Tracking**: Detailed learning analytics and personalized insights
-- **Quiz System**: Knowledge assessment and skill validation
-
-### User Management
-- **Authentication System**: Secure login/signup with persistent sessions
-- **User Profiles**: Customizable profiles with progress tracking
-- **Role-based Access**: Student and admin user roles
-- **Dashboard**: Personalized learning dashboard
-
-### Admin Features
-- **Content Management**: Create and edit courses, lessons, and quizzes
-- **User Management**: Monitor user activity and progress
-- **Analytics**: Platform usage and engagement metrics
-- **Course Publishing**: Control course visibility and availability
-
-### Technical Features
-- **Dark/Light Mode**: Theme toggle with system preference support
-- **Responsive Design**: Mobile-first approach with Tailwind CSS
-- **Type Safety**: Full TypeScript implementation
-- **Component Library**: Radix UI components with custom styling
-
-## 🛠️ Technology Stack
-
-### Frontend
-- **Framework**: Next.js 14.2.33 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Components**: Radix UI
-- **Icons**: Lucide React
-- **Fonts**: Geist Sans & Mono
-- **Theme**: next-themes
-- **Toast**: Sonner
-
-### Backend (Planned)
-- **Framework**: NestJS
-- **Database**: PostgreSQL
-- **Authentication**: JWT tokens
-- **API**: RESTful endpoints
-
-## 📁 Project Structure
-
-```
-app/
-├── admin/              # Admin dashboard and management
-│   ├── courses/        # Course management interface
-│   ├── users/         # User management
-│   ├── analytics/     # Platform analytics
-│   └── login/         # Admin authentication
-├── courses/           # Course listing and details
-├── dashboard/         # User dashboard
-├── signin/            # User authentication
-├── signup/            # User registration
-├── progress/          # Progress tracking
-└── layout.tsx         # Root layout with providers
-
-components/
-├── ui/                # Reusable UI components
-├── theme-provider.tsx # Theme management
-└── theme-toggle.tsx   # Theme switcher
-
-lib/
-├── types.ts           # TypeScript type definitions
-├── auth-context.tsx   # Authentication context
-├── mock-data.ts       # Development data
-├── data-utils.ts      # Data manipulation utilities
-└── utils.ts           # General utility functions
-```
-
-## 🎯 Key Pages
-
-### Public Pages
-- **Landing Page** (`/`): Marketing page with features and CTA
-- **Courses** (`/courses`): Browse available courses with filtering
-- **Sign In** (`/signin`): User authentication
-- **Sign Up** (`/signup`): User registration
-
-### Authenticated Pages
-- **Dashboard** (`/dashboard`): Personal learning overview
-- **Course Details** (`/courses/[id]`): Individual course content
-- **Lessons** (`/courses/[id]/lessons/[lessonId]`): Lesson content
-- **Progress** (`/progress`): Learning progress tracking
-
-### Admin Pages
-- **Admin Dashboard** (`/admin`): Administrative overview
-- **Course Management** (`/admin/courses`): Create/edit courses
-- **Analytics** (`/admin/analytics`): Platform metrics
-
-## 💻 Development
-
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- Git
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd psx-learning-app1
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Run development server**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open in browser**
-   Navigate to `http://localhost:3000`
-
-### Available Scripts
+## Quick Start
 
 ```bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run start    # Start production server
-npm run lint     # Run ESLint
+# start Postgres (example container)
+docker start stockmento-db
+
+# Backend API
+cd backend
+npm install           # first time only
+npm run prisma:migrate
+npm run prisma:seed
+npm run start:dev
+
+# Frontend in a new terminal
+cd frontend
+npm install           # first time only
+npm run dev
 ```
 
-## 🔧 Configuration
+## Useful Scripts
 
-### Environment Variables
-Create a `.env.local` file in the root directory:
+| Command | Description |
+| --- | --- |
+| `npm run prisma:generate` (backend) | Regenerate Prisma client |
+| `npm run prisma:deploy` (backend) | Apply migrations in production |
+| `npm run prisma:studio` (backend) | Inspect DB via Prisma Studio |
+| `npm run lint` (frontend or backend) | Run ESLint in each app |
 
-```env
-# Add environment variables here when backend is integrated
-NEXT_PUBLIC_API_URL=http://localhost:3001
+## Repo Layout
+
+```
+frontend/     # Next.js project (moved from repo root)
+backend/      # NestJS API + Prisma schema/seed
+docs/         # Reference docs (email setup, security, etc.)
+db/           # Optional docker-compose + legacy SQL (reference only)
+.vscode/      # Workspace settings
 ```
 
-### Theme Configuration
-The app supports automatic dark/light mode switching based on system preferences. Users can manually toggle themes using the floating button.
-
-## 📊 Data Structure
-
-### User Types
-- **Student**: Regular learners with access to courses
-- **Admin**: Platform administrators with management access
-
-### Content Types
-- **Courses**: Main learning containers with metadata
-- **Lessons**: Individual learning units (text, video, quiz)
-- **Quizzes**: Assessment tools with multiple choice questions
-
-### Progress Tracking
-- **Enrollment**: User course registrations
-- **Completion**: Lesson and course completion status
-- **Scores**: Quiz results and performance metrics
-
-## 🚀 Deployment
-
-### Production Build
-```bash
-npm run build
-npm run start
-```
-
-## 🔄 Backend Integration
-
-The frontend is prepared for backend integration with:
-- API service layer (`lib/api/`)
-- Database schema documentation (`DATABASE_SCHEMA.md`)
-- Admin interface specifications (`ADMIN_INTERFACE.md`)
-- TypeScript types for all entities
-
-### Backend Setup (When Ready)
-1. Create NestJS backend using provided schema
-2. Set up PostgreSQL database
-3. Configure JWT authentication
-4. Update API endpoints in frontend
-5. Replace mock data with API calls
-
-## 🎨 Design System
-
-### Color Scheme
-- **Primary**: Emerald (trading/growth theme)
-- **Secondary**: Blue, Purple, Amber for accents
-- **Neutral**: Slate colors for text and backgrounds
-
-### Typography
-- **Headings**: Geist Sans (bold, modern)
-- **Body**: Geist Sans (readable, clean)
-- **Code**: Geist Mono (monospace)
-
-### Components
-All components are built with:
-- Accessibility in mind
-- Dark mode support
-- Responsive design
-- Type safety
-
-## 📝 Contributing
-
-### Code Style
-- Use TypeScript for type safety
-- Follow React best practices
-- Use Tailwind CSS for styling
-- Add comments for complex logic
-
-### Git Workflow
-1. Create feature branches from main
-2. Use descriptive commit messages
-3. Test changes before pushing
-4. Create pull requests for review
-
-## 📄 License
-
-This project is proprietary software for StockMento platform.
-
-## 📞 Support
-
-For development questions or issues, please refer to:
-- TypeScript documentation for type issues
-- Next.js documentation for framework questions
-- Tailwind CSS documentation for styling
-- Radix UI documentation for components
-
----
-
-**StockMento** - Empowering Pakistani investors through comprehensive stock market education.
+The old top-level files (`app/`, `components/`, etc.) now live inside `frontend/`. Update any personal scripts/aliases to run commands from the new directories.

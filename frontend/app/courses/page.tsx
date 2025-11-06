@@ -147,7 +147,7 @@ export default function CoursesPage() {
                 <select
                   value={levelFilter}
                   onChange={(e) => setLevelFilter(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-background text-foreground dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="All">All Levels</option>
                   <option value="Beginner">Beginner</option>
@@ -158,7 +158,7 @@ export default function CoursesPage() {
                 <select
                   value={durationFilter}
                   onChange={(e) => setDurationFilter(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-background text-foreground dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="All">Any Duration</option>
                   <option value="Short">Short (&lt;2h)</option>
