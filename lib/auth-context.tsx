@@ -244,51 +244,5 @@ export function useAuth(): AuthContextType {
   return context
 }
 
-export function useAuthGuard(): boolean {
-  const { user } = useAuth()
-  return !!user
-}
-
-export function useRole(role: "student" | "admin"): boolean {
-  const { user } = useAuth()
-  return user?.role === role
-}
-
-export function withAuth<P extends object>(
-  Component: React.ComponentType<P>,
-  requiredRole?: "student" | "admin"
-) {
-  return function AuthenticatedComponent(props: P) {
-    const { user, loading } = useAuth()
-
-    if (loading) {
-      return (
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-500"></div>
-        </div>
-      )
-    }
-
-    if (!user) {
-      if (isBrowser()) {
-        window.location.href = "/signin"
-      }
-      return null
-    }
-
-    if (requiredRole && user.role !== requiredRole) {
-      return (
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-4">Access Denied</h1>
-            <p className="text-muted-foreground">You don&apos;t have permission to access this page.</p>
-          </div>
-        </div>
-      )
-    }
-
-    return <Component {...props} />
-  }
-}
 
 

@@ -1,13 +1,6 @@
 /**
  * StockMento Landing Page
- * 
- * Main marketing page for t            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="border-border/40 text-muted-foreground hover:text-emerald-600 hover:border-emerald-600/20">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </SheetTrigger>stan Stock Exchange learning platform.
+ * Main marketing page for the StockMento Stock Exchange learning platform.
  * Features hero section, features overview, courses preview, and footer.
  * Includes dark mode support and responsive design.
  */
