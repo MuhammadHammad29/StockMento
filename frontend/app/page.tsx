@@ -13,8 +13,18 @@ import { Badge } from "@/components/ui/badge"
 import { BookOpen, Play, Target, Users, Shield, Clock } from "lucide-react"
 import Link from "next/link"
 import Logo from "@/components/ui/logo"
+import { useState, useRef, useEffect } from "react"
 
 export default function HomePage() {
+  
+  const [showDemo, setShowDemo] = useState(false)
+  const demoRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (showDemo && demoRef.current) {
+      demoRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [showDemo])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
@@ -97,22 +107,39 @@ export default function HomePage() {
           {/* Call-to-Action Buttons */}
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Link href="/signup">
-              <Button size="lg" className="px-8 text-white">
+              <Button size="lg" className="w-full sm:w-auto px-8 text-white">
                 Start Learning Free
               </Button>
             </Link>
-            <Link href="#demo">
+            <div className="w-full sm:w-auto">
               <Button
                 size="lg"
                 variant="outline"
-                className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+                className="w-full border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+                onClick={() => setShowDemo((s) => !s)}
               >
                 <Play className="mr-2 h-5 w-5" />
-                Watch Demo
+                {showDemo ? 'Hide Demo' : 'Watch Demo'}
               </Button>
-            </Link>
+            </div>
           </div>
         </div>
+      </section>
+      {/* Demo Video - appears when Watch Demo clicked */}
+      <section id="demo" ref={demoRef} className="px-4 py-6 sm:px-6 lg:px-8">
+        {showDemo && (
+          <div className="mx-auto max-w-4xl">
+            <div className="aspect-video w-full overflow-hidden rounded-md shadow-lg">
+              <iframe
+                src="https://www.youtube.com/embed/N7QOM5ZUsDY"
+                title="StockMento Demo"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Stats Section */}

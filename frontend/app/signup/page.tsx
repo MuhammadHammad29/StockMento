@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Mail, Lock, User, Eye, EyeOff, Loader2, Camera } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { validateEmail } from "@/lib/data-utils"
@@ -38,7 +38,7 @@ export default function SignUpPage() {
     bio: ''
   })
   const [agreeToTerms, setAgreeToTerms] = useState(false)
-  const { signup, loading, user, logout } = useAuth()
+  const { signup, loading, user } = useAuth()
   const router = useRouter()
 
   const handleInputChange = (field: string, value: string) => {
@@ -49,15 +49,6 @@ export default function SignUpPage() {
     setSelectedAvatarId(avatarId)
     setShowAvatarPicker(false)
     toast.success('Avatar selected!')
-  }
-
-  const handleLogoutToSwitch = async () => {
-    try {
-      await logout()
-      toast.success('Signed out. You can now create a different account.')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to sign out')
-    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,30 +96,11 @@ export default function SignUpPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to create account')
     }
   }
-  if (!loading && user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <Card className="border border-border/60 bg-card/95 shadow-xl dark:shadow-none">
-            <CardHeader className="space-y-2 text-center">
-              <CardTitle className="text-2xl font-bold">Already signed in</CardTitle>
-              <CardDescription>
-                You&apos;re currently signed in as <strong>{user.email}</strong>. Please sign out before creating another account.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button className="w-full" onClick={handleLogoutToSwitch}>
-                Sign out to create a new account
-              </Button>
-              <Button variant="outline" className="w-full" onClick={() => router.push('/dashboard')}>
-                Go to dashboard
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace('/dashboard')
+    }
+  }, [loading, user, router])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
