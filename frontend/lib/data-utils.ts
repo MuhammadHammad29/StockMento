@@ -1,6 +1,12 @@
+/**
+ * Shared data utilities for the StockMento frontend.
+ *
+ * Covers storage key definitions, progress math, formatting helpers,
+ * course filtering/sorting, localStorage guards, validation, and analytics.
+ */
 import { Course, UserProgress, CourseFilter } from './types';
 
-// Local storage keys
+// Canonical localStorage keys used across student/admin contexts.
 export const STORAGE_KEYS = {
   USER: 'psx_user',
   ACCESS_TOKEN: 'user_token',
@@ -12,7 +18,9 @@ export const STORAGE_KEYS = {
   PREFERENCES: 'psx_preferences',
 } as const;
 
+// ----------------------------------------
 // Progress calculation utilities
+// ----------------------------------------
 export const calculateCourseProgress = (
   courseId: string,
   completedLessons: string[],
@@ -40,7 +48,9 @@ export const getCompletionRate = (completed: number, total: number): number => {
   return total > 0 ? Math.round((completed / total) * 100) : 0;
 };
 
+// ----------------------------------------
 // Time formatting utilities
+// ----------------------------------------
 export const formatDuration = (minutes: number): string => {
   if (minutes < 60) {
     return `${minutes} min`;
@@ -81,7 +91,9 @@ export const formatTimeAgo = (dateInput: string | Date): string => {
   }
 };
 
-// Course filtering and searching utilities
+// ----------------------------------------
+// Course filtering and sorting
+// ----------------------------------------
 export const filterCourses = (courses: Course[], filters: CourseFilter): Course[] => {
   return courses.filter(course => {
     // Level filter
@@ -134,7 +146,9 @@ export const sortCourses = (
   });
 };
 
-// Local storage utilities
+// ----------------------------------------
+// Safe localStorage helpers
+// ----------------------------------------
 export const saveToStorage = <T>(key: string, data: T): void => {
   try {
     localStorage.setItem(key, JSON.stringify(data));
@@ -161,7 +175,9 @@ export const removeFromStorage = (key: string): void => {
   }
 };
 
-// Progress tracking utilities
+// ----------------------------------------
+// Progress tracking helpers
+// ----------------------------------------
 export const markLessonComplete = (
   userProgress: UserProgress[],
   userId: string,
@@ -232,7 +248,9 @@ export const markQuizComplete = (
   return updatedProgress;
 };
 
-// Validation utilities
+// ----------------------------------------
+// Validation helpers
+// ----------------------------------------
 export const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
@@ -266,7 +284,9 @@ export const validatePassword = (password: string): {
   };
 };
 
-// URL utilities
+// ----------------------------------------
+// URL / slug helpers
+// ----------------------------------------
 export const generateSlug = (text: string): string => {
   return text
     .toLowerCase()
@@ -282,7 +302,9 @@ export const getYouTubeVideoId = (url: string): string | null => {
   return match ? match[1] : null;
 };
 
-// Analytics utilities
+// ----------------------------------------
+// Analytics aggregations
+// ----------------------------------------
 export const calculateAverageRating = (ratings: number[]): number => {
   if (ratings.length === 0) return 0;
   const sum = ratings.reduce((acc, rating) => acc + rating, 0);

@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
     try {
       await resetPassword(email)
       setIsSubmitted(true)
-      toast.success('Password reset instructions sent to your email')
+      toast.success('If an account exists with this email, a password reset link has been sent.')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to send reset email')
     }

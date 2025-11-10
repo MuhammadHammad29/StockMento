@@ -1,3 +1,7 @@
+/**
+ * Admin auth context.
+ * Separates admin sessions from student ones so /admin stays isolated.
+ */
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
@@ -6,6 +10,7 @@ import { authApi } from '@/lib/api'
 import { STORAGE_KEYS, saveToStorage, loadFromStorage, removeFromStorage } from '@/lib/data-utils'
 import type { AuthUser } from '@/lib/types'
 
+// What admin pages get from the context.
 interface AdminAuthContextType {
   adminUser: AuthUser | null
   isAdminAuthenticated: boolean
@@ -17,6 +22,7 @@ interface AdminAuthContextType {
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined)
 
+// Wipe everything related to the admin session.
 const clearAdminStorage = () => {
   removeFromStorage(STORAGE_KEYS.ADMIN_USER)
   if (typeof window !== 'undefined') {
@@ -35,6 +41,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
 
+  // When the provider mounts, try to load an admin session.
   useEffect(() => {
     if (typeof window === 'undefined') {
       setIsLoading(false)
@@ -79,6 +86,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     void initialize()
   }, [])
 
+  // Kick users back to /admin/login if they aren’t signed in.
   useEffect(() => {
     if (isLoading) {
       return
@@ -92,6 +100,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [adminUser, pathname, router, isLoading])
 
+  // Sign in as admin, cache the user/token, and clear student state.
   const adminLogin = useCallback(async (credentials: { email: string; password: string }) => {
     setIsAuthenticating(true)
 
@@ -127,6 +136,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Log out and clear local data even if the API call errors.
   const adminLogout = useCallback(async () => {
     try {
       await authApi.logout()

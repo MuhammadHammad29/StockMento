@@ -1,3 +1,7 @@
+/**
+ * Student auth context.
+ * Keeps track of learner login state across the app.
+ */
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react"
@@ -12,6 +16,7 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
+// Quick check before we poke window/localStorage.
 const isBrowser = () => typeof window !== "undefined"
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -19,9 +24,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  /**
-   * Persists the authenticated user and any tokens returned by the API.
-   */
+  // Save the user + tokens so refreshes stay logged in.
   const storeSession = useCallback((authUser: AuthUser, tokens?: AuthTokens) => {
     setUser(authUser)
     saveToStorage(STORAGE_KEYS.USER, authUser)
@@ -38,9 +41,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
-  /**
-   * Clears all locally cached auth state and tokens.
-   */
+  // Clear everything we cached for the student session.
   const clearSession = useCallback(() => {
     setUser(null)
     removeFromStorage(STORAGE_KEYS.USER)
@@ -55,9 +56,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
-  /**
-   * Runs on app mount to fetch the current user if tokens already exist.
-   */
+  // Try to restore a session when the app bootstraps.
   const restoreSession = useCallback(async () => {
     if (!isBrowser()) {
       setLoading(false)
@@ -99,9 +98,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     void restoreSession()
   }, [restoreSession])
 
-  /**
-   * Signs in the user and stores the returned session.
-   */
+  // Sign in with email/password and stash the session.
   const login = useCallback(
     async (credentials: LoginCredentials): Promise<void> => {
       setLoading(true)
@@ -117,9 +114,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [storeSession]
   )
 
-  /**
-   * Starts the signup flow; actual verification completes later.
-   */
+  // Create a new account (finalized via OTP later).
   const signup = useCallback(
     async (data: SignupData): Promise<void> => {
       setLoading(true)
@@ -141,9 +136,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     []
   )
 
-  /**
-   * Requests a verification code for the supplied email.
-   */
+  // Send or resend the verification code email.
   const sendVerificationCode = useCallback(async (email: string): Promise<void> => {
     try {
       await authApi.sendVerificationCode({ email })
@@ -152,9 +145,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
-  /**
-   * Confirms the OTP and stores the returned auth session.
-   */
+  // Verify the code and immediately sign the user in.
   const verifyEmail = useCallback(
     async (email: string, code: string): Promise<void> => {
       setLoading(true)
@@ -170,9 +161,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [storeSession]
   )
 
-  /**
-   * Starts the password reset flow (emails the reset link).
-   */
+  // Start the forgot password flow.
   const resetPassword = useCallback(async (email: string): Promise<void> => {
     setLoading(true)
     try {
@@ -184,9 +173,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
-  /**
-   * Refetches the authenticated user from the API and updates local storage.
-   */
+  // Re-fetch the user; drop the session if the token is bad.
   const refreshUser = useCallback(async (): Promise<AuthUser | null> => {
     if (!isBrowser()) {
       return null
@@ -207,9 +194,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [clearSession, storeSession])
 
-  /**
-   * Logs out the user and redirects to the sign-in screen.
-   */
+  // Try to log out, but always clear local state and redirect.
   const logout = useCallback(async (): Promise<void> => {
     try {
       await authApi.logout()
