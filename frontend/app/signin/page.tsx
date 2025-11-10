@@ -30,7 +30,7 @@ export default function SignInPage() {
   const [rememberMe, setRememberMe] = useState(false)
   
   // Auth context and routing
-  const { login, loading } = useAuth()
+  const { login, loading, user, logout } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const hasShownVerifiedToast = useRef(false)
@@ -42,6 +42,15 @@ export default function SignInPage() {
       hasShownVerifiedToast.current = true
     }
   }, [searchParams])
+
+  const handleLogoutToSwitch = async () => {
+    try {
+      await logout()
+      toast.success('Signed out. You can now log in with another account.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to sign out')
+    }
+  }
 
   // Handle form submission with validation
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,6 +76,31 @@ export default function SignInPage() {
 
       toast.error(message)
     }
+  }
+
+  if (!loading && user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card className="border border-border/60 bg-card/95 shadow-xl dark:shadow-none">
+            <CardHeader className="space-y-2 text-center">
+              <CardTitle className="text-2xl font-bold">Already signed in</CardTitle>
+              <CardDescription>
+                You&apos;re currently signed in as <strong>{user.email}</strong>. Please sign out before switching accounts.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button className="w-full" onClick={handleLogoutToSwitch}>
+                Sign out to switch accounts
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => router.push('/dashboard')}>
+                Go to dashboard
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (

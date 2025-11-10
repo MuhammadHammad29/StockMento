@@ -264,8 +264,8 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="bg-slate-900 px-4 py-12 text-white dark:bg-slate-950 dark:text-foreground sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="sm:col-span-2 lg:col-span-1">
+          <div className="grid gap-8 md:grid-cols-2">
+            <div>
               <div className="mb-4 flex items-center space-x-2">
                 <Logo size="sm" className="h-auto" />
               </div>
@@ -273,33 +273,21 @@ export default function HomePage() {
                 Pakistan&apos;s premier platform for stock market education and trading knowledge.
               </p>
             </div>
-            {[
-              {
-                title: "Courses",
-                items: ["PSX Basics", "Technical Analysis", "Risk Management", "Portfolio Building"],
-              },
-              {
-                title: "Support",
-                items: ["Help Center", "Contact Us", "Community", "FAQ"],
-              },
-              {
-                title: "Legal",
-                items: ["Privacy Policy", "Terms of Service", "Disclaimer"],
-              },
-            ].map((column) => (
-              <div key={column.title}>
-                <h3 className="mb-4 font-semibold text-white dark:text-foreground">{column.title}</h3>
-                <ul className="space-y-2 text-slate-300 dark:text-muted-foreground">
-                  {column.items.map((item) => (
-                    <li key={item}>
-                      <Link href="#" className="transition-colors hover:text-white dark:hover:text-foreground">
-                        {item}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            <div className="md:pl-16">
+              <h3 className="mb-4 font-semibold text-white dark:text-foreground">Courses</h3>
+              <ul className="space-y-2 text-slate-300 dark:text-muted-foreground">
+                {["PSX Basics", "Technical Analysis", "Risk Management", "Portfolio Building"].map((item) => (
+                  <li key={item}>
+                    <Link
+                      href="/signin"
+                      className="transition-colors hover:text-white dark:hover:text-foreground"
+                    >
+                      {item}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
           <div className="mt-8 border-t border-slate-700 dark:border-border/60 pt-8 text-center text-slate-400 dark:text-muted-foreground">
             <p>&copy; 2025 StockMento. All rights reserved.</p>
