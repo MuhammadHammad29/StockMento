@@ -10,7 +10,6 @@ import {
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import {
@@ -109,7 +108,6 @@ export class AuthController {
 
   @Post('admin/login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60 } })
   async adminLogin(
     @Body() dto: AdminLoginDto,
     @Res({ passthrough: true }) res: Response,
