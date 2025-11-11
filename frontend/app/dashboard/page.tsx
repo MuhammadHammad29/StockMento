@@ -107,7 +107,7 @@ export default function DashboardPage() {
           <Card className="border border-border/60 bg-card/90">
             <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6">
               <div>
-                <CardTitle className="text-xl sm:text-2xl font-semibold text-foreground">Welcome back, {user.firstName}</CardTitle>
+                <CardTitle className="text-xl sm:text-2xl font-semibold text-foreground">Welcome, {user.firstName}</CardTitle>
                 <CardDescription className="text-sm sm:text-base text-muted-foreground">
                   Track your progress and continue learning about the Pakistan Stock Exchange.
                 </CardDescription>

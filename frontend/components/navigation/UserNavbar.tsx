@@ -104,8 +104,8 @@ export default function UserNavbar({ className }: UserNavbarProps) {
     <BaseNavbar
       className={className}
       userInfo={{
-        name: user ? `${user.firstName} ${user.lastName}` : undefined,
-        avatar: user ? getAvatarPath(user.avatarId) : undefined,
+        name: user ? user.firstName : undefined,
+        avatar: user?.avatarId ? getAvatarPath(user.avatarId) : undefined,
         role: 'user'
       }}
       onLogout={logout}
