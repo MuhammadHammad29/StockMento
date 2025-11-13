@@ -82,7 +82,7 @@ export default function AdminNavbar({ className }: AdminNavbarProps) {
     <BaseNavbar
       className={className}
       userInfo={{
-        name: adminUser?.name,
+        name: adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : undefined,
         avatar: getAvatarPath('avatar_2'), // Using avatar_2 for admin
         role: 'admin'
       }}

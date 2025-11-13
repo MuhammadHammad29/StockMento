@@ -47,10 +47,10 @@ export default function RootLayout({
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}>
         {/* Theme Provider - Enables dark/light mode */}
         <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
+          attribute="class" // ← Adds "dark" class to <html>
+          defaultTheme="system" // ← Follows OS theme by default
+          enableSystem // ← Allows system preference
+          disableTransitionOnChange // ← No animation when switching
         >
           {/* Authentication Context Provider */}
           <AuthProvider>

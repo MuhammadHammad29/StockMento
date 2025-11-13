@@ -8,7 +8,7 @@ This repository hosts two separate apps:
 ## Quick Start
 
 ```bash
-# start Postgres (example container)
+# start Postgres 
 docker start stockmento-db
 
 # Backend API
@@ -36,11 +36,8 @@ npm run dev
 ## Repo Layout
 
 ```
-frontend/     # Next.js project (moved from repo root)
+frontend/     # Next.js project 
 backend/      # NestJS API + Prisma schema/seed
-docs/         # Reference docs (email setup, security, etc.)
-db/           # Optional docker-compose + legacy SQL (reference only)
-.vscode/      # Workspace settings
+
 ```
 
-The old top-level files (`app/`, `components/`, etc.) now live inside `frontend/`. Update any personal scripts/aliases to run commands from the new directories.
