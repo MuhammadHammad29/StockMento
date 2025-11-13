@@ -105,17 +105,33 @@ export default function DashboardPage() {
         <div className="space-y-4 sm:space-y-6">
           {/* Welcome Card with Quick Actions */}
           <Card className="border border-border/60 bg-card/90">
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 ">
               <div>
                 <CardTitle className="text-xl sm:text-2xl font-semibold text-foreground">Welcome, {user.firstName}</CardTitle>
                 <CardDescription className="text-sm sm:text-base text-muted-foreground">
                   Track your progress and continue learning about the Pakistan Stock Exchange.
                 </CardDescription>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs sm:text-sm">
-                  {activitySummary.totalCourses} active courses
-                </Badge>
+              <div className="flex flex-col sm:flex-row gap-2 items-center">
+                {/* Improved pill-style badge for active courses */}
+                {activitySummary.totalCourses > 0 ? (
+                  <Link href="/courses" className="inline-block">
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full px-3 py-1.5 text-sm sm:text-sm bg-emerald-100 text-emerald-800 dark:bg-emerald-700/20 dark:text-emerald-200 shadow-sm hover:opacity-95"
+                    >
+                      {activitySummary.totalCourses} active
+                    </Badge>
+                  </Link>
+                ) : (
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full px-3 py-1.5 text-sm sm:text-sm bg-muted/40 text-muted-foreground dark:bg-muted/20 dark:text-muted-foreground/80"
+                  >
+                    No active courses
+                  </Badge>
+                )}
+
                 <Link href="/courses">
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm w-full sm:w-auto">
                     <BookOpen className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
@@ -216,15 +232,15 @@ export default function DashboardPage() {
                     <p className="mb-6 text-sm text-muted-foreground">
                       Discover our comprehensive courses designed specifically for Pakistani investors
                     </p>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-                      <Link href="/courses?filter=beginner">
-                        <Button className="bg-emerald-600 hover:bg-emerald-700">
+                    <div className="flex flex-col gap-3 lg:flex-col xl:flex-row xl:justify-center">
+                      <Link href="/courses?filter=beginner" className="flex-1">
+                        <Button className="bg-emerald-600 hover:bg-emerald-700 w-full justify-center">
                           <Target className="mr-2 h-4 w-4" />
                           Start with Basics
                         </Button>
                       </Link>
-                      <Link href="/courses">
-                        <Button variant="outline">
+                      <Link href="/courses" className="flex-1">
+                        <Button variant="outline" className="w-full justify-center">
                           <BookOpen className="mr-2 h-4 w-4" />
                           Browse All Courses
                         </Button>

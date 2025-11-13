@@ -197,21 +197,21 @@ export default function CoursesPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCourses.map((course) => (
               <Card key={course.id} className="hover:shadow-lg transition-all duration-200 overflow-hidden group flex flex-col h-full">
-                <div className="aspect-video bg-muted/70 relative overflow-hidden">
+                <div className="aspect-video bg-white dark:bg-slate-950 relative overflow-hidden p-4">
                   <Image
                     src={course.thumbnail || "/placeholder.svg"}
                     alt={course.title}
                     fill
-                    className="object-cover transition-transform duration-200 group-hover:scale-105"
+                    className="object-cover transition-transform duration-200 group-hover:scale-105 p-4"
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   />
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-6 left-6 z-10">
                     <Badge variant={getLevelColor(course.level)} className="shadow-sm">
                       {course.level}
                     </Badge>
                   </div>
                   {course.isEnrolled && (
-                    <div className="absolute bottom-3 left-3">
+                    <div className="absolute bottom-6 left-6 z-10">
                       <Badge className="bg-emerald-600 text-white shadow-sm">
                         Enrolled
                       </Badge>
