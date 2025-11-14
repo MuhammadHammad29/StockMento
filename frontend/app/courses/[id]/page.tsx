@@ -8,22 +8,27 @@ import { BookOpen, Clock, Users, Star, CheckCircle, Lock, FileText, Video, Play 
 import Image from "next/image"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { mockCourses, mockUserProgress, getUserCourses, getLessonsByCourseId } from "@/lib/mock-data"
+import { mockCourses, mockUserProgress, getUserCourses, getLessonsByCourseId, getSectionsByCourseId, getLessonsBySectionId } from "@/lib/mock-data"
 import { calculateCourseProgress, formatDuration } from "@/lib/data-utils"
 import { toast } from "sonner"
 import { useState } from "react"
 import CourseCompletionDialog from "@/components/course-completion-dialog"
 import { UserNavbar } from "@/components/navigation"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
   const { user } = useAuth()
   const [showCompletionDialog, setShowCompletionDialog] = useState(false)
+  const [expandedSections, setExpandedSections] = useState<string[]>([])
   const courseId = params.id
   
   // Find the course
   const course = mockCourses.find(c => c.id === courseId)
   
-  // Get lessons for this course
+  // Get sections for this course
+  const sections = getSectionsByCourseId(courseId)
+  
+  // Get lessons for this course (for backward compatibility)
   const lessons = getLessonsByCourseId(courseId)
   
   if (!course) {
@@ -68,6 +73,18 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     if (userProgress.completedLessons.includes(lessonId)) return "completed"
     if (userProgress.currentLesson === lessonId) return "current"
     return "locked"
+  }
+
+  const getSectionProgress = (sectionId: string) => {
+    if (!userProgress) return 0
+    const sectionLessons = getLessonsBySectionId(sectionId)
+    if (sectionLessons.length === 0) return 0
+    
+    const completedCount = sectionLessons.filter(lesson => 
+      userProgress.completedLessons.includes(lesson.id)
+    ).length
+    
+    return Math.round((completedCount / sectionLessons.length) * 100)
   }
 
   return (
@@ -138,77 +155,149 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
               )}
             </div>
 
-            {/* Course Curriculum */}
+            {/* Course Curriculum - Sections View */}
             <div className="space-y-4 sm:space-y-6">
-              {lessons && lessons.length > 0 ? (
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base sm:text-lg">Course Lessons</CardTitle>
-                      <Link href={`/courses/${courseId}/sections`}>
-                        <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-                          <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5" />
-                          View by Sections
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 sm:space-y-3">
-                      {lessons.map((lesson) => {
-                        const status = getLessonStatus(lesson.id)
-                        const LessonIcon = getLessonIcon(lesson.type)
-                        
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base sm:text-lg">Course Curriculum</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {sections.length} sections • {lessons.length} lessons • {formatDuration(course.duration)}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {sections.length > 0 ? (
+                    <Accordion type="multiple" value={expandedSections} onValueChange={setExpandedSections} className="space-y-3">
+                      {sections.map((section, sectionIndex) => {
+                        const sectionLessons = getLessonsBySectionId(section.id)
+                        const sectionProgress = getSectionProgress(section.id)
+                        const completedLessons = sectionLessons.filter(lesson => 
+                          userProgress?.completedLessons.includes(lesson.id)
+                        ).length
+
                         return (
-                          <div
-                            key={lesson.id}
-                            className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border ${
-                              status === "current" ? "bg-emerald-50 border-emerald-200" : "bg-background"
-                            }`}
+                          <AccordionItem 
+                            key={section.id} 
+                            value={section.id}
+                            className="border border-border/60 rounded-lg overflow-hidden"
                           >
-                            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-                              <div className="flex-shrink-0">
-                                {status === "completed" ? (
-                                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
-                                ) : status === "current" ? (
-                                  <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-emerald-600 flex items-center justify-center">
-                                    <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-background" />
+                            <AccordionTrigger className="px-3 sm:px-4 py-3 sm:py-4 hover:no-underline hover:bg-muted/30 transition-colors">
+                              <div className="flex items-start gap-2 sm:gap-3 w-full text-left">
+                                <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
+                                  <span className="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                                    {sectionIndex + 1}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex-1 min-w-0 pr-2">
+                                  <h3 className="text-sm sm:text-base font-semibold text-foreground mb-1">
+                                    {section.title}
+                                  </h3>
+                                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
+                                    <span className="flex items-center">
+                                      <BookOpen className="h-3 w-3 mr-1" />
+                                      {sectionLessons.length} lessons
+                                    </span>
+                                    <span className="flex items-center">
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      {formatDuration(section.totalDuration)}
+                                    </span>
+                                    {isEnrolled && (
+                                      <span className="flex items-center text-emerald-600 font-medium">
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        {completedLessons}/{sectionLessons.length}
+                                      </span>
+                                    )}
                                   </div>
-                                ) : (
-                                  <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-                                )}
+                                  
+                                  {isEnrolled && sectionProgress > 0 && (
+                                    <div className="mt-2">
+                                      <Progress value={sectionProgress} className="h-1.5" />
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex items-center space-x-1 sm:space-x-2 min-w-0 flex-1">
-                                <LessonIcon className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${lesson.type === "video" ? "text-blue-600" : "text-muted-foreground"}`} />
-                                <span className={`font-medium text-sm sm:text-base truncate ${status === "current" ? "text-emerald-700" : ""}`}>
-                                  {lesson.title}
-                                </span>
+                            </AccordionTrigger>
+                            
+                            <AccordionContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+                              <div className="space-y-2 pt-2">
+                                {sectionLessons.map((lesson, lessonIndex) => {
+                                  const status = getLessonStatus(lesson.id)
+                                  const LessonIcon = getLessonIcon(lesson.type)
+                                  
+                                  return (
+                                    <div
+                                      key={lesson.id}
+                                      className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border transition-colors ${
+                                        status === "current" 
+                                          ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30" 
+                                          : "bg-background border-border/40 hover:bg-muted/30"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                                        <div className="flex-shrink-0">
+                                          {status === "completed" ? (
+                                            <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
+                                          ) : status === "current" ? (
+                                            <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-emerald-600 flex items-center justify-center">
+                                              <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-background" />
+                                            </div>
+                                          ) : (
+                                            <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                                          )}
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                                          <span className="text-xs text-muted-foreground flex-shrink-0">
+                                            {sectionIndex + 1}.{lessonIndex + 1}
+                                          </span>
+                                          <LessonIcon className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${
+                                            lesson.type === "video" ? "text-blue-600" : "text-muted-foreground"
+                                          }`} />
+                                          <span className={`font-medium text-xs sm:text-sm truncate ${
+                                            status === "current" ? "text-emerald-700 dark:text-emerald-300" : ""
+                                          }`}>
+                                            {lesson.title}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-2">
+                                        <span className="hidden sm:block text-xs sm:text-sm text-muted-foreground">
+                                          {formatDuration(lesson.duration)}
+                                        </span>
+                                        {isEnrolled && (status === "completed" || status === "current") && (
+                                          <Link href={`/courses/${courseId}/lessons/${lesson.id}`}>
+                                            <Button 
+                                              size="sm" 
+                                              variant={status === "current" ? "default" : "outline"}
+                                              className="text-xs px-2 sm:px-3"
+                                            >
+                                              <span className="hidden sm:inline">
+                                                {status === "completed" ? "Review" : "Start"}
+                                              </span>
+                                              <Play className="h-3 w-3 sm:ml-1.5" />
+                                            </Button>
+                                          </Link>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )
+                                })}
                               </div>
-                            </div>
-                            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-                              <span className="hidden text-xs text-muted-foreground sm:block sm:text-sm">{formatDuration(lesson.duration)}</span>
-                              {isEnrolled && (status === "completed" || status === "current") && (
-                                <Link href={`/courses/${course.id}/lessons/${lesson.id}`}>
-                                  <Button size="sm" variant={status === "current" ? "default" : "outline"} className="text-xs sm:text-sm px-2 sm:px-3">
-                                    <span className="hidden sm:inline">{status === "completed" ? "Review" : "Start"}</span>
-                                    <Play className="h-3 w-3 sm:ml-1" />
-                                  </Button>
-                                </Link>
-                              )}
-                            </div>
-                          </div>
+                            </AccordionContent>
+                          </AccordionItem>
                         )
                       })}
+                    </Accordion>
+                  ) : (
+                    <div className="p-8 text-center">
+                      <BookOpen className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                      <h3 className="mb-2 text-lg font-medium text-foreground">Course Content Coming Soon</h3>
+                      <p className="text-muted-foreground">The curriculum for this course is being prepared.</p>
                     </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className="p-8 text-center">
-                  <BookOpen className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                  <h3 className="mb-2 text-lg font-medium text-foreground">Course Content Coming Soon</h3>
-                  <p className="text-muted-foreground">The curriculum for this course is being prepared.</p>
-                </Card>
-              )}
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
 

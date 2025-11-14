@@ -535,13 +535,21 @@ export const getLessonsBySectionId = (sectionId: string): Lesson[] => {
   // Get all lessons for the course
   const courseLessons = mockLessons.filter(lesson => lesson.courseId === section.courseId);
   
-  // For demo purposes, distribute lessons across sections
-  // In real implementation, lessons would have sectionId field
-  const lessonsPerSection = Math.ceil(courseLessons.length / mockCourseSections.filter(s => s.courseId === section.courseId).length);
+  // Get sections for this course to determine distribution
+  const courseSections = mockCourseSections.filter(s => s.courseId === section.courseId);
+  
+  // Distribute lessons evenly across sections based on position
+  const lessonsPerSection = Math.ceil(courseLessons.length / courseSections.length);
   const startIndex = (section.position - 1) * lessonsPerSection;
   const endIndex = startIndex + lessonsPerSection;
   
-  return courseLessons.slice(startIndex, endIndex);
+  // Return the lessons for this section, properly sliced
+  return courseLessons.slice(startIndex, endIndex).map((lesson, index) => ({
+    ...lesson,
+    sectionId: sectionId,
+    position: index + 1,
+    order: startIndex + index + 1
+  }));
 };
 
 export const getQuizzesByCourseId = (courseId: string): Quiz[] => {

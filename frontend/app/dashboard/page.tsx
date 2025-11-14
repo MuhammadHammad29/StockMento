@@ -364,8 +364,13 @@ export default function DashboardPage() {
               <CardDescription>Continue your learning path</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-3">
               {upcomingLessons.map((lesson) => (
-                <Link key={lesson.id} href={`/courses/${lesson.course.toLowerCase().replace(/\s+/g, '-')}/lessons/${lesson.id}`}>
+                <Link
+                  key={lesson.id}
+                  href={`/courses/${lesson.course.toLowerCase().replace(/\s+/g, '-')}/lessons/${lesson.id}`}
+                  className="block"
+                >
                   <div className="flex items-start space-x-3 rounded-lg border border-border/50 bg-background/70 p-3 backdrop-blur-sm transition-all hover:border-emerald-200 hover:bg-background/90 hover:shadow-sm cursor-pointer group">
                     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-100 group-hover:bg-emerald-200 dark:bg-emerald-500/15 dark:group-hover:bg-emerald-500/25 transition-colors">
                       {lesson.type === "video" ? (
@@ -386,10 +391,11 @@ export default function DashboardPage() {
                         </div>
                         <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald-600 transition-colors" />
                       </div>
-                    </div>
+                     </div>
                   </div>
                 </Link>
               ))}
+              </div>
 
               <div className="grid gap-2">
                 <Link href="/courses">

@@ -302,7 +302,7 @@ model CourseLesson {
   lesson  Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@id([courseId, lessonId])
-  @@unique([courseId, position])
+  @@unique([sectionId, position])
   @@map("course_lessons")
   @@schema("lms")
 }

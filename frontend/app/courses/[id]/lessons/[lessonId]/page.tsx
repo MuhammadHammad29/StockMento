@@ -23,7 +23,7 @@ import {
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { mockCourses, mockUserProgress, getLessonsByCourseId } from "@/lib/mock-data"
+import { mockCourses, mockUserProgress, getLessonsByCourseId, getSectionsByCourseId, getLessonsBySectionId } from "@/lib/mock-data"
 import { formatDuration } from "@/lib/data-utils"
 import { UserNavbar } from "@/components/navigation"
 import { toast } from "sonner"
@@ -44,6 +44,14 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
   const course = mockCourses.find(c => c.id === courseId)
   const courseLessons = course ? getLessonsByCourseId(courseId) : []
   const lesson = courseLessons.find(l => l.id === lessonId)
+  
+  // Find the section this lesson belongs to
+  const sections = course ? getSectionsByCourseId(courseId) : []
+  const currentSection = sections.find(section => {
+    const sectionLessons = getLessonsBySectionId(section.id)
+    return sectionLessons.some(l => l.id === lessonId)
+  })
+  
   const userProgress = user ? mockUserProgress.find(p => p.userId === user.id && p.courseId === courseId) : null
   const isLessonCompleted = userProgress?.completedLessons.includes(lessonId) || false
 
@@ -171,14 +179,22 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
       {/* Breadcrumb Section */}
       <div className="border-b border-border/60 bg-background/80">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Link href="/courses" className="hover:text-foreground">Courses</Link>
+          <div className="flex items-center text-sm text-muted-foreground overflow-x-auto">
+            <Link href="/courses" className="hover:text-foreground whitespace-nowrap">Courses</Link>
             <span className="mx-2">/</span>
-            <Link href={`/courses/${courseId}`} className="hover:text-foreground truncate max-w-[120px] sm:max-w-[200px]">
+            <Link href={`/courses/${courseId}`} className="hover:text-foreground truncate max-w-[100px] sm:max-w-[150px]">
               {course.title}
             </Link>
+            {currentSection && (
+              <>
+                <span className="mx-2">/</span>
+                <span className="text-muted-foreground/70 truncate max-w-[100px] sm:max-w-[150px]">
+                  {currentSection.title}
+                </span>
+              </>
+            )}
             <span className="mx-2">/</span>
-            <span className="text-foreground truncate max-w-[120px] sm:max-w-[200px]">{lesson.title}</span>
+            <span className="text-foreground truncate max-w-[100px] sm:max-w-[150px]">{lesson.title}</span>
           </div>
         </div>
       </div>
