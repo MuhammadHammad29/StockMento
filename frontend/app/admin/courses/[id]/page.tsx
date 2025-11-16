@@ -74,6 +74,9 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
   const [isAddingSection, setIsAddingSection] = useState(false)
   const [newSectionTitle, setNewSectionTitle] = useState("")
   const [isCreatingSection, setIsCreatingSection] = useState(false)
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
+  const [editingSectionTitle, setEditingSectionTitle] = useState("")
+  const [isUpdatingSection, setIsUpdatingSection] = useState(false)
 
   const loadCourse = useCallback(async () => {
     setIsLoading(true)
@@ -144,6 +147,50 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
       })
     } finally {
       setIsCreatingSection(false)
+    }
+  }
+
+  const handleUpdateSection = async () => {
+    if (!editingSectionId) return
+    const title = editingSectionTitle.trim()
+    if (!title) {
+      toast({
+        title: "Section title required",
+        description: "Please enter a section name before saving.",
+        variant: "destructive",
+      })
+      return
+    }
+    setIsUpdatingSection(true)
+    try {
+      const updated = await courseSectionApi.updateSection(courseId, editingSectionId, {
+        title,
+      })
+      setCourse((prev) =>
+        prev
+          ? {
+              ...prev,
+              sections: prev.sections?.map((section) =>
+                section.id === editingSectionId ? { ...section, ...updated } : section,
+              ),
+            }
+          : prev,
+      )
+      toast({
+        title: "Section updated",
+        description: `"${updated.title}" was updated successfully.`,
+      })
+      setEditingSectionId(null)
+      setEditingSectionTitle("")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to update section."
+      toast({
+        title: "Failed to update section",
+        description: message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdatingSection(false)
     }
   }
 
@@ -346,6 +393,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
               <Button
                 variant="outline"
                 size="sm"
+                className="text-xs sm:text-sm h-9 px-4"
                 onClick={() => {
                   setIsAddingSection((prev) => !prev)
                   setNewSectionTitle("")
@@ -354,7 +402,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                 {isAddingSection ? "Close Section Form" : "Add Section"}
               </Button>
               <Link href={`/admin/courses/${courseId}/lessons/new`}>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm">
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm h-9 px-4">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Lesson
                 </Button>
@@ -411,7 +459,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                 <CardTitle className="text-base">{section.title}</CardTitle>
                 <CardDescription>Section {section.position}</CardDescription>
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <Badge variant="outline">{section.lessons?.length ?? 0} lessons</Badge>
                 <Link href={`/admin/courses/${courseId}/lessons/new?sectionId=${section.id}`}>
                   <Button variant="outline" size="sm">
@@ -419,8 +467,48 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                     Lesson
                   </Button>
                 </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingSectionId(section.id)
+                    setEditingSectionTitle(section.title)
+                  }}
+                  disabled={isUpdatingSection && editingSectionId === section.id}
+                >
+                  Edit Section
+                </Button>
               </div>
             </CardHeader>
+            {editingSectionId === section.id && (
+              <div className="px-6 pb-4">
+                <div className="space-y-2">
+                  <Label htmlFor={`edit-section-${section.id}`}>Section title</Label>
+                  <Input
+                    id={`edit-section-${section.id}`}
+                    value={editingSectionTitle}
+                    onChange={(event) => setEditingSectionTitle(event.target.value)}
+                    disabled={isUpdatingSection}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Button onClick={() => void handleUpdateSection()} disabled={isUpdatingSection}>
+                    {isUpdatingSection ? "Saving..." : "Save"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditingSectionId(null)
+                      setEditingSectionTitle("")
+                    }}
+                    disabled={isUpdatingSection}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
             <CardContent className="space-y-3">
               {section.lessons && section.lessons.length > 0 ? (
                 [...section.lessons]

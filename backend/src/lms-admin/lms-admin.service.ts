@@ -143,14 +143,24 @@ export class LmsAdminService {
 
   async reorderSections(courseId: string, dto: ReorderSectionsDto) {
     await this.getCourseOrThrow(courseId);
-    await this.prisma.$transaction(
-      dto.sections.map(({ sectionId, position }) =>
-        this.prisma.courseSection.update({
-          where: { id: sectionId },
-          data: { position },
-        }),
-      ),
-    );
+    await this.prisma.$transaction(async (tx) => {
+      await Promise.all(
+        dto.sections.map(({ sectionId }, index) =>
+          tx.courseSection.update({
+            where: { id: sectionId },
+            data: { position: -(index + 1) },
+          }),
+        ),
+      );
+      await Promise.all(
+        dto.sections.map(({ sectionId, position }) =>
+          tx.courseSection.update({
+            where: { id: sectionId },
+            data: { position },
+          }),
+        ),
+      );
+    });
   }
 
   async deleteSection(courseId: string, sectionId: string) {
@@ -227,14 +237,24 @@ export class LmsAdminService {
     dto: ReorderLessonsDto,
   ) {
     await this.ensureSection(courseId, sectionId);
-    await this.prisma.$transaction(
-      dto.lessons.map(({ lessonId, position }) =>
-        this.prisma.courseLesson.update({
-          where: { courseId_lessonId: { courseId, lessonId } },
-          data: { position },
-        }),
-      ),
-    );
+    await this.prisma.$transaction(async (tx) => {
+      await Promise.all(
+        dto.lessons.map(({ lessonId }, index) =>
+          tx.courseLesson.update({
+            where: { courseId_lessonId: { courseId, lessonId } },
+            data: { position: -(index + 1) },
+          }),
+        ),
+      );
+      await Promise.all(
+        dto.lessons.map(({ lessonId, position }) =>
+          tx.courseLesson.update({
+            where: { courseId_lessonId: { courseId, lessonId } },
+            data: { position },
+          }),
+        ),
+      );
+    });
   }
 
   async deleteLesson(courseId: string, sectionId: string, lessonId: string) {
