@@ -274,3 +274,126 @@ export interface SearchParams {
   page?: number;
   limit?: number;
 }
+
+// ----------------------------------------
+// Admin LMS (courses/sections/lessons) types
+// ----------------------------------------
+
+export type AdminCourseLevel = 'beginner' | 'intermediate' | 'advanced';
+export type AdminLessonContentType = 'video' | 'text' | 'quiz' | 'lab';
+
+export interface AdminCourse {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  level: AdminCourseLevel;
+  mediaUrl: string | null;
+  isPublished: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  sections?: AdminCourseSection[];
+}
+
+export interface AdminCourseSection {
+  id: string;
+  courseId: string;
+  title: string;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+  lessons?: AdminCourseLessonLink[];
+}
+
+export interface AdminCourseLessonLink {
+  courseId: string;
+  sectionId: string;
+  lessonId: string;
+  position: number;
+  lesson: AdminLesson;
+}
+
+export interface AdminLesson {
+  id: string;
+  title: string;
+  contentType: AdminLessonContentType;
+  durationMinutes: number;
+  createdAt: string;
+  updatedAt: string;
+  video?: AdminLessonVideo | null;
+  text?: AdminLessonText | null;
+  quizLink?: AdminLessonQuizLink | null;
+  labLink?: AdminLessonLabLink | null;
+}
+
+export interface AdminLessonVideo {
+  lessonId: string;
+  videoUrl: string;
+  thumbnailUrl?: string | null;
+  durationSeconds: number;
+  transcript?: string | null;
+}
+
+export interface AdminLessonText {
+  lessonId: string;
+  bodyHtml: string;
+  readTimeMinutes: number;
+}
+
+export interface AdminLessonQuizLink {
+  lessonId: string;
+  quizId: string;
+}
+
+export interface AdminLessonLabLink {
+  lessonId: string;
+  labId: string;
+}
+
+export interface CreateCoursePayload {
+  title: string;
+  slug: string;
+  description: string;
+  level: AdminCourseLevel;
+  mediaUrl?: string | null;
+  isPublished?: boolean;
+}
+
+export type UpdateCoursePayload = Partial<CreateCoursePayload>;
+
+export interface CreateSectionPayload {
+  title: string;
+  position?: number;
+}
+
+export type UpdateSectionPayload = Partial<CreateSectionPayload>;
+
+export interface ReorderSectionsPayload {
+  sections: Array<{
+    sectionId: string;
+    position: number;
+  }>;
+}
+
+export interface CreateLessonPayload {
+  title: string;
+  contentType: AdminLessonContentType;
+  durationMinutes: number;
+  position?: number;
+  bodyHtml?: string;
+  readTimeMinutes?: number;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  durationSeconds?: number;
+  transcript?: string;
+}
+
+export type UpdateLessonPayload = Partial<CreateLessonPayload>;
+
+export interface ReorderLessonsPayload {
+  lessons: Array<{
+    lessonId: string;
+    position: number;
+  }>;
+}

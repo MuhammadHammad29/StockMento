@@ -1,7 +1,25 @@
 // API service functions ready for NestJS backend integration
 // These functions will replace the mock data calls when backend is implemented
 
-import { Course, Lesson, User, UserProgress, AuthUser, ProfileDetails, UpdateProfilePayload, DeleteAccountPayload } from '../types'
+import {
+  User,
+  UserProgress,
+  AuthUser,
+  ProfileDetails,
+  UpdateProfilePayload,
+  DeleteAccountPayload,
+  AdminCourse,
+  AdminCourseSection,
+  AdminLesson,
+  CreateCoursePayload,
+  UpdateCoursePayload,
+  CreateSectionPayload,
+  UpdateSectionPayload,
+  ReorderSectionsPayload,
+  CreateLessonPayload,
+  UpdateLessonPayload,
+  ReorderLessonsPayload,
+} from '../types'
 import { STORAGE_KEYS } from '../data-utils'
 
 type ApiJson = Record<string, unknown>
@@ -245,27 +263,27 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
 // Course Management APIs
 export const courseApi = {
   // Get all courses (admin)
-  getAllCourses: async (): Promise<Course[]> => {
-    return apiCall<Course[]>('/admin/courses')
+  getAllCourses: async (): Promise<AdminCourse[]> => {
+    return apiCall<AdminCourse[]>('/admin/courses')
   },
 
   // Get single course (admin)
-  getCourse: async (courseId: string): Promise<Course> => {
-    return apiCall<Course>(`/admin/courses/${courseId}`)
+  getCourse: async (courseId: string): Promise<AdminCourse> => {
+    return apiCall<AdminCourse>(`/admin/courses/${courseId}`)
   },
 
   // Create new course
-  createCourse: async (courseData: Partial<Course>): Promise<Course> => {
-    return apiCall<Course>('/admin/courses', {
+  createCourse: async (courseData: CreateCoursePayload): Promise<AdminCourse> => {
+    return apiCall<AdminCourse>('/admin/courses', {
       method: 'POST',
       body: JSON.stringify(courseData),
     })
   },
 
   // Update course
-  updateCourse: async (courseId: string, courseData: Partial<Course>): Promise<Course> => {
-    return apiCall<Course>(`/admin/courses/${courseId}`, {
-      method: 'PUT',
+  updateCourse: async (courseId: string, courseData: UpdateCoursePayload): Promise<AdminCourse> => {
+    return apiCall<AdminCourse>(`/admin/courses/${courseId}`, {
+      method: 'PATCH',
       body: JSON.stringify(courseData),
     })
   },
@@ -288,47 +306,111 @@ export const courseApi = {
   },
 }
 
+// Course sections management
+export const courseSectionApi = {
+  createSection: async (
+    courseId: string,
+    payload: CreateSectionPayload,
+  ): Promise<AdminCourseSection> => {
+    return apiCall<AdminCourseSection>(`/admin/courses/${courseId}/sections`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  updateSection: async (
+    courseId: string,
+    sectionId: string,
+    payload: UpdateSectionPayload,
+  ): Promise<AdminCourseSection> => {
+    return apiCall<AdminCourseSection>(
+      `/admin/courses/${courseId}/sections/${sectionId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      },
+    )
+  },
+
+  reorderSections: async (
+    courseId: string,
+    payload: ReorderSectionsPayload,
+  ): Promise<void> => {
+    return apiCall<void>(`/admin/courses/${courseId}/sections`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  deleteSection: async (
+    courseId: string,
+    sectionId: string,
+  ): Promise<AdminCourseSection> => {
+    return apiCall<AdminCourseSection>(
+      `/admin/courses/${courseId}/sections/${sectionId}`,
+      {
+        method: 'DELETE',
+      },
+    )
+  },
+}
+
 // Lesson Management APIs
 export const lessonApi = {
-  // Get lessons for a course
-  getLessonsByCourse: async (courseId: string): Promise<Lesson[]> => {
-    return apiCall<Lesson[]>(`/admin/courses/${courseId}/lessons`)
+  createLesson: async (
+    courseId: string,
+    sectionId: string,
+    payload: CreateLessonPayload,
+  ): Promise<AdminLesson> => {
+    return apiCall<AdminLesson>(
+      `/admin/courses/${courseId}/sections/${sectionId}/lessons`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    )
   },
 
-  // Get single lesson
-  getLesson: async (courseId: string, lessonId: string): Promise<Lesson> => {
-    return apiCall<Lesson>(`/admin/courses/${courseId}/lessons/${lessonId}`)
+  updateLesson: async (
+    courseId: string,
+    sectionId: string,
+    lessonId: string,
+    payload: UpdateLessonPayload,
+  ): Promise<AdminLesson> => {
+    return apiCall<AdminLesson>(
+      `/admin/courses/${courseId}/sections/${sectionId}/lessons/${lessonId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      },
+    )
   },
 
-  // Create new lesson
-  createLesson: async (courseId: string, lessonData: Partial<Lesson>): Promise<Lesson> => {
-    return apiCall<Lesson>(`/admin/courses/${courseId}/lessons`, {
-      method: 'POST',
-      body: JSON.stringify(lessonData),
-    })
+  reorderLessons: async (
+    courseId: string,
+    sectionId: string,
+    payload: ReorderLessonsPayload,
+  ): Promise<void> => {
+    return apiCall<void>(
+      `/admin/courses/${courseId}/sections/${sectionId}/lessons`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      },
+    )
   },
 
-  // Update lesson
-  updateLesson: async (courseId: string, lessonId: string, lessonData: Partial<Lesson>): Promise<Lesson> => {
-    return apiCall<Lesson>(`/admin/courses/${courseId}/lessons/${lessonId}`, {
-      method: 'PUT',
-      body: JSON.stringify(lessonData),
-    })
-  },
-
-  // Delete lesson
-  deleteLesson: async (courseId: string, lessonId: string): Promise<void> => {
-    return apiCall<void>(`/admin/courses/${courseId}/lessons/${lessonId}`, {
-      method: 'DELETE',
-    })
-  },
-
-  // Reorder lessons
-  reorderLessons: async (courseId: string, lessonOrders: { lessonId: string, order: number }[]): Promise<void> => {
-    return apiCall<void>(`/admin/courses/${courseId}/lessons/reorder`, {
-      method: 'PUT',
-      body: JSON.stringify({ lessonOrders }),
-    })
+  deleteLesson: async (
+    courseId: string,
+    sectionId: string,
+    lessonId: string,
+  ): Promise<AdminLesson> => {
+    return apiCall<AdminLesson>(
+      `/admin/courses/${courseId}/sections/${sectionId}/lessons/${lessonId}`,
+      {
+        method: 'DELETE',
+      },
+    )
   },
 }
 
@@ -530,6 +612,7 @@ export const progressApi = {
 // Export all APIs
 export const api = {
   courses: courseApi,
+  courseSections: courseSectionApi,
   lessons: lessonApi,
   analytics: analyticsApi,
   files: fileApi,

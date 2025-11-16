@@ -1,136 +1,247 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { 
-  TrendingUp, 
-  Edit, 
-  Plus, 
-  BookOpen, 
-  PlayCircle, 
-  FileText, 
-  Users, 
-  Clock, 
-  Star,
-  Trash2,
-  Eye,
-  BarChart3,
-  GripVertical,
-  ArrowUp,
-  ArrowDown
-} from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useState, useEffect, useCallback } from "react"
-import { useAdminAuth } from "@/lib/admin-auth-context"
-import { mockCourses, mockUserProgress, getLessonsByCourseId } from "@/lib/mock-data"
-import { toast } from "@/components/ui/use-toast"
+import { useRouter } from "next/navigation"
+import {
+  ArrowDown,
+  ArrowUp,
+  BookOpen,
+  Clock,
+  Edit,
+  Layers,
+  Plus,
+  Trash2,
+  Video,
+  FileText,
+} from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import { AdminNavbar } from "@/components/navigation"
-import type { Lesson } from "@/lib/types"
+import { useAdminAuth } from "@/lib/admin-auth-context"
+import { courseApi, courseSectionApi, lessonApi } from "@/lib/api"
+import type { AdminCourse, AdminCourseSection } from "@/lib/types"
+import { toast } from "@/components/ui/use-toast"
+
+type LessonLink = NonNullable<AdminCourseSection["lessons"]>[number]
+
+const countLessons = (course: AdminCourse) =>
+  course.sections?.reduce((total, section) => total + (section.lessons?.length ?? 0), 0) ?? 0
+
+const totalDurationMinutes = (course: AdminCourse) =>
+  course.sections?.reduce(
+    (total, section) =>
+      total +
+      (section.lessons?.reduce((sectionTotal, link) => sectionTotal + (link.lesson?.durationMinutes ?? 0), 0) ?? 0),
+    0,
+  ) ?? 0
+
+const formatDuration = (minutes: number) => {
+  if (!minutes) return "0 min"
+  const hours = Math.floor(minutes / 60)
+  const remaining = minutes % 60
+  if (hours === 0) return `${remaining} min`
+  if (remaining === 0) return `${hours} hr`
+  return `${hours} hr ${remaining} min`
+}
+
+const lessonIcon = (type: string) => {
+  switch (type) {
+    case "video":
+      return <Video className="h-4 w-4 text-blue-500" />
+    case "text":
+      return <FileText className="h-4 w-4 text-emerald-500" />
+    default:
+      return <BookOpen className="h-4 w-4 text-muted-foreground" />
+  }
+}
 
 export default function AdminCourseDetailPage({ params }: { params: { id: string } }) {
   const { adminUser } = useAdminAuth()
   void adminUser
+
+  const router = useRouter()
   const courseId = params.id
-  
-  // Find the course - in future this will be an API call
-  const course = mockCourses.find(c => c.id === courseId)
-  const [orderedLessons, setOrderedLessons] = useState(() => {
-    const lessons = getLessonsByCourseId(courseId)
-    return lessons.sort((a, b) => (a.order || 0) - (b.order || 0))
-  })
-  const [selectedLessonIndex, setSelectedLessonIndex] = useState<number | null>(null)
-  
-  // Calculate course stats - in future this will come from database aggregations
-  const enrolledUsers = mockUserProgress.filter(p => p.courseId === courseId)
-  const completedUsers = enrolledUsers.filter(p => (p.overallProgress || 0) >= 100)
-  const completionRate = enrolledUsers.length > 0 ? Math.round((completedUsers.length / enrolledUsers.length) * 100) : 0
-  const avgProgress = enrolledUsers.length > 0 
-    ? Math.round(enrolledUsers.reduce((sum, p) => sum + (p.overallProgress || 0), 0) / enrolledUsers.length)
-    : 0
 
-  // Lesson reordering functions
-  const moveLesson = useCallback(
-    async (index: number, direction: 'up' | 'down') => {
-      const newIndex = direction === 'up' ? index - 1 : index + 1
-      if (newIndex < 0 || newIndex >= orderedLessons.length) return
+  const [course, setCourse] = useState<AdminCourse | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [processingLessonId, setProcessingLessonId] = useState<string | null>(null)
+  const [isAddingSection, setIsAddingSection] = useState(false)
+  const [newSectionTitle, setNewSectionTitle] = useState("")
+  const [isCreatingSection, setIsCreatingSection] = useState(false)
 
-      const newLessons = [...orderedLessons]
-      const [movedLesson] = newLessons.splice(index, 1)
-      newLessons.splice(newIndex, 0, movedLesson)
-
-      setOrderedLessons(newLessons)
-      
-      // TODO: Call API to save new order
-      // await lessonApi.reorderLessons(courseId, newLessons.map((lesson, idx) => ({
-      //   lessonId: lesson.id,
-      //   order: idx + 1
-      // })))
-      
-      toast({
-        title: "Lesson Order Updated",
-        description: `"${movedLesson.title}" moved ${direction}ward`,
-      })
-    },
-    [orderedLessons],
-  )
-
-  // Keyboard shortcuts for lesson reordering
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedLessonIndex === null || orderedLessons.length === 0) return
-      
-      // Only handle shortcuts if we're focused on the lessons tab and not in an input
-      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return
-      
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key) {
-          case 'ArrowUp':
-            e.preventDefault()
-            if (selectedLessonIndex > 0) {
-              moveLesson(selectedLessonIndex, 'up')
-              setSelectedLessonIndex(selectedLessonIndex - 1)
-            }
-            break
-          case 'ArrowDown':
-            e.preventDefault()
-            if (selectedLessonIndex < orderedLessons.length - 1) {
-              moveLesson(selectedLessonIndex, 'down')
-              setSelectedLessonIndex(selectedLessonIndex + 1)
-            }
-            break
-        }
-      }
+  const loadCourse = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const data = await courseApi.getCourse(courseId)
+      setCourse(data)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to load course."
+      setError(message)
+    } finally {
+      setIsLoading(false)
     }
+  }, [courseId])
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [moveLesson, orderedLessons.length, selectedLessonIndex])
+  useEffect(() => {
+    void loadCourse()
+  }, [loadCourse])
 
-  const deleteLesson = async (lessonId: string, lessonTitle: string) => {
-    // TODO: Implement lesson deletion
-    // await lessonApi.deleteLesson(courseId, lessonId)
-    setOrderedLessons(prev => prev.filter(lesson => lesson.id !== lessonId))
-    
-    toast({
-      title: "Lesson Deleted",
-      description: `"${lessonTitle}" has been removed from the course`,
-      variant: "destructive"
-    })
+  const stats = useMemo(() => {
+    if (!course) {
+      return { sections: 0, lessons: 0, duration: "0 min" }
+    }
+    return {
+      sections: course.sections?.length ?? 0,
+      lessons: countLessons(course),
+      duration: formatDuration(totalDurationMinutes(course)),
+    }
+  }, [course])
+
+  const mutateSections = (updater: (sections: AdminCourseSection[]) => AdminCourseSection[]) => {
+    setCourse((prev) => (prev ? { ...prev, sections: updater(prev.sections ?? []) } : prev))
   }
 
-  if (!course) {
+  const handleCreateSection = async () => {
+    const title = newSectionTitle.trim()
+    if (!title) {
+      toast({
+        title: "Section title required",
+        description: "Please enter a section name before saving.",
+        variant: "destructive",
+      })
+      return
+    }
+    setIsCreatingSection(true)
+    try {
+      const created = await courseSectionApi.createSection(courseId, { title })
+      setCourse((prev) =>
+        prev
+          ? {
+              ...prev,
+              sections: [...(prev.sections ?? []), { ...created, lessons: [] }],
+            }
+          : prev,
+      )
+      toast({
+        title: "Section added",
+        description: `"${created.title}" was added to this course.`,
+      })
+      setNewSectionTitle("")
+      setIsAddingSection(false)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to create section."
+      toast({
+        title: "Failed to add section",
+        description: message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsCreatingSection(false)
+    }
+  }
+
+  const handleLessonReorder = async (
+    sectionId: string,
+    lessonId: string,
+    direction: "up" | "down",
+  ) => {
+    if (!course?.sections) return
+    const section = course.sections.find((sec) => sec.id === sectionId)
+    if (!section?.lessons || section.lessons.length < 2) return
+
+    const currentIndex = section.lessons.findIndex((link) => link.lessonId === lessonId)
+    if (currentIndex === -1) return
+
+    const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1
+    if (newIndex < 0 || newIndex >= section.lessons.length) {
+      return
+    }
+
+    const reorderedLessons = [...section.lessons]
+    const [moved] = reorderedLessons.splice(currentIndex, 1)
+    reorderedLessons.splice(newIndex, 0, moved)
+
+    mutateSections((sections) =>
+      sections.map((sec) =>
+        sec.id === sectionId
+          ? {
+              ...sec,
+              lessons: reorderedLessons.map((link, index) => ({ ...link, position: index + 1 })),
+            }
+          : sec,
+      ),
+    )
+
+    try {
+      await lessonApi.reorderLessons(courseId, sectionId, {
+        lessons: reorderedLessons.map((link, index) => ({
+          lessonId: link.lessonId,
+          position: index + 1,
+        })),
+      })
+      toast({
+        title: "Lesson order updated",
+        description: `"${moved.lesson.title}" moved ${direction === "up" ? "up" : "down"}.`,
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update lesson order."
+      toast({ title: "Failed to reorder", description: message, variant: "destructive" })
+      void loadCourse()
+    }
+  }
+
+  const handleLessonDelete = async (sectionId: string, lesson: LessonLink) => {
+    const confirmed = window.confirm(`Delete lesson "${lesson.lesson.title}"? This cannot be undone.`)
+    if (!confirmed) return
+
+    setProcessingLessonId(lesson.lessonId)
+    try {
+      await lessonApi.deleteLesson(courseId, sectionId, lesson.lessonId)
+      mutateSections((sections) =>
+        sections.map((sec) =>
+          sec.id === sectionId
+            ? { ...sec, lessons: sec.lessons?.filter((link) => link.lessonId !== lesson.lessonId) ?? [] }
+            : sec,
+        ),
+      )
+      toast({ title: "Lesson deleted", description: `"${lesson.lesson.title}" has been removed.` })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete lesson."
+      toast({ title: "Unable to delete lesson", description: message, variant: "destructive" })
+    } finally {
+      setProcessingLessonId(null)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
+        <AdminNavbar />
+        <div className="max-w-6xl mx-auto px-4 py-16 text-center text-muted-foreground">Loading course...</div>
+      </div>
+    )
+  }
+
+  if (error || !course) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center">
         <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <h2 className="text-xl font-semibold mb-2">Course Not Found</h2>
-            <p className="text-muted-foreground mb-4">The requested course could not be found.</p>
-            <Link href="/admin/courses">
-              <Button>Back to Courses</Button>
-            </Link>
+          <CardContent className="pt-6 text-center space-y-4">
+            <CardTitle className="text-xl">Course unavailable</CardTitle>
+            <CardDescription>{error ?? "Course not found."}</CardDescription>
+            <div className="flex justify-center gap-2">
+              <Button onClick={() => void loadCourse()}>Retry</Button>
+              <Link href="/admin/courses">
+                <Button variant="outline">Back to Courses</Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -141,423 +252,241 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       <AdminNavbar />
 
-      {/* Breadcrumb Section */}
       <div className="border-b border-border/60 bg-background/80">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-8 py-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
             <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
-              <Link href="/admin/courses" className="hover:text-foreground">Courses</Link>
+              <Link href="/admin/courses" className="hover:text-foreground">
+                Courses
+              </Link>
               <span className="mx-1 sm:mx-2">/</span>
-              <span className="text-foreground truncate max-w-[200px] sm:max-w-none">{course?.title || 'Course Details'}</span>
+              <span className="text-foreground truncate max-w-[200px] sm:max-w-none">{course.title}</span>
             </div>
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-2">
               <Link href={`/admin/courses/${courseId}/edit`}>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9">
-                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Edit Course</span>
-                  <span className="sm:hidden">Edit</span>
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-3 py-2 h-9">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Course
+                </Button>
+              </Link>
+              <Button variant="outline" onClick={() => void loadCourse()}>
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-6">
+        <Card className="border border-border/60 bg-card/90">
+          <CardHeader className="space-y-3">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="text-xl sm:text-2xl">{course.title}</CardTitle>
+                  <CardDescription className="text-sm sm:text-base">{course.description}</CardDescription>
+                </div>
+                <Badge variant={course.isPublished ? "default" : "secondary"} className="capitalize">
+                  {course.isPublished ? "Published" : "Draft"}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs sm:text-sm text-muted-foreground">
+                <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                  {course.level}
+                </Badge>
+                <span>Slug: {course.slug}</span>
+                <span>Updated: {new Date(course.updatedAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="border border-border/60 bg-card/90">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Sections</p>
+                <p className="text-xl font-semibold">{stats.sections}</p>
+              </div>
+              <Layers className="h-5 w-5 text-purple-500" />
+            </CardContent>
+          </Card>
+          <Card className="border border-border/60 bg-card/90">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Lessons</p>
+                <p className="text-xl font-semibold">{stats.lessons}</p>
+              </div>
+              <BookOpen className="h-5 w-5 text-emerald-500" />
+            </CardContent>
+          </Card>
+          <Card className="border border-border/60 bg-card/90">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Duration</p>
+                <p className="text-xl font-semibold">{stats.duration}</p>
+              </div>
+              <Clock className="h-5 w-5 text-amber-500" />
+            </CardContent>
+          </Card>
+          <Card className="border border-border/60 bg-card/90">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Course ID</p>
+                <p className="text-xs font-mono truncate max-w-[130px]">{course.id}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-lg font-semibold">Sections & Lessons</h2>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsAddingSection((prev) => !prev)
+                  setNewSectionTitle("")
+                }}
+              >
+                {isAddingSection ? "Close Section Form" : "Add Section"}
+              </Button>
+              <Link href={`/admin/courses/${courseId}/lessons/new`}>
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Lesson
                 </Button>
               </Link>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {/* Course Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3 sm:gap-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-2">{course.title}</h1>
-              <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mb-4">{course.description}</p>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4 text-xs sm:text-sm text-muted-foreground">
-                <Badge variant={course.isPublished ? "default" : "secondary"} className="text-xs">
-                  {course.isPublished ? "Published" : "Draft"}
-                </Badge>
-                <span className="flex items-center gap-1">
-                  <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
-                  {orderedLessons.length} lessons
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                  {Math.round(course.duration / 60)}h duration
-                </span>
-                <span className="flex items-center gap-1">
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                  {enrolledUsers.length} enrolled
-                </span>
-                <span className="flex items-center gap-1">
-                  <Star className="h-3 w-3 sm:h-4 sm:w-4" />
-                  {course.rating} rating
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Enrollments</p>
-                  <p className="text-2xl font-bold">{enrolledUsers.length}</p>
+          {isAddingSection && (
+            <Card className="border border-dashed border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/30">
+              <CardContent className="p-4 space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="section-title">Section title</Label>
+                  <Input
+                    id="section-title"
+                    value={newSectionTitle}
+                    onChange={(event) => setNewSectionTitle(event.target.value)}
+                    placeholder="e.g. Market Basics"
+                    disabled={isCreatingSection}
+                  />
                 </div>
-                <Users className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Completion Rate</p>
-                  <p className="text-2xl font-bold">{completionRate}%</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => void handleCreateSection()} disabled={isCreatingSection}>
+                    {isCreatingSection ? "Saving..." : "Save Section"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setIsAddingSection(false)
+                      setNewSectionTitle("")
+                    }}
+                    disabled={isCreatingSection}
+                  >
+                    Cancel
+                  </Button>
                 </div>
-                <BarChart3 className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Avg Progress</p>
-                  <p className="text-2xl font-bold">{avgProgress}%</p>
-                </div>
-                <Progress value={avgProgress} className="mt-2" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Enrollments</p>
-                  <p className="text-2xl font-bold">{enrolledUsers.length}</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-emerald-600" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-        {/* Course Lessons Section */}
-        <div className="space-y-4 sm:space-y-6">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
-            <div className="min-w-0 flex-1">
-              <h2 className="text-xl sm:text-2xl font-bold">Course Lessons</h2>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Use the arrow buttons to reorder lessons. Changes are saved automatically.
-              </p>
-            </div>
-            <Link href={`/admin/courses/${courseId}/lessons/new`}>
-              <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9 w-full sm:w-auto">
-                <Plus className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Add Lesson</span>
-                <span className="sm:hidden">Add</span>
-              </Button>
-            </Link>
-          </div>
+        {(!course.sections || course.sections.length === 0) && (
+          <Card className="border border-dashed border-border/70 bg-card/80">
+            <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              No sections yet. Create a section and add lessons to start structuring this course.
+            </CardContent>
+          </Card>
+        )}
 
-            {orderedLessons.length === 0 ? (
-              <Card className="text-center py-12">
-                <CardContent>
-                  <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                  <h3 className="text-lg font-semibold mb-2">No lessons yet</h3>
-                  <p className="text-muted-foreground mb-4">Start building your course by adding your first lesson.</p>
-                  <Link href={`/admin/courses/${courseId}/lessons/new`}>
-                    <Button className="bg-emerald-600 hover:bg-emerald-700">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create First Lesson
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ) : (
-
-            <div className="space-y-4">
-              {orderedLessons.map((lesson: Lesson, index: number) => (
-                <Card 
-                  key={lesson.id} 
-                  className={`hover:shadow-md transition-all cursor-pointer ${
-                    selectedLessonIndex === index 
-                      ? 'ring-2 ring-emerald-500 shadow-md' 
-                      : 'hover:shadow-md'
-                  }`}
-                  onClick={() => setSelectedLessonIndex(selectedLessonIndex === index ? null : index)}
-                >
-                  <CardContent className="p-3 sm:p-6">
-                    <div className="flex flex-col gap-3 sm:gap-0 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          {/* Drag Handle Visual Indicator */}
-                          <div className="flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing">
-                            <GripVertical className="h-3 w-3 sm:h-4 sm:w-4" />
-                          </div>
-                          
-                          {/* Lesson Number */}
-                          <div className="flex-shrink-0">
-                            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium ${
-                              selectedLessonIndex === index
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400'
-                            }`}>
-                              {index + 1}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                          {lesson.type === 'text' && <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />}
-                          {lesson.type === 'video' && <PlayCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" />}
-                          {lesson.type === 'quiz' && <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 flex-shrink-0" />}
-                          <div className="min-w-0 flex-1">
-                            <h3 className="font-semibold text-foreground text-sm sm:text-base leading-tight">{lesson.title}</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground truncate">{lesson.description}</p>
-                          </div>
+        {course.sections?.map((section) => (
+          <Card key={section.id} id={`section-${section.id}`} className="border border-border/60 bg-card/90">
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-base">{section.title}</CardTitle>
+                <CardDescription>Section {section.position}</CardDescription>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="outline">{section.lessons?.length ?? 0} lessons</Badge>
+                <Link href={`/admin/courses/${courseId}/lessons/new?sectionId=${section.id}`}>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-3 w-3 mr-1" />
+                    Lesson
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {section.lessons && section.lessons.length > 0 ? (
+                [...section.lessons]
+                  .sort((a, b) => a.position - b.position)
+                  .map((lessonLink, index) => (
+                    <div
+                      key={lessonLink.lessonId}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-md border border-border/40 bg-card/80 p-3"
+                    >
+                      <div className="flex items-start gap-3 min-w-0">
+                        {lessonIcon(lessonLink.lesson.contentType)}
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{lessonLink.lesson.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {lessonLink.lesson.contentType} • {lessonLink.lesson.durationMinutes} min
+                          </p>
                         </div>
                       </div>
-                      
-                      {/* Mobile: Badge and duration on separate line */}
-                      <div className="flex items-center justify-between sm:hidden">
                       <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs">
-                          {lesson.type}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {lesson.duration} min
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Desktop: All controls in one line */}
-                      <div className="hidden sm:flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs">
-                          {lesson.type}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {lesson.duration} min
-                        </span>
-                        
-                        {/* Reorder Controls */}
-                        <div className="flex items-center gap-1 ml-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              moveLesson(index, 'up')
-                            }}
-                            disabled={index === 0}
-                            className="h-8 w-8 p-0"
-                            title="Move up (Ctrl+↑)"
+                        <div className="flex flex-col">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            disabled={index === 0 || processingLessonId === lessonLink.lessonId}
+                            onClick={() => void handleLessonReorder(section.id, lessonLink.lessonId, "up")}
                           >
                             <ArrowUp className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              moveLesson(index, 'down')
-                            }}
-                            disabled={index === orderedLessons.length - 1}
-                            className="h-8 w-8 p-0"
-                            title="Move down (Ctrl+↓)"
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            disabled={
+                              index === (section.lessons?.length ?? 0) - 1 || processingLessonId === lessonLink.lessonId
+                            }
+                            onClick={() => void handleLessonReorder(section.id, lessonLink.lessonId, "down")}
                           >
                             <ArrowDown className="h-4 w-4" />
                           </Button>
                         </div>
-                        
-                        {/* Action Controls */}
-                        <div className="flex items-center gap-1 ml-2">
-                          <Link href={`/courses/${courseId}/lessons/${lesson.id}`}>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              title="Preview lesson"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Link href={`/admin/courses/${courseId}/lessons/${lesson.id}/edit`}>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              title="Edit lesson"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          
-                          {/* Delete Lesson with Confirmation */}
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                title="Delete lesson"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="max-w-sm sm:max-w-md">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle className="text-base sm:text-lg">Delete Lesson</AlertDialogTitle>
-                                <AlertDialogDescription className="text-sm">
-                                  Are you sure you want to delete &quot;{lesson.title}&quot;? This action cannot be undone and will permanently remove the lesson from the course.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                                <AlertDialogCancel className="h-8 sm:h-9 text-xs sm:text-sm">Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => deleteLesson(lesson.id, lesson.title)}
-                                  className="h-8 sm:h-9 text-xs sm:text-sm bg-red-600 hover:bg-red-700"
-                                >
-                                  Delete Lesson
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-
-                      {/* Mobile: Action buttons on separate row */}
-                      <div className="flex items-center gap-1 sm:hidden">
-                        {/* Reorder Controls */}
-                        <div className="flex items-center gap-1">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              moveLesson(index, 'up')
-                            }}
-                            disabled={index === 0}
-                            className="h-7 w-7 p-0"
-                            title="Move up"
-                          >
-                            <ArrowUp className="h-3 w-3" />
+                        <Link href={`/admin/courses/${courseId}/lessons/${lessonLink.lessonId}/edit`}>
+                          <Button variant="outline" size="sm">
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              moveLesson(index, 'down')
-                            }}
-                            disabled={index === orderedLessons.length - 1}
-                            className="h-7 w-7 p-0"
-                            title="Move down"
-                          >
-                            <ArrowDown className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        
-                        {/* Action Controls */}
-                        <div className="flex items-center gap-1 flex-1 justify-end">
-                          <Link href={`/courses/${courseId}/lessons/${lesson.id}`}>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              title="Preview lesson"
-                              onClick={(e) => e.stopPropagation()}
-                              className="h-7 w-7 p-0"
-                            >
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                          </Link>
-                          <Link href={`/admin/courses/${courseId}/lessons/${lesson.id}/edit`}>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              title="Edit lesson"
-                              onClick={(e) => e.stopPropagation()}
-                              className="h-7 w-7 p-0"
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                          </Link>
-                          
-                          {/* Delete Lesson with Confirmation */}
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0"
-                                title="Delete lesson"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="max-w-sm sm:max-w-md">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle className="text-base sm:text-lg">Delete Lesson</AlertDialogTitle>
-                                <AlertDialogDescription className="text-sm">
-                                  Are you sure you want to delete &quot;{lesson.title}&quot;? This action cannot be undone and will permanently remove the lesson from the course.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                                <AlertDialogCancel className="h-8 sm:h-9 text-xs sm:text-sm">Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => deleteLesson(lesson.id, lesson.title)}
-                                  className="h-8 sm:h-9 text-xs sm:text-sm bg-red-600 hover:bg-red-700"
-                                >
-                                  Delete Lesson
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
+                        </Link>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                          disabled={processingLessonId === lessonLink.lessonId}
+                          onClick={() => void handleLessonDelete(section.id, lessonLink)}
+                        >
+                          {processingLessonId === lessonLink.lessonId ? "Deleting..." : <Trash2 className="h-4 w-4" />}
+                        </Button>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            )}
-
-            {/* Lesson Management Help */}
-            {orderedLessons.length > 0 && (
-              <Card className="border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center">
-                        <GripVertical className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-emerald-800 dark:text-emerald-200 mb-1">
-                        Lesson Reordering
-                      </h4>
-                      <ul className="list-disc space-y-1 pl-4 text-xs text-emerald-700 dark:text-emerald-300">
-                        <li>
-                          Click on a lesson to select it, then use <kbd className="px-1 py-0.5 text-xs bg-emerald-200 dark:bg-emerald-800 rounded">Ctrl + Up Arrow</kbd>/<kbd className="px-1 py-0.5 text-xs bg-emerald-200 dark:bg-emerald-800 rounded">Ctrl + Down Arrow</kbd> to move it.
-                        </li>
-                        <li>Use the on-card arrow buttons to move lessons up or down.</li>
-                        <li>Changes are saved automatically and update the lesson sequence for students.</li>
-                        <li>You can also manually set lesson order when editing individual lessons.</li>
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-        </div>
+                  ))
+              ) : (
+                <div className="text-sm text-muted-foreground">No lessons in this section yet.</div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   )
 }
-

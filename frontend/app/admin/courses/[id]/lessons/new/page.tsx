@@ -1,391 +1,313 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Save } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Save, FileText, PlayCircle, BookOpen, AlertCircle } from "lucide-react"
-import Link from "next/link"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAdminAuth } from "@/lib/admin-auth-context"
-import { mockCourses, getLessonsByCourseId } from "@/lib/mock-data"
-import { toast } from "sonner"
 import { AdminNavbar } from "@/components/navigation"
+import { useAdminAuth } from "@/lib/admin-auth-context"
+import { courseApi, lessonApi } from "@/lib/api"
+import type { AdminCourseSection } from "@/lib/types"
+import { toast } from "@/components/ui/use-toast"
 
-interface NewLessonFormData {
+type LessonType = "text" | "video" | "quiz" | "lab"
+
+interface LessonFormState {
   title: string
-  description: string
-  type: 'text' | 'video' | 'quiz'
-  content?: string
-  videoUrl?: string
-  duration: number
-  order: number
-  isLocked: boolean
+  contentType: LessonType
+  sectionId: string
+  durationMinutes: number
+  bodyHtml: string
+  videoUrl: string
+  thumbnailUrl: string
+}
+
+const initialForm: LessonFormState = {
+  title: "",
+  contentType: "text",
+  sectionId: "",
+  durationMinutes: 10,
+  bodyHtml: "",
+  videoUrl: "",
+  thumbnailUrl: "",
 }
 
 export default function AdminNewLessonPage({ params }: { params: { id: string } }) {
   const { adminUser } = useAdminAuth()
   void adminUser
-  const router = useRouter()
-  const courseId = params.id
-  
-  // Find course - in future this will be an API call
-  const course = mockCourses.find(c => c.id === courseId)
-  const existingLessons = getLessonsByCourseId(courseId)
-  
-  const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState<NewLessonFormData>({
-    title: '',
-    description: '',
-    type: 'text',
-    content: '',
-    videoUrl: '',
-    duration: 10,
-    order: existingLessons.length + 1,
-    isLocked: false
-  })
 
-  if (!course) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const courseId = params.id
+
+  const [sections, setSections] = useState<AdminCourseSection[]>([])
+  const [formData, setFormData] = useState<LessonFormState>(initialForm)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadSections = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const course = await courseApi.getCourse(courseId)
+        const courseSections = course.sections ?? []
+        setSections(courseSections)
+        const preferredSection = searchParams?.get("sectionId")
+        const defaultSection = preferredSection && courseSections.some((sec) => sec.id === preferredSection)
+          ? preferredSection
+          : courseSections[0]?.id ?? ""
+        setFormData((prev) => ({ ...prev, sectionId: defaultSection }))
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unable to load sections."
+        setError(message)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    void loadSections()
+  }, [courseId, searchParams])
+
+  const selectedSection = useMemo(
+    () => sections.find((section) => section.id === formData.sectionId),
+    [formData.sectionId, sections],
+  )
+
+  const updateField = <K extends keyof LessonFormState>(field: K, value: LessonFormState[K]) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handleSubmit = async () => {
+    if (!formData.title.trim()) {
+      toast({ title: "Missing title", description: "Lesson title is required.", variant: "destructive" })
+      return
+    }
+    if (!formData.sectionId) {
+      toast({
+        title: "Select section",
+        description: "Choose a section before creating a lesson.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const payload = {
+        title: formData.title.trim(),
+        contentType: formData.contentType,
+        durationMinutes: formData.durationMinutes,
+        bodyHtml: formData.contentType === "text" ? formData.bodyHtml : undefined,
+        readTimeMinutes: formData.contentType === "text" ? formData.durationMinutes : undefined,
+        videoUrl: formData.contentType === "video" ? formData.videoUrl.trim() : undefined,
+        thumbnailUrl: formData.contentType === "video" ? formData.thumbnailUrl.trim() : undefined,
+      }
+
+      await lessonApi.createLesson(courseId, formData.sectionId, payload)
+      toast({ title: "Lesson created", description: `"${formData.title}" added to the course.` })
+      router.push(`/admin/courses/${courseId}`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create lesson."
+      toast({ title: "Unable to create lesson", description: message, variant: "destructive" })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
+        <AdminNavbar />
+        <div className="max-w-4xl mx-auto px-4 py-16 text-center text-muted-foreground">Loading sections...</div>
+      </div>
+    )
+  }
+
+  if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center">
         <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <h2 className="text-xl font-semibold mb-2">Course Not Found</h2>
-            <p className="text-muted-foreground mb-4">The requested course could not be found.</p>
-            <Link href="/admin/courses">
-              <Button>Back to Courses</Button>
-            </Link>
+          <CardContent className="pt-6 text-center space-y-4">
+            <CardTitle className="text-xl">Unable to load course</CardTitle>
+            <CardDescription>{error}</CardDescription>
+            <Button onClick={() => router.refresh()}>Retry</Button>
           </CardContent>
         </Card>
       </div>
     )
   }
 
-  const handleInputChange = <K extends keyof NewLessonFormData>(field: K, value: NewLessonFormData[K]) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
-  }
-
-  const handleCreate = async () => {
-    if (!formData.title.trim()) {
-      toast.error('Please enter a lesson title')
-      return
-    }
-
-  if (!formData.description.trim()) {
-    toast.error('Please enter a lesson description')
-    return
-  }
-
-  setIsLoading(true)
-    
-    try {
-      // TODO: Replace with actual API call to NestJS backend
-      // const newLesson = {
-      //   ...formData,
-      //   courseId,
-      //   order: existingLessons.length + 1,
-      //   id: `lesson_${Date.now()}`,
-      //   prerequisiteIds: [],
-      //   createdAt: new Date(),
-      //   updatedAt: new Date()
-      // }
-      
-      // const response = await fetch(`/api/admin/courses/${courseId}/lessons`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(newLesson)
-      // })
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      toast.success('Lesson created successfully!')
-      
-      // Navigate back to course management
-      router.push(`/admin/courses/${courseId}`)
-      
-    } catch (error) {
-      console.error('Error creating lesson:', error)
-      toast.error('Failed to create lesson. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
+  if (!sections.length) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
+        <AdminNavbar />
+        <div className="max-w-4xl mx-auto px-4 py-16">
+          <Card>
+            <CardContent className="p-6 text-center space-y-3">
+              <CardTitle className="text-lg">No sections available</CardTitle>
+              <CardDescription>
+                Create a section for this course before adding lessons. Section management lives in the admin course
+                detail page.
+              </CardDescription>
+              <Link href={`/admin/courses/${courseId}`}>
+                <Button>Back to course</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       <AdminNavbar />
 
-      {/* Breadcrumb Section */}
       <div className="border-b border-border/60 bg-background/80">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-            <div className="flex items-center text-xs sm:text-sm text-muted-foreground overflow-hidden">
-              <Link href="/admin/courses" className="hover:text-foreground flex-shrink-0">Courses</Link>
-              <span className="mx-1 sm:mx-2 flex-shrink-0">/</span>
-              <Link href={`/admin/courses/${courseId}`} className="hover:text-foreground truncate max-w-[100px] sm:max-w-[150px] lg:max-w-none">{course.title}</Link>
-              <span className="mx-1 sm:mx-2 flex-shrink-0">/</span>
-              <span className="text-foreground flex-shrink-0">New Lesson</span>
+            <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+              <Link href={`/admin/courses/${courseId}`} className="hover:text-foreground">
+                Course
+              </Link>
+              <span className="mx-1 sm:mx-2">/</span>
+              <span className="text-foreground">Add Lesson</span>
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-8 gap-3 sm:gap-4">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-2">Create New Lesson</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Add a new lesson to &quot;{course.title}&quot;</p>
-          </div>
-          <Button 
-            onClick={handleCreate} 
-            disabled={isLoading}
-            className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9 flex-shrink-0"
-          >
-            <Save className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{isLoading ? 'Creating...' : 'Create Lesson'}</span>
-            <span className="sm:hidden">{isLoading ? 'Create...' : 'Create'}</span>
-          </Button>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-2">Create Lesson</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Lessons live inside sections. Choose the section and content type to generate the fields you need.
+          </p>
         </div>
 
-        {/* Form */}
-        <div className="space-y-6">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-              <CardDescription>Core lesson details and metadata</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Lesson Title *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
-                  placeholder="Enter lesson title"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description *</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Brief description of what students will learn"
-                  rows={3}
-                  required
-                />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="type">Lesson Type</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) => handleInputChange('type', value as NewLessonFormData['type'])}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="text">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          Text Content
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="video">
-                        <div className="flex items-center gap-2">
-                          <PlayCircle className="h-4 w-4" />
-                          Video Lesson
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="quiz">
-                        <div className="flex items-center gap-2">
-                          <BookOpen className="h-4 w-4" />
-                          Quiz/Assessment
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (minutes)</Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    value={formData.duration}
-                    onChange={(e) => handleInputChange('duration', parseInt(e.target.value) || 10)}
-                    placeholder="Estimated time"
-                    min="1"
-                    max="180"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="order">Lesson Order</Label>
-                  <Input
-                    id="order"
-                    type="number"
-                    value={formData.order}
-                    onChange={(e) => handleInputChange('order', parseInt(e.target.value) || 1)}
-                    placeholder="Position in course"
-                    min="1"
-                    max={existingLessons.length + 10}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Current course has {existingLessons.length} lesson{existingLessons.length !== 1 ? 's' : ''}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="space-y-1">
-                  <Label htmlFor="locked">Locked Status</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {formData.isLocked ? 'Students need to complete prerequisites' : 'Available to all students'}
-                  </p>
-                </div>
-                <Switch
-                  id="locked"
-                  checked={formData.isLocked}
-                  onCheckedChange={(checked) => handleInputChange('isLocked', checked)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Content Preview */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {formData.type === 'text' && <FileText className="h-5 w-5" />}
-                {formData.type === 'video' && <PlayCircle className="h-5 w-5" />}
-                {formData.type === 'quiz' && <BookOpen className="h-5 w-5" />}
-                Content Setup
-              </CardTitle>
-              <CardDescription>
-                Initial content configuration for your {formData.type} lesson
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Text Content */}
-              {formData.type === 'text' && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="content">Initial Content (Markdown)</Label>
-                    <Textarea
-                      id="content"
-                      value={formData.content}
-                      onChange={(e) => handleInputChange('content', e.target.value)}
-                      placeholder="# Lesson Title&#10;&#10;Write your lesson content here using Markdown formatting...&#10;&#10;## Key Points&#10;- Point 1&#10;- Point 2&#10;&#10;**Bold text** and *italic text* are supported."
-                      rows={10}
-                      className="font-mono"
-                    />
-                  </div>
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      You can add basic content now and enhance it later with the full content editor.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-
-              {/* Video Content */}
-              {formData.type === 'video' && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="videoUrl">Video URL (Optional)</Label>
-                    <Input
-                      id="videoUrl"
-                      value={formData.videoUrl}
-                      onChange={(e) => handleInputChange('videoUrl', e.target.value)}
-                      placeholder="https://www.youtube.com/watch?v=..."
-                    />
-                  </div>
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      You can add the video URL now or later when editing the lesson. Video upload functionality will be available with backend integration.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-
-              {/* Quiz Content */}
-              {formData.type === 'quiz' && (
-                <div className="space-y-4">
-                  <Alert>
-                    <BookOpen className="h-4 w-4" />
-                    <AlertDescription>
-                      Quiz questions will be added after creating the lesson. You&apos;ll be able to add multiple questions with different types and explanations.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Course Context */}
-          <Card>
+        <Card className="border border-border/60 bg-card/90">
           <CardHeader>
-            <CardTitle>Course Context</CardTitle>
-            <CardDescription>This lesson will be added to &quot;{course.title}&quot;</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-4 text-sm">
-                <div className="space-y-2">
-                  <p className="font-medium text-muted-foreground">Current Lessons</p>
-                  <p className="text-2xl font-bold">{existingLessons.length}</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="font-medium text-muted-foreground">New Position</p>
-                  <p className="text-2xl font-bold">{existingLessons.length + 1}</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="font-medium text-muted-foreground">Course Level</p>
-                  <Badge variant="secondary">{course.level}</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            <CardTitle>Lesson Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="section">Section *</Label>
+              <Select value={formData.sectionId} onValueChange={(value) => updateField("sectionId", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select section" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sections.map((section) => (
+                    <SelectItem key={section.id} value={section.id}>
+                      {section.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* API Integration Note */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-amber-600" />
-                Backend Integration Ready
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p>This lesson creation form is prepared for NestJS backend integration:</p>
-                <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li>Form data structure matches PostgreSQL schema requirements</li>
-                  <li>API endpoint ready: <code>POST /api/admin/courses/:courseId/lessons</code></li>
-                  <li>Automatic lesson ordering and position management</li>
-                  <li>Validation and error handling implemented</li>
-                  <li>Content type switching with appropriate fields</li>
-                </ul>
+            <div className="space-y-2">
+              <Label htmlFor="title">Lesson Title *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(event) => updateField("title", event.target.value)}
+                placeholder="Enter lesson title"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="type">Content Type *</Label>
+                <Select
+                  value={formData.contentType}
+                  onValueChange={(value: LessonType) => updateField("contentType", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="text">Text Lesson</SelectItem>
+                    <SelectItem value="video">Video Lesson</SelectItem>
+                    <SelectItem value="quiz">Quiz Placeholder</SelectItem>
+                    <SelectItem value="lab">Lab Placeholder</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
+
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duration (minutes) *</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  min={1}
+                  value={formData.durationMinutes}
+                  onChange={(event) => updateField("durationMinutes", Number(event.target.value) || 0)}
+                />
+              </div>
+            </div>
+
+            {formData.contentType === "text" && (
+              <div className="space-y-2">
+                <Label htmlFor="body">Lesson Content (HTML / Markdown)</Label>
+                <Textarea
+                  id="body"
+                  rows={6}
+                  value={formData.bodyHtml}
+                  onChange={(event) => updateField("bodyHtml", event.target.value)}
+                  placeholder="Add lesson content..."
+                />
+              </div>
+            )}
+
+            {formData.contentType === "video" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="videoUrl">Video URL</Label>
+                  <Input
+                    id="videoUrl"
+                    value={formData.videoUrl}
+                    onChange={(event) => updateField("videoUrl", event.target.value)}
+                    placeholder="https://youtu.be/..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="thumbnailUrl">Thumbnail URL</Label>
+                  <Input
+                    id="thumbnailUrl"
+                    value={formData.thumbnailUrl}
+                    onChange={(event) => updateField("thumbnailUrl", event.target.value)}
+                    placeholder="https://example.com/thumb.jpg"
+                  />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6">
+          <Button variant="outline" onClick={() => router.back()} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => void handleSubmit()}
+            className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+            disabled={isSaving}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {isSaving ? "Saving..." : "Create Lesson"}
+          </Button>
         </div>
       </div>
     </div>

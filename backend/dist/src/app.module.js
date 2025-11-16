@@ -15,6 +15,7 @@ const prisma_module_1 = require("./prisma/prisma.module");
 const mail_module_1 = require("./mail/mail.module");
 const auth_module_1 = require("./auth/auth.module");
 const profile_module_1 = require("./profile/profile.module");
+const lms_admin_module_1 = require("./lms-admin/lms-admin.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -29,6 +30,7 @@ exports.AppModule = AppModule = __decorate([
             mail_module_1.MailModule,
             auth_module_1.AuthModule,
             profile_module_1.ProfileModule,
+            lms_admin_module_1.LmsAdminModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

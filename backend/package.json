@@ -31,6 +31,7 @@
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.1",
+    "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@prisma/client": "^6.18.0",
@@ -91,6 +92,6 @@
     "testEnvironment": "node"
   },
   "prisma": {
-  "seed": "ts-node --transpile-only prisma/seed.ts"
-}
+    "seed": "ts-node --transpile-only prisma/seed.ts"
+  }
 }
