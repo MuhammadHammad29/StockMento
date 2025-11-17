@@ -87,6 +87,8 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
   const [isUpdatingSection, setIsUpdatingSection] = useState(false)
   const [lessonToDelete, setLessonToDelete] = useState<{ sectionId: string; lesson: LessonLink } | null>(null)
   const [isDeletingLesson, setIsDeletingLesson] = useState(false)
+  const [sectionToDelete, setSectionToDelete] = useState<AdminCourseSection | null>(null)
+  const [isDeletingSection, setIsDeletingSection] = useState(false)
 
   const loadCourse = useCallback(async () => {
     setIsLoading(true)
@@ -270,6 +272,37 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
       setProcessingLessonId(null)
       setIsDeletingLesson(false)
       setLessonToDelete(null)
+    }
+  }
+
+  const handleSectionDelete = async () => {
+    if (!sectionToDelete) return
+    setIsDeletingSection(true)
+    try {
+      await courseSectionApi.deleteSection(courseId, sectionToDelete.id)
+      setCourse((prev) =>
+        prev
+          ? {
+              ...prev,
+              sections: prev.sections?.filter((section) => section.id !== sectionToDelete.id),
+            }
+          : prev,
+      )
+      if (editingSectionId === sectionToDelete.id) {
+        setEditingSectionId(null)
+        setEditingSectionTitle("")
+      }
+      toast.success("Section deleted", {
+        description: `"${sectionToDelete.title}" has been removed.`,
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete section."
+      toast.error("Unable to delete section", {
+        description: message,
+      })
+    } finally {
+      setIsDeletingSection(false)
+      setSectionToDelete(null)
     }
   }
 
@@ -484,6 +517,15 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                 >
                   Edit Section
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700"
+                  onClick={() => setSectionToDelete(section)}
+                  disabled={isDeletingSection && sectionToDelete?.id === section.id}
+                >
+                  Delete
+                </Button>
               </div>
             </CardHeader>
             {editingSectionId === section.id && (
@@ -580,6 +622,34 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
             </CardContent>
           </Card>
         ))}
+        <AlertDialog
+          open={!!sectionToDelete}
+          onOpenChange={(open) => {
+            if (!open && !isDeletingSection) {
+              setSectionToDelete(null)
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete section</AlertDialogTitle>
+              <AlertDialogDescription>
+                {sectionToDelete ? `Remove "${sectionToDelete.title}" from this course?` : ""}
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeletingSection}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700"
+                disabled={isDeletingSection}
+                onClick={() => void handleSectionDelete()}
+              >
+                {isDeletingSection ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <AlertDialog
           open={!!lessonToDelete}
           onOpenChange={(open) => {

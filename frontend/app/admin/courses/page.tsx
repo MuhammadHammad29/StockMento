@@ -23,6 +23,16 @@ import { useAdminAuth } from "@/lib/admin-auth-context"
 import { courseApi } from "@/lib/api"
 import type { AdminCourse } from "@/lib/types"
 import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const countSections = (course: AdminCourse): number => course.sections?.length ?? 0
 
@@ -70,6 +80,8 @@ export default function AdminCoursesPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [courseToDelete, setCourseToDelete] = useState<AdminCourse | null>(null)
+  const [isDeletingCourse, setIsDeletingCourse] = useState(false)
 
   const loadCourses = useCallback(async () => {
     setIsLoading(true)
@@ -119,31 +131,27 @@ export default function AdminCoursesPage() {
     }
   }, [courses])
 
-  const handleDeleteCourse = useCallback(async (course: AdminCourse) => {
-    const confirmed = window.confirm(`Delete "${course.title}"? This cannot be undone.`)
-    if (!confirmed) {
-      return
-    }
-
-    setDeletingId(course.id)
+  const confirmDeleteCourse = useCallback(async () => {
+    if (!courseToDelete) return
+    setIsDeletingCourse(true)
+    setDeletingId(courseToDelete.id)
     try {
-      await courseApi.deleteCourse(course.id)
-      setCourses((prev) => prev.filter((item) => item.id !== course.id))
-      toast({
-        title: "Course deleted",
-        description: `"${course.title}" has been removed.`,
+      await courseApi.deleteCourse(courseToDelete.id)
+      setCourses((prev) => prev.filter((item) => item.id !== courseToDelete.id))
+      toast.success("Course deleted", {
+        description: `"${courseToDelete.title}" has been removed.`,
       })
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to delete course."
-      toast({
-        title: "Unable to delete course",
+      toast.error("Unable to delete course", {
         description: message,
-        variant: "destructive",
       })
     } finally {
       setDeletingId(null)
+      setIsDeletingCourse(false)
+      setCourseToDelete(null)
     }
-  }, [])
+  }, [courseToDelete])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
@@ -306,7 +314,10 @@ export default function AdminCoursesPage() {
               const updatedLabel = new Date(course.updatedAt).toLocaleDateString()
 
               return (
-                <Card key={course.id} className="hover:shadow-lg transition-shadow border border-border/60 bg-card/90">
+                <Card
+                  key={course.id}
+                  className="hover:shadow-lg transition-shadow border border-border/60 bg-card/90 flex flex-col h-full"
+                >
                   <CardHeader className="p-4 sm:p-6 space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -329,23 +340,25 @@ export default function AdminCoursesPage() {
                       <span className="text-muted-foreground truncate">Slug: {course.slug}</span>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4 p-4 sm:p-6">
-                    <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Layers className="h-3 w-3 sm:h-4 sm:w-4" />
-                        {sections} sections
+                  <CardContent className="flex flex-col space-y-4 p-4 sm:p-6 flex-1">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Layers className="h-3 w-3 sm:h-4 sm:w-4" />
+                          {sections} sections
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <ListOrdered className="h-3 w-3 sm:h-4 sm:w-4" />
+                          {lessons} lessons
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                          {durationLabel}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <ListOrdered className="h-3 w-3 sm:h-4 sm:w-4" />
-                        {lessons} lessons
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                        {durationLabel}
-                      </div>
+                      <div className="text-xs text-muted-foreground">Updated {updatedLabel}</div>
                     </div>
-                    <div className="text-xs text-muted-foreground">Updated {updatedLabel}</div>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-2 mt-auto pt-2">
                       <Link href={`/admin/courses/${course.id}`} className="flex-1">
                         <Button variant="outline" className="w-full bg-transparent text-xs sm:text-sm">
                           <Eye className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
@@ -362,7 +375,7 @@ export default function AdminCoursesPage() {
                         variant="outline"
                         className="bg-transparent text-red-600 hover:text-red-700"
                         disabled={deletingId === course.id}
-                        onClick={() => void handleDeleteCourse(course)}
+                        onClick={() => setCourseToDelete(course)}
                       >
                         {deletingId === course.id ? (
                           <span className="text-xs">Deleting...</span>
@@ -378,6 +391,34 @@ export default function AdminCoursesPage() {
           </div>
         )}
       </div>
+      <AlertDialog
+        open={!!courseToDelete}
+        onOpenChange={(open) => {
+          if (!open && !isDeletingCourse) {
+            setCourseToDelete(null)
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete course</AlertDialogTitle>
+            <AlertDialogDescription>
+              {courseToDelete ? `Remove "${courseToDelete.title}" permanently?` : ""}
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingCourse}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isDeletingCourse}
+              onClick={() => void confirmDeleteCourse()}
+            >
+              {isDeletingCourse ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
