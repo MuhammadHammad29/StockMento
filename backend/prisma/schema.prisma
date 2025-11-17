@@ -484,6 +484,7 @@ model CourseEnrollment {
   course Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@map("course_enrollments")
+  @@unique([userId, courseId])
   @@schema("lms")
 }
 

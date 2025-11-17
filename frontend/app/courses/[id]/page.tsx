@@ -4,87 +4,177 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { BookOpen, Clock, Users, Star, CheckCircle, Lock, FileText, Video, Play } from "lucide-react"
+import { BookOpen, Clock, Users, Star, Lock, FileText, Video, Play, Loader2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { mockCourses, mockUserProgress, getUserCourses, getLessonsByCourseId, getSectionsByCourseId, getLessonsBySectionId } from "@/lib/mock-data"
-import { calculateCourseProgress, formatDuration } from "@/lib/data-utils"
+import { formatDuration } from "@/lib/data-utils"
 import { toast } from "sonner"
-import { useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import CourseCompletionDialog from "@/components/course-completion-dialog"
 import { UserNavbar } from "@/components/navigation"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { publicCoursesApi, studentCoursesApi } from "@/lib/api"
+import { AdminLessonContentType, CourseEnrollmentSummary, PublicCourseDetail, PublicCourseSummary } from "@/lib/types"
 
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
   const { user } = useAuth()
   const [showCompletionDialog, setShowCompletionDialog] = useState(false)
   const [expandedSections, setExpandedSections] = useState<string[]>([])
+  const [course, setCourse] = useState<PublicCourseDetail | null>(null)
+  const [relatedCourses, setRelatedCourses] = useState<PublicCourseSummary[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [enrollment, setEnrollment] = useState<CourseEnrollmentSummary | null>(null)
+  const [isEnrollmentActionPending, setIsEnrollmentActionPending] = useState(false)
   const courseId = params.id
-  
-  // Find the course
-  const course = mockCourses.find(c => c.id === courseId)
-  
-  // Get sections for this course
-  const sections = getSectionsByCourseId(courseId)
-  
-  // Get lessons for this course (for backward compatibility)
-  const lessons = getLessonsByCourseId(courseId)
-  
-  if (!course) {
+
+  const loadCourse = useCallback(async () => {
+    setFetchError(null)
+    setIsLoading(true)
+    try {
+      const [detail, summaries] = await Promise.all([
+        publicCoursesApi.detail(courseId),
+        publicCoursesApi.list(),
+      ])
+      setCourse(detail)
+      const related = summaries
+        .filter(
+          (summary) =>
+            summary.id !== courseId &&
+            summary.level === detail.level &&
+            summary.isPublished,
+        )
+        .slice(0, 2)
+      setRelatedCourses(related)
+    } catch (error) {
+      console.error("Failed to load course details", error)
+      setFetchError("Unable to load this course right now.")
+      toast.error("Unable to load this course right now.")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [courseId])
+
+  useEffect(() => {
+    loadCourse()
+  }, [loadCourse])
+
+  useEffect(() => {
+    if (!user) {
+      setEnrollment(null)
+      return
+    }
+
+    let cancelled = false
+    const fetchEnrollment = async () => {
+      try {
+        const data = await studentCoursesApi.get(courseId)
+        if (!cancelled) {
+          setEnrollment(data)
+        }
+      } catch (error) {
+        console.error("Failed to load enrollment", error)
+        if (!cancelled) {
+          setEnrollment(null)
+        }
+      }
+    }
+
+    fetchEnrollment()
+    return () => {
+      cancelled = true
+    }
+  }, [user, courseId])
+
+  const sections = useMemo(() => course?.sections ?? [], [course])
+  const lessons = useMemo(
+    () => sections.flatMap((section) => section.lessons ?? []),
+    [sections],
+  )
+
+  const estimatedLearners = course ? Math.max(course.totalLessons * 35, 40) : 0
+  const ratingValue = 4.8
+  const ratingCount = Math.max(Math.floor(estimatedLearners * 0.65), 12)
+
+  const isEnrolled = Boolean(enrollment && enrollment.status !== "dropped")
+  const overallProgress = enrollment?.progressPercent ?? 0
+
+  const handleEnroll = async () => {
+    if (!user) {
+      toast.error("Please sign in to enroll in courses")
+      return
+    }
+
+    setIsEnrollmentActionPending(true)
+    try {
+      const nextEnrollment = await studentCoursesApi.enroll(courseId)
+      setEnrollment(nextEnrollment)
+      toast.success("You're enrolled! Start learning now.")
+    } catch (error) {
+      console.error("Failed to enroll", error)
+      toast.error("Unable to enroll right now. Please try again.")
+    } finally {
+      setIsEnrollmentActionPending(false)
+    }
+  }
+
+  const getLessonIcon = (type: AdminLessonContentType) => {
+    return type === "video" ? Video : FileText
+  }
+
+  const getLessonStatus = () => {
+    if (!isEnrolled) return "locked"
+    return "available"
+  }
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Course Not Found</h1>
-          <Link href="/courses">
-            <Button className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400">Back to Courses</Button>
-          </Link>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex flex-col">
+        <UserNavbar />
+        <div className="flex flex-1 items-center justify-center px-4">
+          <Card className="max-w-md w-full border border-border/60 bg-card/90">
+            <CardContent className="p-8 text-center space-y-4">
+              <Loader2 className="mx-auto h-10 w-10 text-emerald-600 animate-spin" />
+              <div>
+                <h2 className="text-xl font-semibold text-foreground mb-1">Loading course</h2>
+                <p className="text-sm text-muted-foreground">
+                  Fetching the latest curriculum details...
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     )
   }
 
-  // Get user enrollment and progress
-  const enrolledCourses = user ? getUserCourses(user.id) : []
-  const isEnrolled = enrolledCourses.some(c => c.id === courseId)
-  const userProgress = user ? mockUserProgress.find(p => p.userId === user.id && p.courseId === courseId) : null
-  const overallProgress = userProgress ? calculateCourseProgress(
-    courseId,
-    userProgress.completedLessons,
-    userProgress.completedQuizzes,
-    course.totalLessons,
-    0 // quizzes count
-  ) : 0
-
-  const handleEnroll = () => {
-    if (!user) {
-      toast.error("Please sign in to enroll in courses")
-      return
-    }
-    toast.success("Successfully enrolled in the course!")
-  }
-
-  const getLessonIcon = (type: string) => {
-    return type === "video" ? Video : FileText
-  }
-
-  const getLessonStatus = (lessonId: string) => {
-    if (!userProgress) return "locked"
-    if (userProgress.completedLessons.includes(lessonId)) return "completed"
-    if (userProgress.currentLesson === lessonId) return "current"
-    return "locked"
-  }
-
-  const getSectionProgress = (sectionId: string) => {
-    if (!userProgress) return 0
-    const sectionLessons = getLessonsBySectionId(sectionId)
-    if (sectionLessons.length === 0) return 0
-    
-    const completedCount = sectionLessons.filter(lesson => 
-      userProgress.completedLessons.includes(lesson.id)
-    ).length
-    
-    return Math.round((completedCount / sectionLessons.length) * 100)
+  if (!course) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex flex-col">
+        <UserNavbar />
+        <div className="flex flex-1 items-center justify-center px-4">
+          <Card className="max-w-lg w-full border border-border/60 bg-card/90">
+            <CardContent className="p-8 text-center space-y-6">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground mb-2">Course unavailable</h1>
+                <p className="text-muted-foreground">
+                  {fetchError ?? "We couldn&apos;t find the requested course."}
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button onClick={loadCourse} className="bg-emerald-600 hover:bg-emerald-700">
+                  Try Again
+                </Button>
+                <Link href="/courses">
+                  <Button variant="outline">Back to Courses</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -113,7 +203,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   {course.level}
                 </Badge>
                 <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-200">
-                  {course.category}
+                  {sections.length === 1 ? "Single section" : `${sections.length} sections`}
                 </Badge>
               </div>
 
@@ -123,22 +213,22 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
               <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 sm:gap-6 text-sm text-muted-foreground mb-4 sm:mb-6">
                 <div className="flex items-center">
                   <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
-                  <span className="truncate">{formatDuration(course.duration)}</span>
+                  <span className="truncate">{formatDuration(course.durationMinutes)}</span>
                 </div>
                 <div className="flex items-center">
                   <BookOpen className="h-4 w-4 mr-1 flex-shrink-0" />
-                  <span className="truncate">{lessons?.length || 0} lessons</span>
+                  <span className="truncate">{lessons.length} lessons</span>
                 </div>
                 <div className="flex items-center">
                   <Users className="h-4 w-4 mr-1 flex-shrink-0" />
-                  <span className="truncate">{course.enrollmentCount || Math.floor(Math.random() * 2000) + 500} students</span>
+                  <span className="truncate">{estimatedLearners.toLocaleString()} students</span>
                 </div>
                 <div className="flex items-center">
                   <Star className="h-4 w-4 mr-1 flex-shrink-0 text-yellow-400" />
                   <span className="truncate">
-                    {course.rating.toFixed(1)}
+                    {ratingValue.toFixed(1)}
                     <span className="ml-1 text-muted-foreground">
-                      ({course.totalStudents.toLocaleString()} learners)
+                      ({ratingCount.toLocaleString()} learners)
                     </span>
                   </span>
                 </div>
@@ -161,18 +251,18 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 <CardHeader>
                   <CardTitle className="text-base sm:text-lg">Course Curriculum</CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {sections.length} sections • {lessons.length} lessons • {formatDuration(course.duration)}
+                    {sections.length} sections • {lessons.length} lessons • {formatDuration(course.durationMinutes)}
                   </p>
                 </CardHeader>
                 <CardContent>
                   {sections.length > 0 ? (
                     <Accordion type="multiple" value={expandedSections} onValueChange={setExpandedSections} className="space-y-3">
                       {sections.map((section, sectionIndex) => {
-                        const sectionLessons = getLessonsBySectionId(section.id)
-                        const sectionProgress = getSectionProgress(section.id)
-                        const completedLessons = sectionLessons.filter(lesson => 
-                          userProgress?.completedLessons.includes(lesson.id)
-                        ).length
+                        const sectionLessons = section.lessons ?? []
+                        const sectionDuration = sectionLessons.reduce(
+                          (sum, lesson) => sum + lesson.durationMinutes,
+                          0,
+                        )
 
                         return (
                           <AccordionItem 
@@ -199,21 +289,9 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                                     </span>
                                     <span className="flex items-center">
                                       <Clock className="h-3 w-3 mr-1" />
-                                      {formatDuration(section.totalDuration)}
+                                      {formatDuration(sectionDuration)}
                                     </span>
-                                    {isEnrolled && (
-                                      <span className="flex items-center text-emerald-600 font-medium">
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        {completedLessons}/{sectionLessons.length}
-                                      </span>
-                                    )}
                                   </div>
-                                  
-                                  {isEnrolled && sectionProgress > 0 && (
-                                    <div className="mt-2">
-                                      <Progress value={sectionProgress} className="h-1.5" />
-                                    </div>
-                                  )}
                                 </div>
                               </div>
                             </AccordionTrigger>
@@ -221,28 +299,27 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                             <AccordionContent className="px-3 sm:px-4 pb-3 sm:pb-4">
                               <div className="space-y-2 pt-2">
                                 {sectionLessons.map((lesson, lessonIndex) => {
-                                  const status = getLessonStatus(lesson.id)
-                                  const LessonIcon = getLessonIcon(lesson.type)
+                                  const status = getLessonStatus()
+                                  const isLocked = status === "locked"
+                                  const LessonIcon = getLessonIcon(lesson.contentType)
                                   
                                   return (
                                     <div
                                       key={lesson.id}
                                       className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border transition-colors ${
-                                        status === "current" 
-                                          ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30" 
-                                          : "bg-background border-border/40 hover:bg-muted/30"
+                                        isLocked
+                                          ? "bg-background border-border/40"
+                                          : "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30"
                                       }`}
                                     >
                                       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                                         <div className="flex-shrink-0">
-                                          {status === "completed" ? (
-                                            <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
-                                          ) : status === "current" ? (
+                                          {isLocked ? (
+                                            <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                                          ) : (
                                             <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-emerald-600 flex items-center justify-center">
                                               <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-background" />
                                             </div>
-                                          ) : (
-                                            <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                                           )}
                                         </div>
                                         
@@ -251,10 +328,10 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                                             {sectionIndex + 1}.{lessonIndex + 1}
                                           </span>
                                           <LessonIcon className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${
-                                            lesson.type === "video" ? "text-blue-600" : "text-muted-foreground"
+                                            lesson.contentType === "video" ? "text-blue-600" : "text-muted-foreground"
                                           }`} />
                                           <span className={`font-medium text-xs sm:text-sm truncate ${
-                                            status === "current" ? "text-emerald-700 dark:text-emerald-300" : ""
+                                            !isLocked ? "text-emerald-700 dark:text-emerald-300" : ""
                                           }`}>
                                             {lesson.title}
                                           </span>
@@ -263,18 +340,19 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                                       
                                       <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-2">
                                         <span className="hidden sm:block text-xs sm:text-sm text-muted-foreground">
-                                          {formatDuration(lesson.duration)}
+                                          {formatDuration(lesson.durationMinutes)}
                                         </span>
-                                        {isEnrolled && (status === "completed" || status === "current") && (
+                                        {isLocked ? (
+                                          <Button size="sm" variant="outline" className="text-xs px-2 sm:px-3" disabled>
+                                            Locked
+                                          </Button>
+                                        ) : (
                                           <Link href={`/courses/${courseId}/lessons/${lesson.id}`}>
                                             <Button 
                                               size="sm" 
-                                              variant={status === "current" ? "default" : "outline"}
                                               className="text-xs px-2 sm:px-3"
                                             >
-                                              <span className="hidden sm:inline">
-                                                {status === "completed" ? "Review" : "Start"}
-                                              </span>
+                                              <span className="hidden sm:inline">Open Lesson</span>
                                               <Play className="h-3 w-3 sm:ml-1.5" />
                                             </Button>
                                           </Link>
@@ -309,17 +387,10 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 <CardContent className="p-6">
                   {isEnrolled ? (
                     <div className="space-y-4">
-                      {userProgress && userProgress.currentLesson ? (
-                        <Link href={`/courses/${course.id}/lessons/${userProgress.currentLesson}`}>
-                          <Button className="w-full bg-emerald-600 hover:bg-emerald-700" size="lg">
-                            Continue Learning
-                            <Play className="ml-2 h-4 w-4" />
-                          </Button>
-                        </Link>
-                      ) : lessons && lessons.length > 0 ? (
+                      {lessons && lessons.length > 0 ? (
                         <Link href={`/courses/${course.id}/lessons/${lessons[0].id}`}>
                           <Button className="w-full bg-emerald-600 hover:bg-emerald-700" size="lg">
-                            Start Course
+                            {overallProgress > 0 ? "Continue Learning" : "Start Course"}
                             <Play className="ml-2 h-4 w-4" />
                           </Button>
                         </Link>
@@ -342,8 +413,13 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <Button onClick={handleEnroll} className="w-full bg-emerald-600 hover:bg-emerald-700" size="lg">
-                        Enroll Now
+                      <Button
+                        onClick={handleEnroll}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700"
+                        size="lg"
+                        disabled={isEnrollmentActionPending}
+                      >
+                        {isEnrollmentActionPending ? "Enrolling..." : "Enroll Now"}
                       </Button>
                     </div>
                   )}
@@ -358,7 +434,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 <CardContent className="space-y-3">
                   <div className="flex items-center space-x-3">
                     <Video className="h-5 w-5 text-blue-600" />
-                    <span className="text-sm">{formatDuration(course.duration)} of content</span>
+                    <span className="text-sm">{formatDuration(course.durationMinutes)} of content</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <FileText className="h-5 w-5 text-muted-foreground" />
@@ -377,14 +453,14 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                   <CardTitle className="text-lg">Related Courses</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {mockCourses
-                    .filter(c => c.id !== course.id && c.level === course.level)
-                    .slice(0, 2)
-                    .map((relatedCourse) => (
+                  {relatedCourses.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Similar courses will appear here as soon as they&apos;re published.</p>
+                  ) : (
+                    relatedCourses.map((relatedCourse) => (
                       <Link key={relatedCourse.id} href={`/courses/${relatedCourse.id}`}>
                         <div className="flex space-x-3 hover:bg-muted/40 dark:hover:bg-muted/30 p-2 rounded-lg transition-colors">
                           <Image
-                            src={relatedCourse.thumbnail}
+                            src={relatedCourse.mediaUrl || "/placeholder.svg"}
                             alt={relatedCourse.title}
                             width={80}
                             height={60}
@@ -392,11 +468,14 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                           />
                           <div className="flex-1">
                             <h4 className="font-medium text-sm line-clamp-2">{relatedCourse.title}</h4>
-                            <p className="text-xs text-muted-foreground">{relatedCourse.level} - {formatDuration(relatedCourse.duration)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {relatedCourse.level} • {formatDuration(relatedCourse.durationMinutes)}
+                            </p>
                           </div>
                         </div>
                       </Link>
-                    ))}
+                    ))
+                  )}
                 </CardContent>
               </Card>
             </div>

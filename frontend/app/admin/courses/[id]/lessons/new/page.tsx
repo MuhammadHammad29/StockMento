@@ -11,10 +11,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import QuizBuilder, {
+  QuizFormState,
+  createEmptyQuizForm,
+  quizFormToPayload,
+  validateQuizForm,
+} from "@/components/admin/quiz-builder"
 import { AdminNavbar } from "@/components/navigation"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { courseApi, lessonApi } from "@/lib/api"
-import type { AdminCourseSection } from "@/lib/types"
+import type { AdminCourseSection, CreateLessonPayload } from "@/lib/types"
 import { toast } from "sonner"
 
 type LessonType = "text" | "video" | "quiz" | "lab"
@@ -49,6 +55,7 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
 
   const [sections, setSections] = useState<AdminCourseSection[]>([])
   const [formData, setFormData] = useState<LessonFormState>(initialForm)
+  const [quizForm, setQuizForm] = useState<QuizFormState>(() => createEmptyQuizForm())
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -84,6 +91,17 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
       ...prev,
       [field]: value,
     }))
+    if (field === "title" && formData.contentType === "quiz") {
+      const nextTitle = String(value)
+      setQuizForm((prev) =>
+        prev.title.trim().length === 0 || prev.title === formData.title
+          ? { ...prev, title: nextTitle }
+          : prev,
+      )
+    }
+    if (field === "contentType" && value === "quiz" && quizForm.title.trim().length === 0) {
+      setQuizForm((prev) => ({ ...prev, title: formData.title }))
+    }
   }
 
   const handleSubmit = async () => {
@@ -108,6 +126,14 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
       return
     }
 
+    if (formData.contentType === "quiz") {
+      const validationError = validateQuizForm(quizForm)
+      if (validationError) {
+        toast.error(validationError)
+        return
+      }
+    }
+
     if (!formData.sectionId) {
       toast.error("Select section", {
         description: "Choose a section before creating a lesson.",
@@ -117,7 +143,7 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
 
     setIsSaving(true)
     try {
-      const payload = {
+      const payload: CreateLessonPayload = {
         title: formData.title.trim(),
         contentType: formData.contentType,
         durationMinutes: formData.durationMinutes,
@@ -125,6 +151,9 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
         readTimeMinutes: formData.contentType === "text" ? formData.durationMinutes : undefined,
         videoUrl: formData.contentType === "video" ? formData.videoUrl.trim() : undefined,
         thumbnailUrl: formData.contentType === "video" ? formData.thumbnailUrl.trim() : undefined,
+      }
+      if (formData.contentType === "quiz") {
+        payload.quiz = quizFormToPayload(quizForm)
       }
 
       await lessonApi.createLesson(courseId, formData.sectionId, payload)
@@ -257,8 +286,8 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
                   <SelectContent>
                     <SelectItem value="text">Text Lesson</SelectItem>
                     <SelectItem value="video">Video Lesson</SelectItem>
-                    <SelectItem value="quiz">Quiz Placeholder</SelectItem>
-                    <SelectItem value="lab">Lab Placeholder</SelectItem>
+                    <SelectItem value="quiz">Quiz</SelectItem>
+                    <SelectItem value="lab">Lab</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -308,6 +337,17 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
                     placeholder="https://example.com/thumb.jpg"
                   />
                 </div>
+              </div>
+            )}
+
+            {formData.contentType === "quiz" && (
+              <div className="space-y-2">
+                <Label>Quiz Details</Label>
+                <QuizBuilder
+                  value={quizForm}
+                  onChange={setQuizForm}
+                  defaultTitle={formData.title}
+                />
               </div>
             )}
           </CardContent>

@@ -11,6 +11,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import QuizBuilder, {
+  QuizFormState,
+  createEmptyQuizForm,
+  quizFormFromAdminQuiz,
+  quizFormToPayload,
+  validateQuizForm,
+} from "@/components/admin/quiz-builder"
 import { AdminNavbar } from "@/components/navigation"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { courseApi, lessonApi } from "@/lib/api"
@@ -48,6 +55,7 @@ export default function EditLessonPage({ params }: { params: { id: string; lesso
   const [course, setCourse] = useState<AdminCourse | null>(null)
   const [section, setSection] = useState<AdminCourseSection | null>(null)
   const [formData, setFormData] = useState<LessonFormState>(emptyState)
+  const [quizForm, setQuizForm] = useState<QuizFormState>(createEmptyQuizForm())
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -77,6 +85,11 @@ export default function EditLessonPage({ params }: { params: { id: string; lesso
         videoUrl: lessonLink.lesson.video?.videoUrl ?? "",
         thumbnailUrl: lessonLink.lesson.video?.thumbnailUrl ?? "",
       })
+      if (lessonLink.lesson.contentType === "quiz") {
+        setQuizForm(quizFormFromAdminQuiz(lessonLink.lesson.quizLink?.quiz))
+      } else {
+        setQuizForm(createEmptyQuizForm())
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to load lesson."
       setError(message)
@@ -118,6 +131,14 @@ export default function EditLessonPage({ params }: { params: { id: string; lesso
       return
     }
 
+    if (formData.contentType === "quiz") {
+      const validationError = validateQuizForm(quizForm)
+      if (validationError) {
+        toast.error(validationError)
+        return
+      }
+    }
+
     setIsSaving(true)
     try {
       const payload = {
@@ -128,6 +149,9 @@ export default function EditLessonPage({ params }: { params: { id: string; lesso
         readTimeMinutes: formData.contentType === "text" ? formData.durationMinutes : undefined,
         videoUrl: formData.contentType === "video" ? formData.videoUrl.trim() : undefined,
         thumbnailUrl: formData.contentType === "video" ? formData.thumbnailUrl.trim() : undefined,
+      }
+      if (formData.contentType === "quiz") {
+        payload.quiz = quizFormToPayload(quizForm)
       }
       await lessonApi.updateLesson(courseId, section.id, lessonId, payload)
       toast.success("Lesson updated", {
@@ -276,6 +300,13 @@ export default function EditLessonPage({ params }: { params: { id: string; lesso
                     onChange={(event) => updateField("thumbnailUrl", event.target.value)}
                   />
                 </div>
+              </div>
+            )}
+
+            {formData.contentType === "quiz" && (
+              <div className="space-y-2">
+                <Label>Quiz Details</Label>
+                <QuizBuilder value={quizForm} onChange={setQuizForm} />
               </div>
             )}
           </CardContent>

@@ -13,68 +13,153 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
-import { BookOpen, Clock, Users, Star, Search, ChevronRight } from "lucide-react"
+import { BookOpen, Clock, Users, Star, Search, ChevronRight, Loader2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { useState, useMemo } from "react"
-import { useAuth } from "@/lib/auth-context"
-import { mockCourses, getUserCourses, mockUserProgress } from "@/lib/mock-data"
-import { calculateCourseProgress } from "@/lib/data-utils"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { UserNavbar } from "@/components/navigation"
+import { publicCoursesApi, studentCoursesApi } from "@/lib/api"
+import { CourseEnrollmentSummary, PublicCourseSummary } from "@/lib/types"
+import { useAuth } from "@/lib/auth-context"
+import { toast } from "sonner"
+
+type CourseWithMetadata = PublicCourseSummary & {
+  progress: number
+  isEnrolled: boolean
+  enrollmentCount: number
+  rating: number
+  categoryLabel: string
+}
 
 export default function CoursesPage() {
   const { user } = useAuth()
-  
   // Filter and search state management
   const [searchQuery, setSearchQuery] = useState("")
   const [levelFilter, setLevelFilter] = useState("All")
   const [durationFilter, setDurationFilter] = useState("All")
+  const [courses, setCourses] = useState<PublicCourseSummary[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [enrollments, setEnrollments] = useState<CourseEnrollmentSummary[]>([])
+  const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(false)
 
-  // Get user's enrolled courses and progress data
-  const enrolledCourses = useMemo(() => (user ? getUserCourses(user.id) : []), [user])
-  const userProgressData = useMemo(
-    () => (user ? mockUserProgress.filter((p) => p.userId === user.id) : []),
-    [user],
-  )
+  const loadCourses = useCallback(async () => {
+    setFetchError(null)
+    setIsLoading(true)
+    try {
+      const data = await publicCoursesApi.list()
+      setCourses(data)
+    } catch (error) {
+      console.error("Failed to load courses", error)
+      setFetchError("Unable to load courses right now.")
+      toast.error("Unable to load courses right now.")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
-  // Enhance courses with user-specific progress information
-  const coursesWithProgress = useMemo(() => {
-    return mockCourses.map(course => {
-      const userProgress = userProgressData.find(p => p.courseId === course.id)
-      const isEnrolled = enrolledCourses.some(c => c.id === course.id)
-      
+  useEffect(() => {
+    loadCourses()
+  }, [loadCourses])
+
+  useEffect(() => {
+    if (!user) {
+      setEnrollments([])
+      return
+    }
+
+    let cancelled = false
+    const fetchEnrollments = async () => {
+      setIsLoadingEnrollments(true)
+      try {
+        const data = await studentCoursesApi.list()
+        if (!cancelled) {
+          setEnrollments(data)
+        }
+      } catch (error) {
+        console.error("Failed to load enrollments", error)
+        if (!cancelled) {
+          toast.error("Unable to load your enrollments right now.")
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingEnrollments(false)
+        }
+      }
+    }
+
+    fetchEnrollments()
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+  const enrollmentMap = useMemo(() => {
+    const map = new Map<string, CourseEnrollmentSummary>()
+    enrollments.forEach((enrollment) => {
+      if (enrollment.status !== "dropped") {
+        map.set(enrollment.courseId, enrollment)
+      }
+    })
+    return map
+  }, [enrollments])
+
+  // Enhance courses with derived UI metadata
+  const coursesWithProgress: CourseWithMetadata[] = useMemo(() => {
+    return courses.map((course) => {
+      const enrollmentEstimate = Math.max(course.totalLessons * 35, 40)
+      const categoryLabel =
+        course.sectionsCount === 1 ? "Single section" : `${course.sectionsCount} sections`
+      const enrollment = enrollmentMap.get(course.id)
+      const isEnrolled = Boolean(enrollment)
+
       return {
         ...course,
         isEnrolled,
-        progress: userProgress ? calculateCourseProgress(
-          course.id,
-          userProgress.completedLessons,
-          userProgress.completedQuizzes,
-          course.totalLessons,
-          0 // quizzes count - will be updated when quiz data is available
-        ) : 0,
-        enrollmentCount: course.enrollmentCount || Math.floor(Math.random() * 2000) + 500
+        progress: enrollment?.progressPercent ?? 0,
+        enrollmentCount: enrollmentEstimate,
+        rating: 4.8,
+        categoryLabel,
       }
     })
-  }, [userProgressData, enrolledCourses])
+  }, [courses, enrollmentMap])
 
   // Filter courses
   const filteredCourses = useMemo(() => {
     return coursesWithProgress.filter(course => {
       const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           course.category.toLowerCase().includes(searchQuery.toLowerCase())
+                           course.categoryLabel.toLowerCase().includes(searchQuery.toLowerCase())
       
       const matchesLevel = levelFilter === "All" || course.level === levelFilter
       
       const matchesDuration = durationFilter === "All" || 
-        (durationFilter === "Short" && course.duration <= 120) ||
-        (durationFilter === "Medium" && course.duration > 120 && course.duration <= 300) ||
-        (durationFilter === "Long" && course.duration > 300)
+        (durationFilter === "Short" && course.durationMinutes <= 120) ||
+        (durationFilter === "Medium" && course.durationMinutes > 120 && course.durationMinutes <= 300) ||
+        (durationFilter === "Long" && course.durationMinutes > 300)
       
       return matchesSearch && matchesLevel && matchesDuration
     })
   }, [coursesWithProgress, searchQuery, levelFilter, durationFilter])
+
+  const totalLessons = useMemo(
+    () => coursesWithProgress.reduce((sum, course) => sum + course.totalLessons, 0),
+    [coursesWithProgress],
+  )
+
+  const activeEnrollments = useMemo(
+    () => enrollments.filter((enrollment) => enrollment.status !== "dropped").length,
+    [enrollments],
+  )
+
+  const averageDurationMinutes = useMemo(() => {
+    if (coursesWithProgress.length === 0) return 0
+    const totalDuration = coursesWithProgress.reduce(
+      (sum, course) => sum + course.durationMinutes,
+      0,
+    )
+    return Math.round(totalDuration / coursesWithProgress.length)
+  }, [coursesWithProgress])
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60)
@@ -106,26 +191,26 @@ export default function CoursesPage() {
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl font-bold text-emerald-600">{mockCourses.length}</div>
+              <div className="text-xl sm:text-2xl font-bold text-emerald-600">{coursesWithProgress.length}</div>
               <div className="text-xs sm:text-sm text-muted-foreground">Total Courses</div>
             </div>
             <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl font-bold text-blue-600">{enrolledCourses.length}</div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Enrolled Courses</div>
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">
+                {isLoadingEnrollments ? "…" : activeEnrollments}
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">My Enrollments</div>
             </div>
             <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 sm:p-4">
               <div className="text-xl sm:text-2xl font-bold text-purple-600">
-                {userProgressData.filter(p => p.overallProgress === 100).length}
+                {totalLessons}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Courses Completed</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Lessons Published</div>
             </div>
             <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 sm:p-4">
               <div className="text-xl sm:text-2xl font-bold text-yellow-600">
-                {userProgressData.length > 0 
-                  ? Math.round(userProgressData.reduce((acc, p) => acc + p.overallProgress, 0) / userProgressData.length)
-                  : 0}%
+                {coursesWithProgress.length > 0 ? formatDuration(averageDurationMinutes) : "0m"}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Average Progress</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Avg. Course Duration</div>
             </div>
           </div>
         </div>
@@ -176,8 +261,29 @@ export default function CoursesPage() {
           </CardContent>
         </Card>
 
-        {/* Course Grid */}
-        {filteredCourses.length === 0 ? (
+        {fetchError && (
+          <Card className="border border-red-200 bg-red-50/80 dark:bg-red-500/10 dark:border-red-500/30 mb-6">
+            <CardContent className="flex flex-col gap-4 p-6 text-center">
+              <div>
+                <h3 className="text-lg font-semibold text-red-700 dark:text-red-200">We couldn&apos;t load the courses</h3>
+                <p className="text-sm text-muted-foreground mt-1">{fetchError}</p>
+              </div>
+              <div className="flex justify-center">
+                <Button onClick={loadCourses} variant="outline">
+                  Try Again
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {isLoading ? (
+          <Card className="border border-border/60 bg-card/90 p-12 text-center">
+            <Loader2 className="h-8 w-8 text-emerald-600 animate-spin mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">Loading courses</h3>
+            <p className="text-muted-foreground">Fetching the latest learning experiences for you...</p>
+          </Card>
+        ) : filteredCourses.length === 0 ? (
           <Card className="border border-border/60 bg-card/90 p-12 text-center">
             <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">No courses found</h3>
@@ -199,7 +305,7 @@ export default function CoursesPage() {
               <Card key={course.id} className="hover:shadow-lg transition-all duration-200 overflow-hidden group flex flex-col h-full">
                 <div className="aspect-video bg-white dark:bg-slate-950 relative overflow-hidden p-4">
                   <Image
-                    src={course.thumbnail || "/placeholder.svg"}
+                    src={course.mediaUrl || "/placeholder.svg"}
                     alt={course.title}
                     fill
                     className="object-cover transition-transform duration-200 group-hover:scale-105 p-4"
@@ -230,7 +336,7 @@ export default function CoursesPage() {
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-1" />
-                      {formatDuration(course.duration)}
+                      {formatDuration(course.durationMinutes)}
                     </div>
                     <div className="flex items-center">
                       <BookOpen className="h-4 w-4 mr-1" />
@@ -256,7 +362,7 @@ export default function CoursesPage() {
                       </div>
                       <span className="ml-2 text-sm text-muted-foreground">{course.rating}</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">{course.category}</span>
+                    <span className="text-sm text-muted-foreground">{course.categoryLabel}</span>
                   </div>
 
                   {course.isEnrolled && course.progress > 0 && (
@@ -289,7 +395,7 @@ export default function CoursesPage() {
         )}
 
         {/* Load More - Hidden for now since we have all courses */}
-        {filteredCourses.length > 0 && filteredCourses.length === mockCourses.length && (
+        {filteredCourses.length > 0 && filteredCourses.length === coursesWithProgress.length && !isLoading && (
           <div className="text-center mt-12">
             <p className="text-muted-foreground mb-4">You&apos;ve seen all available courses!</p>
             <Link href="/dashboard">

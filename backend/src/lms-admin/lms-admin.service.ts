@@ -29,7 +29,27 @@ export class LmsAdminService {
           include: {
             lessons: {
               orderBy: { position: 'asc' },
-              include: { lesson: true },
+              include: {
+                lesson: {
+                  include: {
+                    video: true,
+                    text: true,
+                    quizLink: {
+                      include: {
+                        quiz: {
+                          include: {
+                            questions: {
+                              orderBy: { position: 'asc' },
+                              include: { choices: true },
+                            },
+                          },
+                        },
+                      },
+                    },
+                    labLink: true,
+                  },
+                },
+              },
             },
           },
         },
@@ -71,7 +91,18 @@ export class LmsAdminService {
                   include: {
                     video: true,
                     text: true,
-                    quizLink: true,
+                    quizLink: {
+                      include: {
+                        quiz: {
+                          include: {
+                            questions: {
+                              orderBy: { position: 'asc' },
+                              include: { choices: true },
+                            },
+                          },
+                        },
+                      },
+                    },
                     labLink: true,
                   },
                 },
@@ -303,6 +334,9 @@ export class LmsAdminService {
     const durationMinutes = dto.durationMinutes;
     const readTimeMinutes = dto.readTimeMinutes ?? durationMinutes;
     const durationSeconds = dto.durationSeconds ?? durationMinutes * 60;
+    if (contentType !== 'quiz') {
+      await this.removeQuiz(tx, lessonId);
+    }
     switch (contentType) {
       case 'text':
         await tx.lessonText.upsert({
@@ -336,8 +370,86 @@ export class LmsAdminService {
           },
         });
         break;
+      case 'quiz':
+        await this.upsertQuiz(tx, lessonId, dto);
+        break;
       default:
         break;
     }
+  }
+
+  private async removeQuiz(tx: Prisma.TransactionClient, lessonId: string) {
+    const existing = await tx.lessonQuiz.findUnique({
+      where: { lessonId },
+    });
+    if (!existing) {
+      return;
+    }
+    await tx.lessonQuiz.delete({ where: { lessonId } });
+    await tx.quiz.delete({ where: { id: existing.quizId } }).catch(() => {
+      /* ignore */
+    });
+  }
+
+  private async upsertQuiz(
+    tx: Prisma.TransactionClient,
+    lessonId: string,
+    dto: CreateLessonDto | UpdateLessonDto,
+  ) {
+    const quizInput = dto.quiz;
+    if (!quizInput) {
+      throw new BadRequestException('Quiz payload is required.');
+    }
+    if (!quizInput.questions?.length) {
+      throw new BadRequestException('Quiz must include at least one question.');
+    }
+    const normalizedQuestions = quizInput.questions.map((question) => {
+      if (!question.choices?.length) {
+        throw new BadRequestException(
+          'Each quiz question requires at least one choice.',
+        );
+      }
+      if (!question.choices.some((choice) => choice.isCorrect)) {
+        throw new BadRequestException(
+          'Each quiz question must have at least one correct choice.',
+        );
+      }
+      return question;
+    });
+
+    await this.removeQuiz(tx, lessonId);
+
+    const quiz = await tx.quiz.create({
+      data: {
+        title: quizInput.title,
+        passScore: quizInput.passScore,
+      },
+    });
+
+    await Promise.all(
+      normalizedQuestions.map((question, index) =>
+        tx.quizQuestion.create({
+          data: {
+            quizId: quiz.id,
+            promptHtml: question.promptHtml,
+            type: question.type,
+            position: index + 1,
+            points: question.points,
+            choices: {
+              create: question.choices.map((choice) => ({
+                choiceHtml: choice.choiceHtml,
+                isCorrect: choice.isCorrect,
+              })),
+            },
+          },
+        }),
+      ),
+    );
+
+    await tx.lessonQuiz.upsert({
+      where: { lessonId },
+      update: { quizId: quiz.id },
+      create: { lessonId, quizId: quiz.id },
+    });
   }
 }

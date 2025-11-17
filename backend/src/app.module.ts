@@ -7,6 +7,7 @@ import { MailModule } from './mail/mail.module';
 import { AuthModule } from './auth/auth.module';
 import { ProfileModule } from './profile/profile.module';
 import { LmsAdminModule } from './lms-admin/lms-admin.module';
+import { CoursesModule } from './courses/courses.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { LmsAdminModule } from './lms-admin/lms-admin.module';
     AuthModule,
     ProfileModule,
     LmsAdminModule,
+    CoursesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

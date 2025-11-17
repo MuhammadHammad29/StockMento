@@ -341,9 +341,34 @@ export interface AdminLessonText {
   readTimeMinutes: number;
 }
 
+export type AdminQuizQuestionType = 'single' | 'multiple' | 'true_false';
+
 export interface AdminLessonQuizLink {
   lessonId: string;
   quizId: string;
+  quiz: AdminQuiz | null;
+}
+
+export interface AdminQuiz {
+  id: string;
+  title: string;
+  passScore: number;
+  questions: AdminQuizQuestion[];
+}
+
+export interface AdminQuizQuestion {
+  id: string;
+  promptHtml: string;
+  type: AdminQuizQuestionType;
+  position: number;
+  points: number;
+  choices: AdminQuizChoice[];
+}
+
+export interface AdminQuizChoice {
+  id: string;
+  choiceHtml: string;
+  isCorrect: boolean;
 }
 
 export interface AdminLessonLabLink {
@@ -387,6 +412,7 @@ export interface CreateLessonPayload {
   thumbnailUrl?: string;
   durationSeconds?: number;
   transcript?: string;
+  quiz?: QuizPayload;
 }
 
 export type UpdateLessonPayload = Partial<CreateLessonPayload>;
@@ -396,4 +422,131 @@ export interface ReorderLessonsPayload {
     lessonId: string;
     position: number;
   }>;
+}
+
+export interface QuizPayload {
+  title: string;
+  passScore: number;
+  questions: QuizPayloadQuestion[];
+}
+
+export interface QuizPayloadQuestion {
+  promptHtml: string;
+  type: AdminQuizQuestionType;
+  points: number;
+  choices: QuizPayloadChoice[];
+}
+
+export interface QuizPayloadChoice {
+  choiceHtml: string;
+  isCorrect: boolean;
+}
+
+// ----------------------------------------
+// Public course shapes
+// ----------------------------------------
+
+export interface PublicCourseSummary {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  level: AdminCourseLevel;
+  mediaUrl: string | null;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+  totalLessons: number;
+  sectionsCount: number;
+  durationMinutes: number;
+}
+
+export interface PublicCourseDetail extends PublicCourseSummary {
+  sections: PublicCourseSection[];
+}
+
+export interface PublicCourseSection {
+  id: string;
+  title: string;
+  position: number;
+  lessons: PublicCourseLesson[];
+}
+
+export interface PublicCourseLesson {
+  id: string;
+  title: string;
+  contentType: AdminLessonContentType;
+  durationMinutes: number;
+  description?: string | null;
+}
+
+export interface PublicLessonText {
+  bodyHtml: string;
+  readTimeMinutes: number;
+}
+
+export interface PublicLessonVideo {
+  videoUrl: string;
+  thumbnailUrl?: string | null;
+  durationSeconds: number;
+  transcript?: string | null;
+}
+
+export interface PublicLessonQuizChoice {
+  id: string;
+  choiceHtml: string;
+  isCorrect: boolean;
+}
+
+export interface PublicLessonQuizQuestion {
+  id: string;
+  promptHtml: string;
+  type: AdminQuizQuestionType;
+  points: number;
+  choices: PublicLessonQuizChoice[];
+}
+
+export interface PublicLessonQuiz {
+  id: string;
+  title: string;
+  passScore: number;
+  questions: PublicLessonQuizQuestion[];
+}
+
+export interface PublicLessonLab {
+  id: string;
+  title: string;
+  labUrl: string;
+  instructionsHtml: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface PublicLessonDetail {
+  id: string;
+  title: string;
+  contentType: AdminLessonContentType;
+  durationMinutes: number;
+  description?: string | null;
+  course: PublicCourseSummary;
+  section: {
+    id: string;
+    title: string;
+    position: number;
+  };
+  text: PublicLessonText | null;
+  video: PublicLessonVideo | null;
+  quiz: PublicLessonQuiz | null;
+  lab: PublicLessonLab | null;
+}
+
+export type CourseEnrollmentStatus = 'active' | 'completed' | 'dropped';
+
+export interface CourseEnrollmentSummary {
+  id: string;
+  courseId: string;
+  status: CourseEnrollmentStatus;
+  progressPercent: number | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  course: PublicCourseSummary;
 }

@@ -19,6 +19,10 @@ import {
   CreateLessonPayload,
   UpdateLessonPayload,
   ReorderLessonsPayload,
+  PublicCourseSummary,
+  PublicCourseDetail,
+  CourseEnrollmentSummary,
+  PublicLessonDetail,
 } from '../types'
 import { STORAGE_KEYS } from '../data-utils'
 
@@ -355,6 +359,49 @@ export const courseSectionApi = {
   },
 }
 
+// Public Courses APIs
+export const publicCoursesApi = {
+  list: async (): Promise<PublicCourseSummary[]> => {
+    return apiCall<PublicCourseSummary[]>('/courses')
+  },
+
+  detail: async (courseId: string): Promise<PublicCourseDetail> => {
+    return apiCall<PublicCourseDetail>(`/courses/${courseId}`)
+  },
+
+  lessonDetail: async (
+    courseId: string,
+    lessonId: string,
+  ): Promise<PublicLessonDetail> => {
+    return apiCall<PublicLessonDetail>(`/courses/${courseId}/lessons/${lessonId}`)
+  },
+}
+
+// Student-facing course APIs
+export const studentCoursesApi = {
+  enroll: async (courseId: string): Promise<CourseEnrollmentSummary> => {
+    return apiCall<CourseEnrollmentSummary>(`/courses/${courseId}/enroll`, {
+      method: 'POST',
+    })
+  },
+
+  drop: async (courseId: string): Promise<CourseEnrollmentSummary> => {
+    return apiCall<CourseEnrollmentSummary>(`/courses/${courseId}/enroll`, {
+      method: 'DELETE',
+    })
+  },
+
+  list: async (): Promise<CourseEnrollmentSummary[]> => {
+    return apiCall<CourseEnrollmentSummary[]>('/courses/me/enrollments')
+  },
+
+  get: async (courseId: string): Promise<CourseEnrollmentSummary | null> => {
+    return apiCall<CourseEnrollmentSummary | null>(
+      `/courses/${courseId}/enrollment`,
+    )
+  },
+}
+
 // Lesson Management APIs
 export const lessonApi = {
   createLesson: async (
@@ -611,6 +658,8 @@ export const progressApi = {
 
 // Export all APIs
 export const api = {
+  publicCourses: publicCoursesApi,
+  studentCourses: studentCoursesApi,
   courses: courseApi,
   courseSections: courseSectionApi,
   lessons: lessonApi,
