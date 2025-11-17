@@ -13,7 +13,7 @@ import { usePathname } from "next/navigation"
 import { BookOpen, BarChart3 } from "lucide-react"
 import BaseNavbar from "./BaseNavbar"
 import { useAdminAuth } from "@/lib/admin-auth-context"
-import { getAvatarPath } from "@/lib/mock-data"
+import { getAvatarPath } from "@/lib/avatar-utils"
 
 interface AdminNavbarProps {
   className?: string

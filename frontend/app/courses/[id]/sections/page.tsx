@@ -15,6 +15,7 @@ import {
   Play,
   GraduationCap,
   Loader2,
+  CheckCircle,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
@@ -23,7 +24,7 @@ import { UserNavbar } from "@/components/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { publicCoursesApi, studentCoursesApi } from "@/lib/api"
-import { AdminLessonContentType, CourseEnrollmentSummary, PublicCourseDetail } from "@/lib/types"
+import { AdminLessonContentType, CourseEnrollmentSummary, CourseProgressSummary, PublicCourseDetail } from "@/lib/types"
 import { toast } from "sonner"
 
 export default function CourseSectionsPage({ params }: { params: { id: string } }) {
@@ -35,6 +36,8 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [enrollment, setEnrollment] = useState<CourseEnrollmentSummary | null>(null)
   const [isEnrollmentActionPending, setIsEnrollmentActionPending] = useState(false)
+  const [progressSummary, setProgressSummary] = useState<CourseProgressSummary | null>(null)
+  const [isProgressLoading, setIsProgressLoading] = useState(false)
 
   const loadCourse = useCallback(async () => {
     setFetchError(null)
@@ -82,13 +85,53 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
     }
   }, [user, courseId])
 
+  useEffect(() => {
+    if (!user || !enrollment || enrollment.status === "dropped") {
+      setProgressSummary(null)
+      return
+    }
+
+    let cancelled = false
+    const fetchProgress = async () => {
+      setIsProgressLoading(true)
+      try {
+        const data = await studentCoursesApi.getProgress(courseId)
+        if (!cancelled) {
+          setProgressSummary(data)
+        }
+      } catch (error) {
+        console.error("Failed to load progress", error)
+        if (!cancelled) {
+          toast.error("Unable to load your progress right now.")
+        }
+      } finally {
+        if (!cancelled) {
+          setIsProgressLoading(false)
+        }
+      }
+    }
+
+    void fetchProgress()
+    return () => {
+      cancelled = true
+    }
+  }, [user, enrollment, courseId])
+
   const sections = useMemo(() => course?.sections ?? [], [course])
+  const sectionProgressMap = useMemo(() => {
+    const map = new Map<string, CourseProgressSummary["sections"][number]>()
+    progressSummary?.sections.forEach((section) => map.set(section.id, section))
+    return map
+  }, [progressSummary])
+  const lessonProgressMap = progressSummary?.lessons ?? {}
   const estimatedLearners = course ? Math.max(course.totalLessons * 35, 40) : 0
   const ratingValue = 4.8
   const ratingCount = Math.max(Math.floor(estimatedLearners * 0.65), 12)
 
   const isEnrolled = Boolean(enrollment && enrollment.status !== "dropped")
-  const overallProgress = enrollment?.progressPercent ?? 0
+  const enrollmentProgress = enrollment?.progressPercent ?? 0
+  const overallProgress =
+    progressSummary?.percentComplete ?? enrollmentProgress
 
   const handleEnroll = async () => {
     if (!user) {
@@ -100,6 +143,8 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
     try {
       const nextEnrollment = await studentCoursesApi.enroll(courseId)
       setEnrollment(nextEnrollment)
+      const progress = await studentCoursesApi.getProgress(courseId)
+      setProgressSummary(progress)
       toast.success("You're enrolled! Start learning now.")
     } catch (error) {
       console.error("Failed to enroll", error)
@@ -113,9 +158,9 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
     return type === "video" ? Video : type === "quiz" ? GraduationCap : FileText
   }
 
-  const getLessonStatus = () => {
+  const getLessonStatus = (lessonId: string) => {
     if (!isEnrolled) return "locked"
-    return "available"
+    return lessonProgressMap[lessonId]?.status ?? "not_started"
   }
 
   if (isLoading) {
@@ -223,13 +268,12 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
           {isEnrolled && (
             <div className="bg-background/80 border border-border/60 rounded-lg p-4 sm:p-6 mb-6">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium">Your Progress</span>
+                <span className="text-sm font-medium">
+                  {isProgressLoading ? "Loading progress..." : "Your Progress"}
+                </span>
                 <span className="text-sm font-bold text-emerald-600">{overallProgress}%</span>
               </div>
               <Progress value={overallProgress} className="h-3" />
-              <p className="text-xs text-muted-foreground mt-2">
-                Keep going! Progress updates will appear here soon.
-              </p>
             </div>
           )}
         </div>
@@ -257,6 +301,14 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
                   (sum, lesson) => sum + lesson.durationMinutes,
                   0,
                 )
+                const sectionProgress = sectionProgressMap.get(section.id)
+                const sectionCompletedLessons = sectionProgress?.completedLessons ?? 0
+                const sectionTotalLessons = sectionProgress?.totalLessons ?? sectionLessons.length
+                const sectionCompletionPercent =
+                  sectionProgress && sectionTotalLessons > 0
+                    ? Math.round((sectionCompletedLessons / sectionTotalLessons) * 100)
+                    : null
+                const showSectionProgress = Boolean(isEnrolled && sectionCompletionPercent !== null)
 
                 return (
                   <AccordionItem 
@@ -290,7 +342,22 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
                               <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                               {formatDuration(sectionDuration)}
                             </span>
+                            {showSectionProgress && (
+                              <span className="flex items-center">
+                                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-emerald-600" />
+                                {sectionCompletedLessons}/{sectionTotalLessons} completed
+                              </span>
+                            )}
                           </div>
+                          {showSectionProgress && (
+                            <div className="mt-3">
+                              <div className="flex justify-between text-[11px] text-muted-foreground mb-1">
+                                <span>Section progress</span>
+                                <span>{sectionCompletionPercent}%</span>
+                              </div>
+                              <Progress value={sectionCompletionPercent ?? 0} className="h-1.5" />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </AccordionTrigger>
@@ -298,27 +365,43 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
                     <AccordionContent className="px-4 sm:px-6 pb-4">
                       <div className="space-y-2 pt-2">
                         {sectionLessons.map((lesson, lessonIndex) => {
-                          const status = getLessonStatus()
-                        const isLocked = status === "locked"
-                        const isCurrent = status === "current"
-                        const LessonIcon = getLessonIcon(lesson.contentType)
-
-                        return (
-                          <div
-                            key={lesson.id}
-                            className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                              isLocked
-                                ? "bg-background border-border/40"
+                          const status = getLessonStatus(lesson.id)
+                          const isLocked = status === "locked"
+                          const isCompleted = status === "completed"
+                          const isInProgress = status === "in_progress"
+                          const isCurrent = isInProgress
+                          const statusLabel = isLocked
+                            ? "Locked"
+                            : isCompleted
+                              ? "Completed"
+                              : isInProgress
+                                ? "In progress"
+                                : "Not started"
+                          const LessonIcon = getLessonIcon(lesson.contentType)
+                          const rowTone = isLocked
+                            ? "bg-background border-border/40"
+                            : isCompleted
+                              ? "bg-emerald-100/60 border-emerald-200 dark:bg-emerald-500/20 dark:border-emerald-500/40"
+                              : isInProgress
+                                ? "bg-blue-50 border-blue-200 dark:bg-blue-500/20 dark:border-blue-500/40"
                                 : "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30"
-                            }`}
-                          >
+
+                          return (
+                            <div
+                              key={lesson.id}
+                              className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${rowTone}`}
+                            >
                             <div className="flex items-center gap-3 min-w-0 flex-1">
                               <div className="flex-shrink-0">
                                 {isLocked ? (
                                   <Lock className="h-5 w-5 text-muted-foreground" />
+                                ) : isCompleted ? (
+                                  <CheckCircle className="h-5 w-5 text-emerald-600" />
+                                ) : isInProgress ? (
+                                  <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
                                 ) : (
-                                  <div className="h-5 w-5 rounded-full bg-emerald-600 flex items-center justify-center">
-                                    <div className="h-2 w-2 rounded-full bg-background" />
+                                  <div className="h-5 w-5 rounded-full border border-dashed border-muted-foreground/60 flex items-center justify-center">
+                                    <div className="h-2 w-2 rounded-full bg-muted-foreground/70" />
                                   </div>
                                 )}
                               </div>
@@ -343,6 +426,14 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
                               </div>
                               
                               <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+                                {isEnrolled && (
+                                  <Badge
+                                    variant={isCompleted ? "default" : isInProgress ? "secondary" : "outline"}
+                                    className="text-[10px] sm:text-xs"
+                                  >
+                                    {statusLabel}
+                                  </Badge>
+                                )}
                                 <span className="hidden sm:block text-sm text-muted-foreground">
                                   {formatDuration(lesson.durationMinutes)}
                                 </span>
@@ -354,7 +445,7 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
                                   <Link href={`/courses/${courseId}/lessons/${lesson.id}`}>
                                     <Button size="sm" className="text-xs sm:text-sm">
                                       <span className="hidden sm:inline">
-                                        {isCurrent ? "Continue" : "Open Lesson"}
+                                        {isCompleted ? "Review" : isCurrent ? "Continue" : "Open Lesson"}
                                       </span>
                                       <Play className="h-3 w-3 sm:ml-1.5" />
                                     </Button>

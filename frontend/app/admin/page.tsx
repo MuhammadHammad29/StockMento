@@ -20,7 +20,8 @@ import {
   FileText,
 } from "lucide-react"
 import Link from "next/link"
-import { mockUsers, mockCourses, mockUserProgress, mockLessons, getAvatarPath } from "@/lib/mock-data"
+import { mockUsers, mockCourses, mockUserProgress, mockLessons } from "@/lib/mock-data"
+import { getAvatarPath } from "@/lib/avatar-utils"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import AdminNavbar from "@/components/navigation/AdminNavbar"
 

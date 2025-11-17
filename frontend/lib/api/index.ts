@@ -23,6 +23,9 @@ import {
   PublicCourseDetail,
   CourseEnrollmentSummary,
   PublicLessonDetail,
+  CourseProgressSummary,
+  LessonProgressState,
+  LearningStreakSummary,
 } from '../types'
 import { STORAGE_KEYS } from '../data-utils'
 
@@ -43,6 +46,10 @@ type MessageResponse = {
 type UpdatePasswordPayload = {
   currentPassword: string
   newPassword: string
+}
+
+type UpdateLessonProgressPayload = {
+  status: LessonProgressState
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
@@ -398,6 +405,28 @@ export const studentCoursesApi = {
   get: async (courseId: string): Promise<CourseEnrollmentSummary | null> => {
     return apiCall<CourseEnrollmentSummary | null>(
       `/courses/${courseId}/enrollment`,
+    )
+  },
+
+  getLearningStreak: async (): Promise<LearningStreakSummary> => {
+    return apiCall<LearningStreakSummary>('/courses/me/streak')
+  },
+
+  getProgress: async (courseId: string): Promise<CourseProgressSummary> => {
+    return apiCall<CourseProgressSummary>(`/courses/${courseId}/progress`)
+  },
+
+  updateLessonProgress: async (
+    courseId: string,
+    lessonId: string,
+    payload: UpdateLessonProgressPayload,
+  ): Promise<CourseProgressSummary> => {
+    return apiCall<CourseProgressSummary>(
+      `/courses/${courseId}/lessons/${lessonId}/progress`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      },
     )
   },
 }

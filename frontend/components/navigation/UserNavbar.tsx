@@ -13,7 +13,7 @@ import { usePathname } from "next/navigation"
 import { Home, BookOpen, TrendingUp } from "lucide-react"
 import BaseNavbar from "./BaseNavbar"
 import { useAuth } from "@/lib/auth-context"
-import { getAvatarPath } from "@/lib/mock-data"
+import { getAvatarPath } from "@/lib/avatar-utils"
 
 interface UserNavbarProps {
   className?: string

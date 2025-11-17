@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
-import { BookOpen, Clock, Users, Star, Search, ChevronRight, Loader2 } from "lucide-react"
+import { BookOpen, Clock, Search, ChevronRight, Loader2, Layers, ListOrdered } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useMemo, useEffect, useCallback } from "react"
@@ -26,8 +26,6 @@ import { toast } from "sonner"
 type CourseWithMetadata = PublicCourseSummary & {
   progress: number
   isEnrolled: boolean
-  enrollmentCount: number
-  rating: number
   categoryLabel: string
 }
 
@@ -107,9 +105,6 @@ export default function CoursesPage() {
   // Enhance courses with derived UI metadata
   const coursesWithProgress: CourseWithMetadata[] = useMemo(() => {
     return courses.map((course) => {
-      const enrollmentEstimate = Math.max(course.totalLessons * 35, 40)
-      const categoryLabel =
-        course.sectionsCount === 1 ? "Single section" : `${course.sectionsCount} sections`
       const enrollment = enrollmentMap.get(course.id)
       const isEnrolled = Boolean(enrollment)
 
@@ -117,9 +112,6 @@ export default function CoursesPage() {
         ...course,
         isEnrolled,
         progress: enrollment?.progressPercent ?? 0,
-        enrollmentCount: enrollmentEstimate,
-        rating: 4.8,
-        categoryLabel,
       }
     })
   }, [courses, enrollmentMap])
@@ -170,14 +162,7 @@ export default function CoursesPage() {
     return `${mins}m`
   }
 
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case "Beginner": return "default"
-      case "Intermediate": return "secondary"
-      case "Advanced": return "destructive"
-      default: return "default"
-    }
-  }
+  const getLevelVariant = () => "secondary"
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
@@ -312,8 +297,8 @@ export default function CoursesPage() {
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   />
                   <div className="absolute top-6 left-6 z-10">
-                    <Badge variant={getLevelColor(course.level)} className="shadow-sm">
-                      {course.level}
+                    <Badge variant={getLevelVariant(course.level)} className="shadow-sm">
+                      {(course.level ?? "LEVEL").toUpperCase()}
                     </Badge>
                   </div>
                   {course.isEnrolled && (
@@ -333,36 +318,19 @@ export default function CoursesPage() {
                 </CardHeader>
 
                 <CardContent className="space-y-4 flex-grow flex flex-col">
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {formatDuration(course.durationMinutes)}
+                  <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Layers className="h-3 w-3 sm:h-4 sm:w-4" />
+                      {course.sectionsCount} sections
                     </div>
-                    <div className="flex items-center">
-                      <BookOpen className="h-4 w-4 mr-1" />
+                    <div className="flex items-center gap-1">
+                      <ListOrdered className="h-3 w-3 sm:h-4 sm:w-4" />
                       {course.totalLessons} lessons
                     </div>
-                    <div className="flex items-center">
-                      <Users className="h-4 w-4 mr-1" />
-                      {course.enrollmentCount}
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                      {formatDuration(course.durationMinutes)}
                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < Math.floor(course.rating) ? "text-yellow-400 fill-current" : "text-muted-foreground opacity-60"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="ml-2 text-sm text-muted-foreground">{course.rating}</span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">{course.categoryLabel}</span>
                   </div>
 
                   {course.isEnrolled && course.progress > 0 && (

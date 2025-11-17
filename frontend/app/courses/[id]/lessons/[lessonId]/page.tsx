@@ -4,14 +4,34 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { BookOpen, Clock, Play, ArrowLeft, ArrowRight, Loader2, Video, FileText, GraduationCap } from "lucide-react"
+import {
+  Clock,
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  Video,
+  FileText,
+  GraduationCap,
+  CheckCircle2,
+  XCircle,
+  Layers,
+  ListOrdered,
+} from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { formatDuration } from "@/lib/data-utils"
 import { UserNavbar } from "@/components/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { publicCoursesApi, studentCoursesApi } from "@/lib/api"
-import { AdminLessonContentType, CourseEnrollmentSummary, PublicCourseDetail, PublicLessonDetail } from "@/lib/types"
+import {
+  AdminLessonContentType,
+  AdminQuizQuestionType,
+  CourseEnrollmentSummary,
+  CourseProgressSummary,
+  LessonProgressState,
+  PublicCourseDetail,
+  PublicLessonDetail,
+} from "@/lib/types"
 import { toast } from "sonner"
 import { getYouTubeEmbedUrl, isYouTubeUrl } from "@/lib/youtube-utils"
 
@@ -23,6 +43,46 @@ type LessonOutlineEntry = {
   sectionId: string
   sectionTitle: string
   description?: string | null
+}
+
+type QuizSelections = Record<string, string[]>
+
+type QuizEvaluation = {
+  score: number
+  totalPoints: number
+  percentage: number
+  passed: boolean
+  perQuestion: Record<string, boolean>
+}
+
+const LESSON_STATUS_COPY: Record<LessonProgressState, { label: string; description: string }> = {
+  not_started: {
+    label: "Not started",
+    description: "Begin this lesson to start tracking your learning progress.",
+  },
+  in_progress: {
+    label: "In progress",
+    description: "Keep going—mark it as completed once you finish the material.",
+  },
+  completed: {
+    label: "Completed",
+    description: "Great job! You can revisit this lesson at any time.",
+  },
+}
+
+const stripHtmlToSummary = (value?: string | null, length = 160) => {
+  if (!value) return null
+  const plain = value
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+  if (!plain) return null
+  return plain.length > length ? `${plain.slice(0, length)}…` : plain
+}
+
+const normalizeLessonBody = (value?: string | null) => {
+  if (!value) return ""
+  return value.includes("<") ? value : value.replace(/\n/g, "<br />")
 }
 
 export default function LessonPage({ params }: { params: { id: string; lessonId: string } }) {
@@ -38,6 +98,13 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
   const [lessonError, setLessonError] = useState<string | null>(null)
   const [enrollment, setEnrollment] = useState<CourseEnrollmentSummary | null>(null)
   const [isEnrollmentActionPending, setIsEnrollmentActionPending] = useState(false)
+  const [progressSummary, setProgressSummary] = useState<CourseProgressSummary | null>(null)
+  const [isProgressLoading, setIsProgressLoading] = useState(false)
+  const [isProgressMutationPending, setIsProgressMutationPending] = useState(false)
+  const [quizSelections, setQuizSelections] = useState<QuizSelections>({})
+  const [quizSubmitting, setQuizSubmitting] = useState(false)
+  const [quizResult, setQuizResult] = useState<QuizEvaluation | null>(null)
+  const [quizError, setQuizError] = useState<string | null>(null)
 
   const loadCourse = useCallback(async () => {
     setFetchError(null)
@@ -76,6 +143,12 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
   useEffect(() => {
     loadLessonDetail()
   }, [loadLessonDetail])
+
+  useEffect(() => {
+    setQuizSelections({})
+    setQuizResult(null)
+    setQuizError(null)
+  }, [lessonId])
 
   useEffect(() => {
     if (!user) {
@@ -132,20 +205,217 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
       ? courseLessons[currentIndex + 1]
       : null
 
-  const estimatedLearners = course ? Math.max(course.totalLessons * 35, 40) : 0
-  const ratingValue = 4.8
-  const ratingCount = Math.max(Math.floor(estimatedLearners * 0.65), 12)
   const lessonTitle = lessonDetail?.title ?? lesson?.title ?? "Lesson"
+  const lessonBodyHtml = lessonDetail?.text?.bodyHtml
   const lessonDescriptionText =
     lessonDetail?.description ??
+    stripHtmlToSummary(lessonBodyHtml) ??
     lesson?.description ??
     "Additional lesson details will be visible here soon."
   const lessonDurationMinutes =
     lessonDetail?.durationMinutes ?? lesson?.durationMinutes ?? 0
   const lessonContentType = lessonDetail?.contentType ?? lesson?.contentType ?? "text"
+  const normalizedLessonBody = useMemo(
+    () => normalizeLessonBody(lessonBodyHtml),
+    [lessonBodyHtml],
+  )
 
   const isEnrolled = Boolean(enrollment && enrollment.status !== "dropped")
-  const overallProgress = enrollment?.progressPercent ?? 0
+
+  useEffect(() => {
+    if (!user || !isEnrolled) {
+      setProgressSummary(null)
+      return
+    }
+
+    let cancelled = false
+    const fetchProgress = async () => {
+      setIsProgressLoading(true)
+      try {
+        const summary = await studentCoursesApi.getProgress(courseId)
+        if (!cancelled) {
+          setProgressSummary(summary)
+        }
+      } catch (error) {
+        console.error("Failed to load lesson progress", error)
+        if (!cancelled) {
+          toast.error("Unable to load your lesson progress right now.")
+        }
+      } finally {
+        if (!cancelled) {
+          setIsProgressLoading(false)
+        }
+      }
+    }
+
+    void fetchProgress()
+    return () => {
+      cancelled = true
+    }
+  }, [user, isEnrolled, courseId])
+
+  const lessonProgressMap = progressSummary?.lessons ?? {}
+  const currentLessonProgress = lessonProgressMap[lessonId]
+  const currentLessonStatus: LessonProgressState =
+    currentLessonProgress?.status ?? "not_started"
+  const lessonStatusMeta = LESSON_STATUS_COPY[currentLessonStatus]
+  const overallProgress = progressSummary?.percentComplete ?? enrollment?.progressPercent ?? 0
+  const isQuizLesson = lessonContentType === "quiz"
+  const quizPassingScore = lessonDetail?.quiz?.passScore ?? null
+
+  const normalizeChoiceIds = (values: string[]) => [...values].sort()
+
+  const areArraysEqual = (first: string[], second: string[]) =>
+    first.length === second.length && first.every((value, index) => value === second[index])
+
+  const questionTypeLabel = (type: AdminQuizQuestionType) => {
+    switch (type) {
+      case "multiple":
+        return "Multiple select"
+      case "true_false":
+        return "True / False"
+      default:
+        return "Single choice"
+    }
+  }
+
+  const handleLessonProgressUpdate = useCallback(
+    async (nextStatus: LessonProgressState, options: { silent?: boolean } = {}) => {
+      if (!user || !isEnrolled) {
+        if (!options.silent) {
+          toast.error("Please sign in to track your progress.")
+        }
+        return
+      }
+
+      setIsProgressMutationPending(true)
+      try {
+        const summary = await studentCoursesApi.updateLessonProgress(courseId, lessonId, {
+          status: nextStatus,
+        })
+        setProgressSummary(summary)
+        try {
+          const refreshedEnrollment = await studentCoursesApi.get(courseId)
+          setEnrollment(refreshedEnrollment)
+        } catch (refreshError) {
+          console.error("Failed to refresh enrollment after progress update", refreshError)
+        }
+        if (!options.silent) {
+          toast.success(
+            nextStatus === "completed"
+              ? "Lesson marked as completed."
+              : "Lesson progress updated.",
+          )
+        }
+      } catch (error) {
+        console.error("Failed to update lesson progress", error)
+        if (!options.silent) {
+          toast.error("Unable to update lesson progress right now.")
+        }
+      } finally {
+        setIsProgressMutationPending(false)
+      }
+    },
+    [courseId, lessonId, isEnrolled, user],
+  )
+
+  const handleQuizChoiceSelect = useCallback(
+    (questionId: string, choiceId: string, type: AdminQuizQuestionType) => {
+      setQuizSelections((prev) => {
+        const current = new Set(prev[questionId] ?? [])
+        if (type === "multiple") {
+          if (current.has(choiceId)) {
+            current.delete(choiceId)
+          } else {
+            current.add(choiceId)
+          }
+        } else {
+          current.clear()
+          current.add(choiceId)
+        }
+
+        return {
+          ...prev,
+          [questionId]: Array.from(current),
+        }
+      })
+      setQuizResult(null)
+      setQuizError(null)
+    },
+    [],
+  )
+
+  const handleQuizSubmit = useCallback(async () => {
+    if (!lessonDetail?.quiz) {
+      return
+    }
+
+    const { questions, passScore } = lessonDetail.quiz
+    if (questions.length === 0) {
+      setQuizError("This quiz has no questions configured yet.")
+      return
+    }
+
+    if (
+      questions.some((question) => {
+        const selected = quizSelections[question.id] ?? []
+        return selected.length === 0
+      })
+    ) {
+      setQuizError("Please answer every question before submitting.")
+      return
+    }
+
+    setQuizError(null)
+    setQuizSubmitting(true)
+    try {
+      let score = 0
+      let totalPoints = 0
+      const perQuestion: Record<string, boolean> = {}
+
+      questions.forEach((question) => {
+        const selected = normalizeChoiceIds(quizSelections[question.id] ?? [])
+        const correct = normalizeChoiceIds(
+          question.choices.filter((choice) => choice.isCorrect).map((choice) => choice.id),
+        )
+        const isCorrect =
+          question.type === "multiple"
+            ? selected.length > 0 && areArraysEqual(selected, correct)
+            : selected.length === 1 && correct.length === 1 && selected[0] === correct[0]
+
+        perQuestion[question.id] = isCorrect
+        totalPoints += question.points
+        if (isCorrect) {
+          score += question.points
+        }
+      })
+
+      const percentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0
+      const passed = percentage >= passScore
+      setQuizResult({
+        score,
+        totalPoints,
+        percentage,
+        passed,
+        perQuestion,
+      })
+
+      if (passed && currentLessonStatus !== "completed") {
+        await handleLessonProgressUpdate("completed", { silent: true })
+      }
+
+      if (passed) {
+        toast.success("Great job! You passed the quiz.")
+      } else {
+        toast.error(`Score ${percentage}% is below the passing requirement of ${passScore}%.`)
+      }
+    } catch (error) {
+      console.error("Failed to submit quiz responses", error)
+      toast.error("Unable to grade the quiz right now.")
+    } finally {
+      setQuizSubmitting(false)
+    }
+  }, [currentLessonStatus, handleLessonProgressUpdate, lessonDetail, quizSelections])
 
   const handleEnroll = async () => {
     if (!user) {
@@ -166,9 +436,34 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
     }
   }
 
+  useEffect(() => {
+    if (!isEnrolled || !progressSummary) {
+      return
+    }
+    if (currentLessonStatus !== "not_started" || isProgressMutationPending) {
+      return
+    }
+    void handleLessonProgressUpdate("in_progress", { silent: true })
+  }, [
+    currentLessonStatus,
+    handleLessonProgressUpdate,
+    isEnrolled,
+    isProgressMutationPending,
+    progressSummary,
+  ])
+
   const getLessonStatus = (entryId: string) => {
     if (!isEnrolled) return "locked"
-    if (entryId === lessonId) return "current"
+    if (entryId === lessonId) {
+      return currentLessonStatus === "completed" ? "completed" : "current"
+    }
+    const progress = lessonProgressMap[entryId]?.status
+    if (progress === "completed") {
+      return "completed"
+    }
+    if (progress === "in_progress") {
+      return "in_progress"
+    }
     return "available"
   }
 
@@ -247,6 +542,11 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                     controls
                     poster={lessonDetail.video.thumbnailUrl ?? undefined}
                     className="w-full h-full object-cover"
+                    onEnded={() => {
+                      if (currentLessonStatus !== "completed") {
+                        void handleLessonProgressUpdate("completed")
+                      }
+                    }}
                   >
                     <source src={lessonDetail.video.videoUrl} />
                     Your browser does not support the video tag.
@@ -276,34 +576,146 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
           )
         }
 
+        const quiz = lessonDetail.quiz
+        const totalPoints = quiz.questions.reduce((sum, question) => sum + question.points, 0)
+        const allQuestionsAnswered = quiz.questions.every(
+          (question) => (quizSelections[question.id]?.length ?? 0) > 0,
+        )
+
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">{lessonDetail.quiz.title}</CardTitle>
-              <p className="text-sm text-muted-foreground">Passing score: {lessonDetail.quiz.passScore}%</p>
+              <CardTitle className="text-lg">{quiz.title}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Passing score: {quiz.passScore}% · {quiz.questions.length} questions · {totalPoints} pts
+              </p>
             </CardHeader>
             <CardContent className="space-y-6">
-              {lessonDetail.quiz.questions.map((question, index) => (
-                <div key={question.id} className="space-y-3 border-b border-border/50 pb-4 last:border-0 last:pb-0">
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>Question {index + 1}</span>
-                    <span>{question.points} pts</span>
+              {quiz.questions.map((question, index) => {
+                const selectedIds = new Set(quizSelections[question.id] ?? [])
+                const questionResult = quizResult?.perQuestion[question.id]
+                const showEvaluation = questionResult !== undefined
+                const QuestionResultIcon = showEvaluation
+                  ? questionResult
+                    ? CheckCircle2
+                    : XCircle
+                  : null
+
+                return (
+                  <div key={question.id} className="space-y-3 border-b border-border/50 pb-4 last:border-0 last:pb-0">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
+                      <div className="text-muted-foreground flex items-center gap-2">
+                        <span className="font-medium text-foreground">Question {index + 1}</span>
+                        <span>• {question.points} pts</span>
+                        <span>• {questionTypeLabel(question.type)}</span>
+                      </div>
+                      {QuestionResultIcon && (
+                        <span
+                          className={`flex items-center gap-1 text-xs uppercase tracking-wide font-semibold ${
+                            questionResult ? "text-emerald-600" : "text-destructive"
+                          }`}
+                        >
+                          <QuestionResultIcon className="h-4 w-4" />
+                          {questionResult ? "Correct" : "Incorrect"}
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      className="prose dark:prose-invert text-foreground"
+                      dangerouslySetInnerHTML={{ __html: question.promptHtml }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {question.type === "multiple"
+                        ? "Select all choices that apply."
+                        : "Select one answer."}
+                    </p>
+                    <ul className="space-y-2">
+                      {question.choices.map((choice) => {
+                        const isSelected = selectedIds.has(choice.id)
+                        const isCorrectChoice = choice.isCorrect
+                        const highlightClass = showEvaluation
+                          ? isCorrectChoice
+                            ? "border-emerald-500 bg-emerald-500/10"
+                            : isSelected
+                              ? "border-destructive/60 bg-destructive/10"
+                              : "opacity-80"
+                          : isSelected
+                            ? "border-emerald-500 bg-emerald-50"
+                            : "border-border/60"
+
+                        return (
+                          <li key={choice.id}>
+                            <button
+                              type="button"
+                              onClick={() => handleQuizChoiceSelect(question.id, choice.id, question.type)}
+                              disabled={quizSubmitting}
+                              className={`w-full rounded-md border px-3 py-2 text-left text-sm transition hover:border-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${highlightClass}`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <span
+                                  className={`mt-1 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border text-[10px] ${
+                                    isSelected
+                                      ? "border-emerald-600 bg-emerald-600 text-background"
+                                      : "border-muted-foreground/40 text-muted-foreground"
+                                  }`}
+                                >
+                                  {isSelected ? (question.type === "multiple" ? "✓" : "•") : ""}
+                                </span>
+                                <div
+                                  className="flex-1"
+                                  dangerouslySetInnerHTML={{ __html: choice.choiceHtml }}
+                                />
+                              </div>
+                            </button>
+                          </li>
+                        )
+                      })}
+                    </ul>
                   </div>
-                  <div
-                    className="prose dark:prose-invert text-foreground"
-                    dangerouslySetInnerHTML={{ __html: question.promptHtml }}
-                  />
-                  <ul className="space-y-2">
-                    {question.choices.map((choice) => (
-                      <li
-                        key={choice.id}
-                        className="rounded-md border border-border/60 px-3 py-2 text-sm"
-                        dangerouslySetInnerHTML={{ __html: choice.choiceHtml }}
-                      />
-                    ))}
-                  </ul>
+                )
+              })}
+
+              {quizError && <p className="text-sm text-destructive">{quizError}</p>}
+
+              {quizResult && (
+                <div
+                  className={`rounded-lg border px-4 py-3 text-sm ${
+                    quizResult.passed
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-800"
+                      : "border-destructive/60 bg-destructive/10 text-destructive"
+                  }`}
+                >
+                  <p className="font-semibold">
+                    Score: {quizResult.score}/{quizResult.totalPoints} pts ({quizResult.percentage}%)
+                  </p>
+                  <p>
+                    {quizResult.passed
+                      ? "Passing score achieved. This lesson is now marked as completed."
+                      : `You need at least ${quiz.passScore}% to pass. Review your answers and try again.`}
+                  </p>
                 </div>
-              ))}
+              )}
+
+              {!allQuestionsAnswered && (
+                <p className="text-xs text-muted-foreground">
+                  Answer every question to enable the submission button.
+                </p>
+              )}
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {quizResult
+                    ? "You can retake the quiz to improve your score."
+                    : "Only a passing score will complete this lesson."}
+                </p>
+                <Button
+                  onClick={handleQuizSubmit}
+                  disabled={quizSubmitting || !allQuestionsAnswered}
+                  className="sm:w-auto"
+                >
+                  {quizSubmitting ? "Grading..." : quizResult ? "Retry quiz" : "Submit quiz"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )
@@ -364,8 +776,11 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                 Approximate read time: {lessonDetail.text.readTimeMinutes} minutes
               </p>
             </CardHeader>
-            <CardContent className="prose dark:prose-invert max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: lessonDetail.text.bodyHtml }} />
+            <CardContent>
+              <div
+                className="prose dark:prose-invert max-w-none whitespace-pre-line"
+                dangerouslySetInnerHTML={{ __html: normalizedLessonBody }}
+              />
             </CardContent>
           </Card>
         )
@@ -464,18 +879,75 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                     <span>{formatDuration(lessonDurationMinutes)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    <span>{sections.length} sections</span>
+                    <Layers className="h-4 w-4" />
+                    <span>
+                      {sections.length} {sections.length === 1 ? "section" : "sections"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Play className="h-4 w-4" />
-                    <span>{courseLessons.length} lessons total</span>
+                    <ListOrdered className="h-4 w-4" />
+                    <span>
+                      {courseLessons.length} {courseLessons.length === 1 ? "lesson" : "lessons"}
+                    </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {renderLessonContent()}
+
+            {isEnrolled && (
+              <Card className="border border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-500/40 dark:bg-emerald-500/10">
+                <CardContent className="p-4 sm:p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Lesson status</p>
+                    <p className="text-lg font-semibold text-foreground">{lessonStatusMeta.label}</p>
+                    <p className="text-sm text-muted-foreground">{lessonStatusMeta.description}</p>
+                    {isProgressLoading && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Refreshing progress...
+                      </p>
+                    )}
+                  </div>
+                  {isQuizLesson ? (
+                    <p className="text-sm text-muted-foreground w-full sm:w-auto">
+                      Complete the quiz with a score of at least {quizPassingScore ?? 0}% to finish this lesson.
+                      Your status updates automatically after you pass.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                      {currentLessonStatus === "not_started" && (
+                        <Button
+                          variant="outline"
+                          disabled={isProgressMutationPending}
+                          onClick={() => handleLessonProgressUpdate("in_progress")}
+                        >
+                          {isProgressMutationPending ? "Updating..." : "Start lesson"}
+                        </Button>
+                      )}
+                      {currentLessonStatus === "completed" ? (
+                        <Button
+                          variant="outline"
+                          disabled={isProgressMutationPending}
+                          onClick={() => handleLessonProgressUpdate("in_progress")}
+                        >
+                          {isProgressMutationPending ? "Updating..." : "Mark as in progress"}
+                        </Button>
+                      ) : (
+                        <Button
+                          className="bg-emerald-600 hover:bg-emerald-700"
+                          disabled={isProgressMutationPending}
+                          onClick={() => handleLessonProgressUpdate("completed")}
+                        >
+                          {isProgressMutationPending ? "Saving..." : "Mark as completed"}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
@@ -542,29 +1014,65 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                       {(section.lessons ?? []).map((entry) => {
                         const status = getLessonStatus(entry.id)
                         const LessonIcon = getLessonIcon(entry.contentType)
+                        const isLocked = status === "locked"
+                        const isCompleted = status === "completed"
+                        const isActive = status === "current"
+                        const isInProgress = status === "in_progress"
+                        const actionLabel = isCompleted ? "Review" : isActive || isInProgress ? "Resume" : "Open"
+                        const statusText = isLocked
+                          ? "Locked"
+                          : isCompleted
+                            ? "Completed"
+                            : isActive
+                              ? "Current"
+                              : isInProgress
+                                ? "In progress"
+                                : "Available"
+                        const rowTone = isLocked
+                          ? "border-border/40 opacity-70"
+                          : isCompleted
+                            ? "border-emerald-500 bg-emerald-500/10"
+                            : isActive || isInProgress
+                              ? "border-blue-500 bg-blue-500/10"
+                              : "border-border/60"
                         return (
                           <div
                             key={entry.id}
-                            className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm ${
-                              status === "current"
-                                ? "border-emerald-500 bg-emerald-500/10"
-                                : "border-border/60"
-                            }`}
+                            className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm ${rowTone}`}
                           >
                             <div className="flex items-center gap-2 min-w-0">
-                              <LessonIcon className="h-4 w-4 text-muted-foreground" />
-                              <span className="truncate">{entry.title}</span>
+                              <LessonIcon
+                                className={`h-4 w-4 ${
+                                  isCompleted
+                                    ? "text-emerald-600"
+                                    : isActive || isInProgress
+                                      ? "text-blue-600"
+                                      : "text-muted-foreground"
+                                }`}
+                              />
+                              <span className={`truncate ${isCompleted ? "text-emerald-700 dark:text-emerald-300" : ""}`}>
+                                {entry.title}
+                              </span>
                             </div>
                             {isEnrolled ? (
-                              <Link href={`/courses/${courseId}/lessons/${entry.id}`}>
-                                <Button
-                                  variant={status === "current" ? "default" : "outline"}
-                                  size="sm"
-                                  className="text-xs"
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <Badge
+                                  variant={isCompleted ? "default" : "outline"}
+                                  className="hidden sm:inline-flex text-[10px] uppercase tracking-wide"
                                 >
-                                  {status === "current" ? "Resume" : "Open"}
-                                </Button>
-                              </Link>
+                                  {statusText}
+                                </Badge>
+                                <Link href={`/courses/${courseId}/lessons/${entry.id}`}>
+                                  <Button
+                                    variant={isActive ? "default" : "outline"}
+                                    size="sm"
+                                    className="text-xs"
+                                    disabled={isLocked}
+                                  >
+                                    {actionLabel}
+                                  </Button>
+                                </Link>
+                              </div>
                             ) : (
                               <Button variant="outline" size="sm" className="text-xs" disabled>
                                 Locked
@@ -585,10 +1093,8 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-muted-foreground">
                 <p>Total lessons: {course.totalLessons}</p>
-                <p>Estimated learners: {estimatedLearners.toLocaleString()}</p>
-                <p>
-                  Rating: {ratingValue.toFixed(1)} ({ratingCount.toLocaleString()} reviews)
-                </p>
+                <p>Total sections: {course.sections.length}</p>
+                <p>Duration: {formatDuration(course.durationMinutes)}</p>
               </CardContent>
             </Card>
           </div>

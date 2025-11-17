@@ -550,3 +550,39 @@ export interface CourseEnrollmentSummary {
   completedAt: string | null;
   course: PublicCourseSummary;
 }
+
+export type LessonProgressState = 'not_started' | 'in_progress' | 'completed';
+
+export interface LessonProgressRecord {
+  status: LessonProgressState;
+  completedAt: string | null;
+}
+
+export interface SectionProgressSummary {
+  id: string;
+  title: string;
+  position: number;
+  totalLessons: number;
+  completedLessons: number;
+  lessons: Array<{
+    id: string;
+    title: string;
+    status: LessonProgressState;
+    completedAt: string | null;
+  }>;
+}
+
+export interface CourseProgressSummary {
+  courseId: string;
+  totalLessons: number;
+  completedLessons: number;
+  percentComplete: number;
+  sections: SectionProgressSummary[];
+  lessons: Record<string, LessonProgressRecord>;
+}
+
+export interface LearningStreakSummary {
+  currentStreak: number;
+  bestStreak: number;
+  lastActivityDate: string | null;
+}

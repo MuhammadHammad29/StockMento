@@ -18,18 +18,286 @@ import {
   Play,
   Target,
   BarChart3,
-  Users,
-  Star,
   ChevronRight,
+  Loader2,
+  Layers,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { mockCourses, mockUserProgress, getUserCourses } from "@/lib/mock-data"
-import { formatTimeAgo, getActivitySummary } from "@/lib/data-utils"
+import { formatDuration, formatTimeAgo } from "@/lib/data-utils"
 import { UserNavbar } from "@/components/navigation"
+import { useEffect, useMemo, useState } from "react"
+import { publicCoursesApi, studentCoursesApi } from "@/lib/api"
+import type {
+  CourseEnrollmentSummary,
+  PublicCourseSummary,
+  LearningStreakSummary,
+} from "@/lib/types"
+
+type RecentActivityItem = {
+  id: string
+  title: string
+  course: string
+  time: string
+  type: "course_complete" | "course_progress" | "course_enrolled"
+}
+
+type UpcomingLesson = {
+  id: string
+  title: string
+  courseId: string
+  courseTitle: string
+  duration: number
+  type: "text" | "video"
+}
+
+type ActivitySummary = {
+  totalCourses: number
+  completedCourses: number
+  completedLessons: number
+  averageProgress: number
+}
+
+const getLevelBadgeVariant = () => "secondary"
 
 export default function DashboardPage() {
   const { user } = useAuth()
+
+  const [enrollments, setEnrollments] = useState<CourseEnrollmentSummary[]>([])
+  const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(false)
+  const [enrollmentError, setEnrollmentError] = useState<string | null>(null)
+  const [catalog, setCatalog] = useState<PublicCourseSummary[]>([])
+  const [isLoadingCatalog, setIsLoadingCatalog] = useState(false)
+  const [catalogError, setCatalogError] = useState<string | null>(null)
+  const [learningStreak, setLearningStreak] = useState<LearningStreakSummary | null>(null)
+  const [isLoadingStreak, setIsLoadingStreak] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadCatalog = async () => {
+      setIsLoadingCatalog(true)
+      try {
+        const data = await publicCoursesApi.list()
+        if (!cancelled) {
+          setCatalog(data)
+          setCatalogError(null)
+        }
+      } catch (error) {
+        console.error("Failed to load course catalog", error)
+        if (!cancelled) {
+          setCatalogError("Unable to load available courses right now.")
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingCatalog(false)
+        }
+      }
+    }
+
+    void loadCatalog()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+useEffect(() => {
+  if (!user) {
+    setEnrollments([])
+    return
+  }
+
+    let cancelled = false
+    const loadEnrollments = async () => {
+      setIsLoadingEnrollments(true)
+      try {
+        const data = await studentCoursesApi.list()
+        if (!cancelled) {
+          setEnrollments(data.filter((enrollment) => enrollment.status !== "dropped"))
+          setEnrollmentError(null)
+        }
+      } catch (error) {
+        console.error("Failed to load enrollments", error)
+        if (!cancelled) {
+          setEnrollmentError("Unable to load your courses right now.")
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingEnrollments(false)
+        }
+      }
+    }
+
+    void loadEnrollments()
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+useEffect(() => {
+  if (!user) {
+    setLearningStreak(null)
+    return
+  }
+
+  let cancelled = false
+  const fetchStreak = async () => {
+    setIsLoadingStreak(true)
+    try {
+      const data = await studentCoursesApi.getLearningStreak()
+      if (!cancelled) {
+        setLearningStreak(data)
+      }
+    } catch (error) {
+      console.error("Failed to load learning streak", error)
+      if (!cancelled) {
+        setLearningStreak(null)
+      }
+    } finally {
+      if (!cancelled) {
+        setIsLoadingStreak(false)
+      }
+    }
+  }
+
+  void fetchStreak()
+  return () => {
+    cancelled = true
+  }
+}, [user])
+
+  const activeEnrollments = useMemo(
+    () => enrollments.filter((enrollment) => enrollment.status !== "dropped"),
+    [enrollments],
+  )
+
+  const enrollmentCourseIds = useMemo(
+    () => new Set(activeEnrollments.map((enrollment) => enrollment.course.id)),
+    [activeEnrollments],
+  )
+
+  const availableCourses = useMemo(
+    () =>
+      catalog
+        .filter((course) => !enrollmentCourseIds.has(course.id) && course.isPublished)
+        .slice(0, 3),
+    [catalog, enrollmentCourseIds],
+  )
+
+  const activitySummary: ActivitySummary = useMemo(() => {
+    if (activeEnrollments.length === 0) {
+      return {
+        totalCourses: 0,
+        completedCourses: 0,
+        completedLessons: 0,
+        averageProgress: 0,
+      }
+    }
+
+    const totalCourses = activeEnrollments.length
+    const completedCourses = activeEnrollments.filter(
+      (enrollment) => enrollment.status === "completed",
+    ).length
+    const completedLessons = activeEnrollments.reduce((sum, enrollment) => {
+      const percent = enrollment.progressPercent ?? 0
+      const completedForCourse = Math.round(
+        (percent / 100) * enrollment.course.totalLessons,
+      )
+      return sum + completedForCourse
+    }, 0)
+    const averageProgress = Math.round(
+      activeEnrollments.reduce(
+        (sum, enrollment) => sum + (enrollment.progressPercent ?? 0),
+        0,
+      ) / totalCourses,
+    )
+
+    return {
+      totalCourses,
+      completedCourses,
+      completedLessons,
+      averageProgress,
+    }
+  }, [activeEnrollments])
+
+  const recentActivity: RecentActivityItem[] = useMemo(() => {
+    if (activeEnrollments.length === 0) {
+      return []
+    }
+
+    return activeEnrollments
+      .map((enrollment) => {
+        const isCompleted = enrollment.status === "completed"
+        const percent = enrollment.progressPercent ?? 0
+        const hasProgress = percent > 0
+        const courseTitle = enrollment.course.title
+        const defaultTimestamp =
+          enrollment.course.updatedAt ?? new Date().toISOString()
+
+        if (isCompleted) {
+          return {
+            id: `${enrollment.id}-completed`,
+            course: courseTitle,
+            time: enrollment.completedAt ?? defaultTimestamp,
+            type: "course_complete" as const,
+            title: `Completed "${courseTitle}"`,
+          }
+        }
+
+        if (hasProgress) {
+          return {
+            id: `${enrollment.id}-progress`,
+            course: courseTitle,
+            time: enrollment.course.updatedAt ?? enrollment.startedAt ?? defaultTimestamp,
+            type: "course_progress" as const,
+            title: `Progressed in "${courseTitle}"`,
+          }
+        }
+
+        return {
+          id: `${enrollment.id}-enrolled`,
+          course: courseTitle,
+          time: enrollment.startedAt ?? enrollment.course.createdAt ?? defaultTimestamp,
+          type: "course_enrolled" as const,
+          title: `Enrolled in "${courseTitle}"`,
+        }
+      })
+      .sort(
+        (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime(),
+      )
+      .slice(0, 3)
+  }, [activeEnrollments])
+
+  const upcomingLessons: UpcomingLesson[] = useMemo(() => {
+    if (activeEnrollments.length === 0) {
+      return availableCourses.slice(0, 2).map((course) => ({
+        id: course.id,
+        title: course.title,
+        courseId: course.id,
+        courseTitle: course.title,
+        duration: Math.max(
+          Math.round(course.durationMinutes / Math.max(course.totalLessons || 1, 1)),
+          10,
+        ),
+        type: "text",
+      }))
+    }
+
+    return activeEnrollments.slice(0, 2).map((enrollment) => ({
+      id: enrollment.course.id,
+      title: `Continue ${enrollment.course.title}`,
+      courseId: enrollment.course.id,
+      courseTitle: enrollment.course.title,
+      duration: Math.max(
+        Math.round(
+          enrollment.course.durationMinutes /
+            Math.max(enrollment.course.totalLessons || 1, 1),
+        ),
+        10,
+      ),
+      type: "video",
+    }))
+  }, [activeEnrollments, availableCourses])
 
   if (!user) {
     return (
@@ -45,57 +313,6 @@ export default function DashboardPage() {
       </div>
     )
   }
-
-  const userProgressData = mockUserProgress.filter((p) => p.userId === user.id)
-  const enrolledCourses = getUserCourses(user.id)
-  const activitySummary = getActivitySummary(userProgressData)
-
-  // Get courses user hasn't enrolled in for exploration
-  const enrolledCourseIds = enrolledCourses.map(c => c.id)
-  const availableCourses = mockCourses
-    .filter(course => !enrolledCourseIds.includes(course.id) && course.isPublished)
-    .slice(0, 3) // Show top 3 available courses
-
-  const recentActivity = [
-    {
-      id: 1,
-      type: "lesson_complete",
-      title: 'Completed "Understanding Stock Market Basics"',
-      course: "PSX Fundamentals",
-      time: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    },
-    {
-      id: 2,
-      type: "quiz_complete",
-      title: "Scored 85% on PSX Fundamentals Quiz",
-      course: "PSX Fundamentals",
-      time: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-    },
-    {
-      id: 3,
-      type: "course_start",
-      title: 'Started "Technical Analysis Mastery"',
-      course: "Technical Analysis Mastery",
-      time: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-    },
-  ]
-
-  const upcomingLessons = [
-    {
-      id: "lesson-1-3",
-      title: "Market Participants and Their Roles",
-      course: "PSX Fundamentals",
-      duration: 18,
-      type: "text" as "text" | "video",
-    },
-    {
-      id: "lesson-2-2",
-      title: "Support and Resistance Levels",
-      course: "Technical Analysis Mastery",
-      duration: 22,
-      type: "video" as "text" | "video",
-    },
-  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
@@ -143,19 +360,32 @@ export default function DashboardPage() {
             <CardContent className="p-4 sm:p-6">
               <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Overall Progress</p>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground uppercase tracking-wide">
+                    <BarChart3 className="h-3 w-3" />
+                    Overall Progress
+                  </div>
                   <div className="mt-2 flex items-center gap-2 sm:gap-3">
                     <div className="text-2xl sm:text-3xl font-semibold text-foreground">{activitySummary.averageProgress}%</div>
                     <Progress value={activitySummary.averageProgress} className="h-1.5 sm:h-2 flex-1" />
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Completed Lessons</p>
-                  <div className="mt-2 text-2xl font-semibold text-foreground">{activitySummary.totalLessons}</div>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground uppercase tracking-wide">
+                    <BookOpen className="h-3 w-3" />
+                    Completed Lessons
+                  </div>
+                  <div className="mt-2 text-2xl font-semibold text-foreground">
+                    {activitySummary.completedLessons}
+                  </div>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Quizzes Passed</p>
-                  <div className="mt-2 text-2xl font-semibold text-foreground">{activitySummary.totalQuizzes}</div>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground uppercase tracking-wide">
+                    <Target className="h-3 w-3" />
+                    Courses Completed
+                  </div>
+                  <div className="mt-2 text-2xl font-semibold text-foreground">
+                    {activitySummary.completedCourses}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -172,33 +402,50 @@ export default function DashboardPage() {
                 <CardDescription className="text-sm">Your ongoing learning journey</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0">
-                {enrolledCourses.length > 0 ? (
-                  enrolledCourses.map((course) => {
-                    const progress = userProgressData.find((p) => p.courseId === course.id)
+                {isLoadingEnrollments ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                  </div>
+                ) : activeEnrollments.length > 0 ? (
+                  activeEnrollments.map((enrollment) => {
+                    const { course } = enrollment
+                    const progressPercent = enrollment.progressPercent ?? 0
+                    const lessonsCompletedEstimate = Math.min(
+                      course.totalLessons,
+                      Math.round((progressPercent / 100) * course.totalLessons),
+                    )
+
                     return (
                       <div
-                        key={course.id}
+                        key={enrollment.id}
                         className="rounded-lg border border-border/40 bg-background/70 p-3 sm:p-4 backdrop-blur-sm transition-colors hover:bg-background/90"
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-base sm:text-lg font-semibold text-foreground line-clamp-2">{course.title}</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mt-1">{course.description}</p>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground line-clamp-2">
+                              {course.title}
+                            </h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mt-1">
+                              {course.description}
+                            </p>
                           </div>
-                          <Badge variant="outline" className="border-emerald-200 text-emerald-600 dark:border-emerald-400/40 dark:text-emerald-300 text-xs self-start sm:self-center flex-shrink-0">
-                            {course.level}
+                          <Badge
+                            variant={getLevelBadgeVariant(course.level)}
+                            className="text-xs uppercase tracking-wide self-start sm:self-center flex-shrink-0"
+                          >
+                            {(course.level ?? "LEVEL").toUpperCase()}
                           </Badge>
                         </div>
                         <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                           <div className="flex-1">
                             <p className="text-xs uppercase tracking-wide text-muted-foreground">Progress</p>
                             <div className="flex items-center gap-2 mt-1">
-                              <Progress value={progress?.overallProgress ?? 0} className="h-1.5 sm:h-2 flex-1 max-w-24 sm:max-w-32" />
-                              <span className="text-xs sm:text-sm font-medium text-foreground">{progress?.overallProgress ?? 0}%</span>
+                              <Progress value={progressPercent} className="h-1.5 sm:h-2 flex-1 max-w-24 sm:max-w-32" />
+                              <span className="text-xs sm:text-sm font-medium text-foreground">{progressPercent}%</span>
                             </div>
                           </div>
                           <div className="text-xs sm:text-sm text-muted-foreground">
-                            {progress?.completedLessons.length ?? 0} / {course.totalLessons} lessons
+                            {lessonsCompletedEstimate} / {course.totalLessons} lessons
                           </div>
                         </div>
                         <div className="mt-3 sm:mt-4 flex items-center justify-end">
@@ -208,11 +455,7 @@ export default function DashboardPage() {
                                 View Course
                               </Button>
                             </Link>
-                            <Link href={
-                              progress?.currentLesson 
-                                ? `/courses/${course.id}/lessons/${progress.currentLesson}`
-                                : `/courses/${course.id}`
-                            } className="flex-1 sm:flex-none">
+                            <Link href={`/courses/${course.id}`} className="flex-1 sm:flex-none">
                               <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-2 sm:px-4 w-full sm:w-auto">
                                 <Play className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                 Continue
@@ -248,6 +491,9 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 )}
+                {enrollmentError && (
+                  <p className="text-xs sm:text-sm text-destructive">{enrollmentError}</p>
+                )}
               </CardContent>
             </Card>
 
@@ -261,24 +507,34 @@ export default function DashboardPage() {
                 <CardDescription className="text-sm">Your learning progress over time</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 pt-0">
-                <div className="space-y-3 sm:space-y-4">
-                  {recentActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-start space-x-3">
-                      <div className="mt-2 h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground line-clamp-2">{activity.title}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-1">{activity.course}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">{formatTimeAgo(activity.time)}</p>
+                {isLoadingEnrollments ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                  </div>
+                ) : recentActivity.length > 0 ? (
+                  <div className="space-y-3 sm:space-y-4">
+                    {recentActivity.map((activity) => (
+                      <div key={activity.id} className="flex items-start space-x-3">
+                        <div className="mt-2 h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground line-clamp-2">{activity.title}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">{activity.course}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{formatTimeAgo(activity.time)}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No course activity yet. Start learning to see your journey here.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
 
           {/* Available Courses Section */}
-          {availableCourses.length > 0 && (
+          {(availableCourses.length > 0 || isLoadingCatalog || catalogError) && (
             <Card className="border border-border/60 bg-card/90">
               <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 p-4 sm:p-6">
                 <div>
@@ -296,60 +552,75 @@ export default function DashboardPage() {
                 </Link>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 sm:gap-5 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {availableCourses.map((course) => (
-                    <div
-                      key={course.id}
-                      className="group rounded-xl border border-border/50 bg-background/70 p-4 md:p-5 backdrop-blur-sm transition-all hover:border-emerald-200 hover:bg-background/90 hover:shadow-md flex flex-col h-full"
-                    >
-                      <div className="mb-3 md:mb-4 flex items-start justify-between">
-                        <Badge variant="outline" className="border-emerald-200 text-emerald-600 dark:border-emerald-400/40 dark:text-emerald-300 text-xs md:text-sm">
-                          {course.level}
-                        </Badge>
-                        <div className="text-right ml-2">
-                          <div className="text-xs md:text-sm text-muted-foreground">
-                            {course.duration} min
+                {catalogError && (
+                  <p className="text-xs sm:text-sm text-destructive mb-4">{catalogError}</p>
+                )}
+                {isLoadingCatalog ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                  </div>
+                ) : availableCourses.length > 0 ? (
+                  <div className="grid gap-4 sm:gap-5 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {availableCourses.map((course) => {
+                      const durationLabel = formatDuration(course.durationMinutes)
+
+                      return (
+                        <div
+                          key={course.id}
+                          className="group rounded-xl border border-border/50 bg-background/70 p-4 md:p-5 backdrop-blur-sm transition-all hover:border-emerald-200 hover:bg-background/90 hover:shadow-md flex flex-col h-full"
+                        >
+                          <div className="mb-3 md:mb-4 flex items-start justify-between">
+                            <Badge
+                              variant={getLevelBadgeVariant(course.level)}
+                              className="text-xs md:text-sm uppercase tracking-wide"
+                            >
+                              {(course.level ?? "LEVEL").toUpperCase()}
+                            </Badge>
+                          </div>
+
+                          <h3 className="mb-2 md:mb-3 line-clamp-2 text-lg md:text-xl font-semibold text-foreground group-hover:text-emerald-600">
+                            {course.title}
+                          </h3>
+                          <p className="mb-3 md:mb-4 line-clamp-2 text-sm md:text-base text-muted-foreground flex-grow">
+                            {course.description}
+                          </p>
+
+                          <div className="mb-3 md:mb-4 flex items-center gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground flex-wrap">
+                            <span className="flex items-center gap-1">
+                              <Layers className="h-3 w-3 md:h-4 md:w-4" />
+                              {course.sectionsCount} sections
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
+                              {course.totalLessons} lessons
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 md:h-4 md:w-4" />
+                              {durationLabel}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col xl:flex-row gap-2 mt-auto">
+                            <Link href={`/courses/${course.id}`} className="flex-1">
+                              <Button variant="outline" size="sm" className="w-full h-9 text-xs sm:text-sm font-medium">
+                                Preview
+                              </Button>
+                            </Link>
+                            <Link href={`/courses/${course.id}`} className="flex-1">
+                              <Button size="sm" className="w-full h-9 bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm font-medium">
+                                Start Learning
+                              </Button>
+                            </Link>
                           </div>
                         </div>
-                      </div>
-                      
-                      <h3 className="mb-2 md:mb-3 line-clamp-2 text-lg md:text-xl font-semibold text-foreground group-hover:text-emerald-600">
-                        {course.title}
-                      </h3>
-                      <p className="mb-3 md:mb-4 line-clamp-2 text-sm md:text-base text-muted-foreground flex-grow">
-                        {course.description}
-                      </p>
-                      
-                      <div className="mb-3 md:mb-4 flex items-center gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
-                          {course.totalLessons} lessons
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3 md:h-4 md:w-4" />
-                          {course.totalStudents} students
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Star className="h-3 w-3 md:h-4 md:w-4 fill-amber-400 text-amber-400" />
-                          {course.rating}
-                        </span>
-                      </div>
-                      
-                      <div className="flex flex-col xl:flex-row gap-2 mt-auto">
-                        <Link href={`/courses/${course.id}`} className="flex-1">
-                          <Button variant="outline" size="sm" className="w-full h-9 text-xs sm:text-sm font-medium">
-                            Preview
-                          </Button>
-                        </Link>
-                        <Link href={`/courses/${course.id}`} className="flex-1">
-                          <Button size="sm" className="w-full h-9 bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm font-medium">
-                            Start Learning
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    You&apos;re all caught up! Check back soon for new courses to explore.
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
@@ -365,36 +636,36 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
-              {upcomingLessons.map((lesson) => (
-                <Link
-                  key={lesson.id}
-                  href={`/courses/${lesson.course.toLowerCase().replace(/\s+/g, '-')}/lessons/${lesson.id}`}
-                  className="block"
-                >
-                  <div className="flex items-start space-x-3 rounded-lg border border-border/50 bg-background/70 p-3 backdrop-blur-sm transition-all hover:border-emerald-200 hover:bg-background/90 hover:shadow-sm cursor-pointer group">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-100 group-hover:bg-emerald-200 dark:bg-emerald-500/15 dark:group-hover:bg-emerald-500/25 transition-colors">
-                      {lesson.type === "video" ? (
-                        <Play className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
-                      ) : (
-                        <BookOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="line-clamp-2 text-sm font-medium text-foreground group-hover:text-emerald-600">
-                        {lesson.title}
-                      </h4>
-                      <p className="text-xs text-muted-foreground">{lesson.course}</p>
-                      <div className="mt-1 flex items-center justify-between">
-                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>{lesson.duration} min</span>
+                {upcomingLessons.length > 0 ? (
+                  upcomingLessons.map((lesson) => (
+                    <Link key={lesson.id} href={`/courses/${lesson.courseId}`} className="block">
+                      <div className="flex items-start space-x-3 rounded-lg border border-border/50 bg-background/70 p-3 backdrop-blur-sm transition-all hover:border-emerald-200 hover:bg-background/90 hover:shadow-sm cursor-pointer group">
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-100 group-hover:bg-emerald-200 dark:bg-emerald-500/15 dark:group-hover:bg-emerald-500/25 transition-colors">
+                          {lesson.type === "video" ? (
+                            <Play className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                          ) : (
+                            <BookOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                          )}
                         </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald-600 transition-colors" />
+                        <div className="min-w-0 flex-1">
+                          <h4 className="line-clamp-2 text-sm font-medium text-foreground group-hover:text-emerald-600">
+                            {lesson.title}
+                          </h4>
+                          <p className="text-xs text-muted-foreground">{lesson.courseTitle}</p>
+                          <div className="mt-1 flex items-center justify-between">
+                            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              <span>{lesson.duration} min</span>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald-600 transition-colors" />
+                          </div>
+                        </div>
                       </div>
-                     </div>
-                  </div>
-                </Link>
-              ))}
+                    </Link>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center">No upcoming lessons scheduled yet.</p>
+                )}
               </div>
 
               <div className="grid gap-2">
@@ -422,14 +693,32 @@ export default function DashboardPage() {
                 Learning Streak
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-center">
-                <div className="mb-2 text-3xl font-bold text-foreground">7</div>
-                <p className="mb-4 text-sm text-muted-foreground">Days in a row</p>
-                <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200">
-                  Great job!
-                </Badge>
-              </div>
+            <CardContent className="text-center space-y-3">
+              {isLoadingStreak ? (
+                <div className="py-6 flex items-center justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
+                </div>
+              ) : (
+                <>
+                  <div className="text-3xl font-bold text-foreground">
+                    {learningStreak?.currentStreak ?? 0}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {learningStreak?.currentStreak === 1 ? "Day in a row" : "Days in a row"}
+                  </p>
+                  <div className="text-xs text-muted-foreground">
+                    Best streak: {learningStreak?.bestStreak ?? 0} days
+                  </div>
+                  <Badge
+                    variant="secondary"
+                    className="bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+                  >
+                    {learningStreak && learningStreak.currentStreak > 0
+                      ? "Great job!"
+                      : "Let’s start learning"}
+                  </Badge>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

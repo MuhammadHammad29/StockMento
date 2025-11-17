@@ -17,13 +17,6 @@ import { comprehensiveLessons } from './lessons-data';
  * Simple avatar management using public folder images
  * Backend will serve these images directly from /public/avatars/
  */
-export const AVATAR_CONFIG = {
-  TOTAL_AVATARS: 6,
-  BASE_PATH: '/avatars',
-  DEFAULT_AVATAR: 'avatar_1',
-  FILE_EXTENSION: '.png'
-};
-
 /**
  * Mock Users Data
  * Sample user accounts for testing authentication and user management features
@@ -582,64 +575,11 @@ export const getUserCourses = (userId: string): Course[] => {
   }).filter(Boolean) as Course[];
 };
 
-/**
- * Avatar Helper Functions
- * Simple functions for managing avatars stored in public folder
- */
-
-/**
- * Get avatar image path by avatar ID
- * @param avatarId - Avatar ID (e.g., 'avatar_1', 'avatar_2')
- * @returns Full path to avatar image
- */
-export const getAvatarPath = (avatarId: string): string => {
-  if (!avatarId) return `${AVATAR_CONFIG.BASE_PATH}/${AVATAR_CONFIG.DEFAULT_AVATAR}${AVATAR_CONFIG.FILE_EXTENSION}`;
-  return `${AVATAR_CONFIG.BASE_PATH}/${avatarId}${AVATAR_CONFIG.FILE_EXTENSION}`;
-};
-
-/**
- * Get all available avatar IDs
- * @returns Array of avatar IDs
- */
-export const getAvailableAvatars = (): string[] => {
-  const avatars: string[] = [];
-  for (let i = 1; i <= AVATAR_CONFIG.TOTAL_AVATARS; i++) {
-    avatars.push(`avatar_${i}`);
-  }
-  return avatars;
-};
-
-/**
- * Check if avatar ID is valid
- * @param avatarId - Avatar ID to validate
- * @returns True if avatar ID is valid
- */
-export const isValidAvatarId = (avatarId: string): boolean => {
-  const availableAvatars = getAvailableAvatars();
-  return availableAvatars.includes(avatarId);
-};
-
-/**
- * Get user's avatar path
- * @param user - User object
- * @returns Path to user's avatar image
- */
-export const getUserAvatarPath = (user: User): string => {
-  return getAvatarPath(user.avatarId);
-};
-
-/**
- * Get default avatar ID
- * @returns Default avatar ID
- */
-export const getDefaultAvatarId = (): string => {
-  return AVATAR_CONFIG.DEFAULT_AVATAR;
-};
-
-/**
- * Legacy function for backward compatibility
- * @deprecated Use getAvatarPath instead
- */
-export const getUserAvatar = (user: User): string => {
-  return getUserAvatarPath(user);
-};
+export {
+  AVATAR_CONFIG,
+  getAvatarPath,
+  getAvailableAvatars,
+  getUserAvatarPath,
+  getDefaultAvatarId,
+  isValidAvatarId,
+} from "./avatar-utils";

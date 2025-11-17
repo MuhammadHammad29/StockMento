@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, User } from "lucide-react";
-import { getAvailableAvatars, getAvatarPath, AVATAR_CONFIG } from "@/lib/mock-data";
+import { getAvailableAvatars, getAvatarPath, AVATAR_CONFIG } from "@/lib/avatar-utils";
 
 interface AvatarPickerProps {
   selectedAvatarId: string;

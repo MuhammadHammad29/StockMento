@@ -1,5 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, CourseEnrollmentStatus } from '@prisma/client';
+import {
+  Prisma,
+  CourseEnrollmentStatus,
+  LessonProgressStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const courseInclude = Prisma.validator<Prisma.CourseInclude>()({
@@ -123,6 +127,83 @@ export class CoursesService {
     );
   }
 
+  async getLearningStreak(userId: string) {
+    const progressEntries = await this.prisma.lessonProgress.findMany({
+      where: {
+        userId,
+        status: {
+          not: LessonProgressStatus.not_started,
+        },
+      },
+      select: { updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    if (progressEntries.length === 0) {
+      return {
+        currentStreak: 0,
+        bestStreak: 0,
+        lastActivityDate: null,
+      };
+    }
+
+    const startOfDayUTC = (value: Date) =>
+      new Date(
+        Date.UTC(
+          value.getUTCFullYear(),
+          value.getUTCMonth(),
+          value.getUTCDate(),
+        ),
+      );
+
+    const uniqueDayStrings = Array.from(
+      new Set(
+        progressEntries.map((entry) =>
+          startOfDayUTC(entry.updatedAt).toISOString(),
+        ),
+      ),
+    ).sort();
+
+    const msInDay = 24 * 60 * 60 * 1000;
+    let bestStreak = 0;
+    let rollingStreak = 0;
+    let previousDay: Date | null = null;
+
+    uniqueDayStrings.forEach((iso) => {
+      const current = new Date(iso);
+      if (!previousDay) {
+        rollingStreak = 1;
+      } else {
+        const diff = Math.round(
+          (current.getTime() - previousDay.getTime()) / msInDay,
+        );
+        rollingStreak = diff === 1 ? rollingStreak + 1 : 1;
+      }
+      if (rollingStreak > bestStreak) {
+        bestStreak = rollingStreak;
+      }
+      previousDay = current;
+    });
+
+    const activitySet = new Set(uniqueDayStrings);
+    let currentStreak = 0;
+    let cursor = startOfDayUTC(new Date());
+
+    while (activitySet.has(cursor.toISOString())) {
+      currentStreak += 1;
+      cursor = new Date(cursor.getTime() - msInDay);
+    }
+
+    return {
+      currentStreak,
+      bestStreak,
+      lastActivityDate:
+        uniqueDayStrings.length > 0
+          ? uniqueDayStrings[uniqueDayStrings.length - 1]
+          : null,
+    };
+  }
+
   async getUserEnrollment(courseId: string, userId: string) {
     const enrollment = await this.prisma.courseEnrollment.findUnique({
       where: {
@@ -211,6 +292,159 @@ export class CoursesService {
     return this.mapEnrollmentResponse(updated);
   }
 
+  async getCourseProgress(courseId: string, userId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: courseInclude,
+    });
+    if (!course || !course.isPublished) {
+      throw new NotFoundException('Course not found');
+    }
+
+    const lessonIds = course.sections.flatMap((section) =>
+      section.lessons.map((sectionLesson) => sectionLesson.lessonId),
+    );
+
+    if (lessonIds.length === 0) {
+      return {
+        courseId,
+        totalLessons: 0,
+        completedLessons: 0,
+        percentComplete: 0,
+        sections: [],
+        lessons: {},
+      };
+    }
+
+    const progressEntries = await this.prisma.lessonProgress.findMany({
+      where: {
+        userId,
+        lessonId: { in: lessonIds },
+      },
+    });
+
+    const progressMap = new Map(
+      progressEntries.map((entry) => [entry.lessonId, entry]),
+    );
+
+    const sections = course.sections.map((section) => {
+      const lessons = section.lessons.map((sectionLesson) => {
+        const entry = progressMap.get(sectionLesson.lessonId);
+        const status = entry?.status ?? LessonProgressStatus.not_started;
+        return {
+          id: sectionLesson.lessonId,
+          title: sectionLesson.lesson.title,
+          status,
+          completedAt: entry?.completedAt ?? null,
+        };
+      });
+      const completedLessons = lessons.filter(
+        (lesson) => lesson.status === LessonProgressStatus.completed,
+      ).length;
+      return {
+        id: section.id,
+        title: section.title,
+        position: section.position,
+        totalLessons: lessons.length,
+        completedLessons,
+        lessons,
+      };
+    });
+
+    const completedLessons = sections.reduce(
+      (sum, section) => sum + section.completedLessons,
+      0,
+    );
+
+    const lessonsRecord = Object.fromEntries(
+      sections.flatMap((section) =>
+        section.lessons.map((lesson) => [
+          lesson.id,
+          {
+            status: lesson.status,
+            completedAt: lesson.completedAt,
+          },
+        ]),
+      ),
+    );
+
+    const percentComplete =
+      lessonIds.length === 0
+        ? 0
+        : Math.round((completedLessons / lessonIds.length) * 100);
+
+    return {
+      courseId,
+      totalLessons: lessonIds.length,
+      completedLessons,
+      percentComplete,
+      sections,
+      lessons: lessonsRecord,
+    };
+  }
+
+  async updateLessonProgress(
+    courseId: string,
+    lessonId: string,
+    userId: string,
+    status: LessonProgressStatus,
+  ) {
+    await this.ensureCourseIsPublished(courseId);
+
+    const courseLesson = await this.prisma.courseLesson.findUnique({
+      where: {
+        courseId_lessonId: {
+          courseId,
+          lessonId,
+        },
+      },
+    });
+
+    if (!courseLesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    const enrollment = await this.prisma.courseEnrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId,
+        },
+      },
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException('Enrollment not found');
+    }
+
+    const now = new Date();
+
+    await this.prisma.lessonProgress.upsert({
+      where: {
+        userId_lessonId: {
+          userId,
+          lessonId,
+        },
+      },
+      create: {
+        userId,
+        lessonId,
+        status,
+        startedAt: now,
+        completedAt: status === LessonProgressStatus.completed ? now : null,
+      },
+      update: {
+        status,
+        updatedAt: now,
+        completedAt: status === LessonProgressStatus.completed ? now : null,
+      },
+    });
+
+    await this.recalculateEnrollmentProgress(courseId, userId);
+
+    return this.getCourseProgress(courseId, userId);
+  }
+
   async getLessonDetail(courseId: string, lessonId: string) {
     const courseLesson = await this.prisma.courseLesson.findUnique({
       where: {
@@ -279,6 +513,62 @@ export class CoursesService {
     if (!course || !course.isPublished) {
       throw new NotFoundException('Course not found');
     }
+  }
+
+  private async recalculateEnrollmentProgress(
+    courseId: string,
+    userId: string,
+  ) {
+    const enrollment = await this.prisma.courseEnrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId,
+        },
+      },
+    });
+
+    if (!enrollment) {
+      return null;
+    }
+
+    const lessonIds = await this.prisma.courseLesson.findMany({
+      where: { courseId },
+      select: { lessonId: true },
+    });
+
+    if (lessonIds.length === 0) {
+      return this.prisma.courseEnrollment.update({
+        where: { id: enrollment.id },
+        data: {
+          progressPercent: 0,
+          status: CourseEnrollmentStatus.active,
+          completedAt: null,
+        },
+      });
+    }
+
+    const completedLessons = await this.prisma.lessonProgress.count({
+      where: {
+        userId,
+        lessonId: { in: lessonIds.map((lesson) => lesson.lessonId) },
+        status: LessonProgressStatus.completed,
+      },
+    });
+
+    const percent = Math.round((completedLessons / lessonIds.length) * 100);
+
+    return this.prisma.courseEnrollment.update({
+      where: { id: enrollment.id },
+      data: {
+        progressPercent: percent,
+        status:
+          percent >= 100
+            ? CourseEnrollmentStatus.completed
+            : CourseEnrollmentStatus.active,
+        completedAt: percent >= 100 ? new Date() : null,
+      },
+    });
   }
 
   private mapLessonDetail(link: LessonDetailLink) {
