@@ -16,6 +16,7 @@ import {
   XCircle,
   Layers,
   ListOrdered,
+  CheckCircle,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
@@ -1007,78 +1008,64 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                 <CardTitle className="text-base">Course outline</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-                {sections.map((section) => (
+                {sections.map((section, sectionIndex) => (
                   <div key={section.id} className="space-y-2">
                     <p className="text-sm font-semibold">{section.title}</p>
                     <div className="space-y-1.5">
-                      {(section.lessons ?? []).map((entry) => {
+                      {(section.lessons ?? []).map((entry, lessonIndex) => {
                         const status = getLessonStatus(entry.id)
                         const LessonIcon = getLessonIcon(entry.contentType)
                         const isLocked = status === "locked"
                         const isCompleted = status === "completed"
-                        const isActive = status === "current"
-                        const isInProgress = status === "in_progress"
-                        const actionLabel = isCompleted ? "Review" : isActive || isInProgress ? "Resume" : "Open"
-                        const statusText = isLocked
-                          ? "Locked"
+                        const isCurrent = status === "current"
+
+                        const rowTone = isCurrent
+                          ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10"
                           : isCompleted
-                            ? "Completed"
-                            : isActive
-                              ? "Current"
-                              : isInProgress
-                                ? "In progress"
-                                : "Available"
-                        const rowTone = isLocked
-                          ? "border-border/40 opacity-70"
-                          : isCompleted
-                            ? "border-emerald-500 bg-emerald-500/10"
-                            : isActive || isInProgress
-                              ? "border-blue-500 bg-blue-500/10"
-                              : "border-border/60"
+                            ? "border-emerald-200"
+                            : "border-border/40"
+
+                        const WrapperComponent = isLocked ? "div" : Link
+                        const wrapperProps = isLocked
+                          ? {}
+                          : { href: `/courses/${courseId}/lessons/${entry.id}` }
+
                         return (
-                          <div
+                          <WrapperComponent
                             key={entry.id}
-                            className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm ${rowTone}`}
+                            {...wrapperProps}
+                            className={`flex items-center justify-between rounded-lg border ${rowTone} px-3 py-2 text-sm transition hover:bg-muted/10 ${
+                              isLocked ? "cursor-not-allowed" : ""
+                            }`}
                           >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <LessonIcon
-                                className={`h-4 w-4 ${
-                                  isCompleted
-                                    ? "text-emerald-600"
-                                    : isActive || isInProgress
-                                      ? "text-blue-600"
-                                      : "text-muted-foreground"
-                                }`}
-                              />
-                              <span className={`truncate ${isCompleted ? "text-emerald-700 dark:text-emerald-300" : ""}`}>
-                                {entry.title}
-                              </span>
-                            </div>
-                            {isEnrolled ? (
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <Badge
-                                  variant={isCompleted ? "default" : "outline"}
-                                  className="hidden sm:inline-flex text-[10px] uppercase tracking-wide"
-                                >
-                                  {statusText}
-                                </Badge>
-                                <Link href={`/courses/${courseId}/lessons/${entry.id}`}>
-                                  <Button
-                                    variant={isActive ? "default" : "outline"}
-                                    size="sm"
-                                    className="text-xs"
-                                    disabled={isLocked}
-                                  >
-                                    {actionLabel}
-                                  </Button>
-                                </Link>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                                <LessonIcon className="h-4 w-4 text-muted-foreground" />
                               </div>
-                            ) : (
-                              <Button variant="outline" size="sm" className="text-xs" disabled>
-                                Locked
-                              </Button>
+                              <div className="min-w-0">
+                                <p
+                                  className={`truncate font-medium ${
+                                    isCompleted ? "text-emerald-700 dark:text-emerald-300" : "text-foreground"
+                                  }`}
+                                >
+                                  {entry.title}
+                                </p>
+                                <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <ListOrdered className="h-3 w-3" />
+                                    {sectionIndex + 1}.{lessonIndex + 1}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {formatDuration(entry.durationMinutes)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            {isCompleted && (
+                              <CheckCircle className="h-4 w-4 text-emerald-600" aria-label="Lesson completed" />
                             )}
-                          </div>
+                          </WrapperComponent>
                         )
                       })}
                     </div>
@@ -1091,10 +1078,19 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
               <CardHeader>
                 <CardTitle className="text-base">Course stats</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm text-muted-foreground">
-                <p>Total lessons: {course.totalLessons}</p>
-                <p>Total sections: {course.sections.length}</p>
-                <p>Duration: {formatDuration(course.durationMinutes)}</p>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <ListOrdered className="h-4 w-4 text-muted-foreground" />
+                  <p>Total lessons: {course.totalLessons}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                  <p>Total sections: {course.sections.length}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <p>Duration: {formatDuration(course.durationMinutes)}</p>
+                </div>
               </CardContent>
             </Card>
           </div>
