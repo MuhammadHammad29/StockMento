@@ -17,7 +17,7 @@ import { AdminNavbar } from "@/components/navigation"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { courseApi } from "@/lib/api"
 import { generateSlug } from "@/lib/data-utils"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 
 type CourseLevel = "beginner" | "intermediate" | "advanced"
 
@@ -71,6 +71,9 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to load course details."
       setLoadError(message)
+      toast.error("Unable to load course", {
+        description: message,
+      })
     } finally {
       setIsLoading(false)
     }
@@ -102,10 +105,8 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
 
   const handleSave = async () => {
     if (!formData.title.trim() || !formData.slug.trim() || !formData.description.trim()) {
-      toast({
-        title: "Missing required fields",
+      toast.error("Missing required fields", {
         description: "Title, slug, and description are required.",
-        variant: "destructive",
       })
       return
     }
@@ -130,8 +131,7 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
         isPublished: updated.isPublished,
       })
       setHasChanges(false)
-      toast({
-        title: "Course updated",
+      toast.success("Course updated", {
         description: updated.isPublished
           ? `"${updated.title}" is published.`
           : `"${updated.title}" saved as draft.`,
@@ -139,10 +139,8 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
       router.refresh()
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update course."
-      toast({
-        title: "Unable to update course",
+      toast.error("Unable to update course", {
         description: message,
-        variant: "destructive",
       })
     } finally {
       setIsSaving(false)

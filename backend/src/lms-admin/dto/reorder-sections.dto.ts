@@ -1,11 +1,21 @@
 import { Type } from 'class-transformer';
-import { ArrayNotEmpty, IsArray, ValidateNested } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  ValidateNested,
+  IsUUID,
+  IsInt,
+  Min,
+} from 'class-validator';
 
 class SectionOrderDto {
   @Type(() => String)
+  @IsUUID()
   sectionId!: string;
 
   @Type(() => Number)
+  @IsInt()
+  @Min(1)
   position!: number;
 }
 

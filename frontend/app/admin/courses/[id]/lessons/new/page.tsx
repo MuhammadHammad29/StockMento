@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Save } from "lucide-react"
@@ -15,7 +15,7 @@ import { AdminNavbar } from "@/components/navigation"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { courseApi, lessonApi } from "@/lib/api"
 import type { AdminCourseSection } from "@/lib/types"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 
 type LessonType = "text" | "video" | "quiz" | "lab"
 
@@ -69,17 +69,15 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unable to load sections."
         setError(message)
+        toast.error("Unable to load sections", {
+          description: message,
+        })
       } finally {
         setIsLoading(false)
       }
     }
     void loadSections()
   }, [courseId, searchParams])
-
-  const selectedSection = useMemo(
-    () => sections.find((section) => section.id === formData.sectionId),
-    [formData.sectionId, sections],
-  )
 
   const updateField = <K extends keyof LessonFormState>(field: K, value: LessonFormState[K]) => {
     setFormData((prev) => ({
@@ -90,14 +88,29 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
 
   const handleSubmit = async () => {
     if (!formData.title.trim()) {
-      toast({ title: "Missing title", description: "Lesson title is required.", variant: "destructive" })
+      toast.error("Missing title", {
+        description: "Lesson title is required.",
+      })
       return
     }
+
+    if (formData.contentType === "video" && !formData.videoUrl.trim()) {
+      toast.error("Add video URL", {
+        description: "Video lessons must include a video link.",
+      })
+      return
+    }
+
+    if (formData.contentType === "text" && !formData.bodyHtml.trim()) {
+      toast.error("Add lesson content", {
+        description: "Text lessons must include lesson content.",
+      })
+      return
+    }
+
     if (!formData.sectionId) {
-      toast({
-        title: "Select section",
+      toast.error("Select section", {
         description: "Choose a section before creating a lesson.",
-        variant: "destructive",
       })
       return
     }
@@ -115,11 +128,15 @@ export default function AdminNewLessonPage({ params }: { params: { id: string } 
       }
 
       await lessonApi.createLesson(courseId, formData.sectionId, payload)
-      toast({ title: "Lesson created", description: `"${formData.title}" added to the course.` })
+      toast.success("Lesson created", {
+        description: `"${formData.title}" added to the course.`,
+      })
       router.push(`/admin/courses/${courseId}`)
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create lesson."
-      toast({ title: "Unable to create lesson", description: message, variant: "destructive" })
+      toast.error("Unable to create lesson", {
+        description: message,
+      })
     } finally {
       setIsSaving(false)
     }

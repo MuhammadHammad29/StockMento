@@ -15,7 +15,7 @@ import { AdminNavbar } from "@/components/navigation"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { courseApi, lessonApi } from "@/lib/api"
 import type { AdminCourse, AdminCourseSection } from "@/lib/types"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 
 type LessonType = "text" | "video" | "quiz" | "lab"
 
@@ -80,6 +80,9 @@ export default function EditLessonPage({ params }: { params: { id: string; lesso
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to load lesson."
       setError(message)
+      toast.error("Unable to load lesson", {
+        description: message,
+      })
     } finally {
       setIsLoading(false)
     }
@@ -100,11 +103,18 @@ export default function EditLessonPage({ params }: { params: { id: string; lesso
 
   const handleSave = async () => {
     if (!section) {
-      toast({ title: "Missing section", description: "Lesson section missing.", variant: "destructive" })
+      toast.error("Missing section", { description: "Lesson section missing." })
       return
     }
     if (!formData.title.trim()) {
-      toast({ title: "Missing title", description: "Lesson title is required.", variant: "destructive" })
+      toast.error("Missing title", { description: "Lesson title is required." })
+      return
+    }
+
+    if (formData.contentType === "text" && !formData.bodyHtml.trim()) {
+      toast.error("Add lesson content", {
+        description: "Text lessons must include lesson content.",
+      })
       return
     }
 
@@ -120,11 +130,15 @@ export default function EditLessonPage({ params }: { params: { id: string; lesso
         thumbnailUrl: formData.contentType === "video" ? formData.thumbnailUrl.trim() : undefined,
       }
       await lessonApi.updateLesson(courseId, section.id, lessonId, payload)
-      toast({ title: "Lesson updated", description: `"${formData.title}" saved.` })
+      toast.success("Lesson updated", {
+        description: `"${formData.title}" saved.`,
+      })
       router.push(`/admin/courses/${courseId}`)
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update lesson."
-      toast({ title: "Unable to update lesson", description: message, variant: "destructive" })
+      toast.error("Unable to update lesson", {
+        description: message,
+      })
     } finally {
       setIsSaving(false)
     }

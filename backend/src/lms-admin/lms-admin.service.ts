@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Injectable,
   NotFoundException,
@@ -292,7 +291,9 @@ export class LmsAdminService {
   ) {
     const contentType = dto.contentType;
     if (!contentType) {
-      throw new BadRequestException('contentType is required for lesson content.');
+      throw new BadRequestException(
+        'contentType is required for lesson content.',
+      );
     }
     if (dto.durationMinutes === undefined) {
       throw new BadRequestException(

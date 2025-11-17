@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AdminNavbar } from "@/components/navigation"
 import { courseApi } from "@/lib/api"
 import { generateSlug } from "@/lib/data-utils"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 
 type CourseLevel = "beginner" | "intermediate" | "advanced" | ""
 
@@ -61,26 +61,26 @@ export default function CreateCoursePage() {
 
   const validateForm = () => {
     if (!courseData.title.trim()) {
-      toast({ title: "Missing title", description: "Please provide a course title.", variant: "destructive" })
+      toast.error("Missing title", {
+        description: "Please provide a course title.",
+      })
       return false
     }
     if (!courseData.slug.trim()) {
-      toast({ title: "Missing slug", description: "Please provide a unique slug.", variant: "destructive" })
+      toast.error("Missing slug", {
+        description: "Please provide a unique slug.",
+      })
       return false
     }
     if (!courseData.description.trim()) {
-      toast({
-        title: "Description required",
+      toast.error("Description required", {
         description: "Add a short course description for the catalog.",
-        variant: "destructive",
       })
       return false
     }
     if (!courseData.level) {
-      toast({
-        title: "Select a level",
+      toast.error("Select a level", {
         description: "Choose the difficulty level for this course.",
-        variant: "destructive",
       })
       return false
     }
@@ -104,8 +104,8 @@ export default function CreateCoursePage() {
       }
 
       const created = await courseApi.createCourse(payload)
-      toast({
-        title: publish ? "Course published" : "Course saved",
+      const message = publish ? "Course published" : "Course saved"
+      toast.success(message, {
         description: publish
           ? `"${created.title}" is live for admins.`
           : `"${created.title}" was saved as a draft.`,
@@ -114,10 +114,8 @@ export default function CreateCoursePage() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Something went wrong while saving the course. Please try again."
-      toast({
-        title: "Unable to save course",
+      toast.error("Unable to save course", {
         description: message,
-        variant: "destructive",
       })
     } finally {
       setIsSaving(false)

@@ -22,7 +22,7 @@ import { AdminNavbar } from "@/components/navigation"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { courseApi } from "@/lib/api"
 import type { AdminCourse } from "@/lib/types"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 
 const countSections = (course: AdminCourse): number => course.sections?.length ?? 0
 
@@ -80,6 +80,9 @@ export default function AdminCoursesPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to load courses. Please try again."
       setError(message)
+      toast.error("Unable to load courses", {
+        description: message,
+      })
     } finally {
       setIsLoading(false)
     }

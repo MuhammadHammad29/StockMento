@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  ValidateIf,
 } from 'class-validator';
 import { LessonContentType } from '@prisma/client';
 
@@ -26,8 +27,9 @@ export class CreateLessonDto {
   position?: number;
 
   // Content-specific fields
-  @IsOptional()
+  @ValidateIf((dto) => dto.contentType === LessonContentType.text)
   @IsString()
+  @IsNotEmpty()
   bodyHtml?: string;
 
   @IsOptional()
@@ -35,8 +37,9 @@ export class CreateLessonDto {
   @IsPositive()
   readTimeMinutes?: number;
 
-  @IsOptional()
+  @ValidateIf((dto) => dto.contentType === LessonContentType.video)
   @IsString()
+  @IsNotEmpty()
   videoUrl?: string;
 
   @IsOptional()

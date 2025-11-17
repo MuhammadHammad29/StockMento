@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import {
   ArrowDown,
   ArrowUp,
@@ -25,7 +24,17 @@ import { AdminNavbar } from "@/components/navigation"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { courseApi, courseSectionApi, lessonApi } from "@/lib/api"
 import type { AdminCourse, AdminCourseSection } from "@/lib/types"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 type LessonLink = NonNullable<AdminCourseSection["lessons"]>[number]
 
@@ -64,7 +73,6 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
   const { adminUser } = useAdminAuth()
   void adminUser
 
-  const router = useRouter()
   const courseId = params.id
 
   const [course, setCourse] = useState<AdminCourse | null>(null)
@@ -77,6 +85,8 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
   const [editingSectionTitle, setEditingSectionTitle] = useState("")
   const [isUpdatingSection, setIsUpdatingSection] = useState(false)
+  const [lessonToDelete, setLessonToDelete] = useState<{ sectionId: string; lesson: LessonLink } | null>(null)
+  const [isDeletingLesson, setIsDeletingLesson] = useState(false)
 
   const loadCourse = useCallback(async () => {
     setIsLoading(true)
@@ -87,6 +97,9 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to load course."
       setError(message)
+      toast.error("Unable to load course", {
+        description: message,
+      })
     } finally {
       setIsLoading(false)
     }
@@ -114,10 +127,8 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
   const handleCreateSection = async () => {
     const title = newSectionTitle.trim()
     if (!title) {
-      toast({
-        title: "Section title required",
+      toast.error("Section title required", {
         description: "Please enter a section name before saving.",
-        variant: "destructive",
       })
       return
     }
@@ -132,18 +143,15 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
             }
           : prev,
       )
-      toast({
-        title: "Section added",
+      toast.success("Section added", {
         description: `"${created.title}" was added to this course.`,
       })
       setNewSectionTitle("")
       setIsAddingSection(false)
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to create section."
-      toast({
-        title: "Failed to add section",
+      toast.error("Failed to add section", {
         description: message,
-        variant: "destructive",
       })
     } finally {
       setIsCreatingSection(false)
@@ -154,10 +162,8 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
     if (!editingSectionId) return
     const title = editingSectionTitle.trim()
     if (!title) {
-      toast({
-        title: "Section title required",
+      toast.error("Section title required", {
         description: "Please enter a section name before saving.",
-        variant: "destructive",
       })
       return
     }
@@ -176,18 +182,15 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
             }
           : prev,
       )
-      toast({
-        title: "Section updated",
+      toast.success("Section updated", {
         description: `"${updated.title}" was updated successfully.`,
       })
       setEditingSectionId(null)
       setEditingSectionTitle("")
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to update section."
-      toast({
-        title: "Failed to update section",
+      toast.error("Failed to update section", {
         description: message,
-        variant: "destructive",
       })
     } finally {
       setIsUpdatingSection(false)
@@ -233,22 +236,19 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
           position: index + 1,
         })),
       })
-      toast({
-        title: "Lesson order updated",
+      toast("Lesson order updated", {
         description: `"${moved.lesson.title}" moved ${direction === "up" ? "up" : "down"}.`,
       })
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update lesson order."
-      toast({ title: "Failed to reorder", description: message, variant: "destructive" })
+      toast.error("Failed to reorder", { description: message })
       void loadCourse()
     }
   }
 
   const handleLessonDelete = async (sectionId: string, lesson: LessonLink) => {
-    const confirmed = window.confirm(`Delete lesson "${lesson.lesson.title}"? This cannot be undone.`)
-    if (!confirmed) return
-
     setProcessingLessonId(lesson.lessonId)
+    setIsDeletingLesson(true)
     try {
       await lessonApi.deleteLesson(courseId, sectionId, lesson.lessonId)
       mutateSections((sections) =>
@@ -258,12 +258,18 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
             : sec,
         ),
       )
-      toast({ title: "Lesson deleted", description: `"${lesson.lesson.title}" has been removed.` })
+      toast.success("Lesson deleted", {
+        description: `"${lesson.lesson.title}" has been removed.`,
+      })
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to delete lesson."
-      toast({ title: "Unable to delete lesson", description: message, variant: "destructive" })
+      toast.error("Unable to delete lesson", {
+        description: message,
+      })
     } finally {
       setProcessingLessonId(null)
+      setIsDeletingLesson(false)
+      setLessonToDelete(null)
     }
   }
 
@@ -561,7 +567,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                           size="sm"
                           className="text-red-600 hover:text-red-700"
                           disabled={processingLessonId === lessonLink.lessonId}
-                          onClick={() => void handleLessonDelete(section.id, lessonLink)}
+                          onClick={() => setLessonToDelete({ sectionId: section.id, lesson: lessonLink })}
                         >
                           {processingLessonId === lessonLink.lessonId ? "Deleting..." : <Trash2 className="h-4 w-4" />}
                         </Button>
@@ -574,6 +580,38 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
             </CardContent>
           </Card>
         ))}
+        <AlertDialog
+          open={!!lessonToDelete}
+          onOpenChange={(open) => {
+            if (!open && !isDeletingLesson) {
+              setLessonToDelete(null)
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete lesson</AlertDialogTitle>
+              <AlertDialogDescription>
+                {lessonToDelete ? `Remove "${lessonToDelete.lesson.lesson.title}" from this course?` : ""}
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeletingLesson}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isDeletingLesson}
+                className="bg-red-600 hover:bg-red-700"
+                onClick={() => {
+                  if (lessonToDelete) {
+                    void handleLessonDelete(lessonToDelete.sectionId, lessonToDelete.lesson)
+                  }
+                }}
+              >
+                {isDeletingLesson ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   )
