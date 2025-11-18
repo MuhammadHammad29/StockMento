@@ -60,13 +60,7 @@ type ActivitySummary = {
   averageProgress: number
 }
 
-const getLevelBadgeVariant = (level?: string): "default" | "secondary" | "outline" => {
-  const normalized = level?.toLowerCase()
-  if (normalized === "beginner") return "default"
-  if (normalized === "intermediate") return "secondary"
-  if (normalized === "advanced") return "outline"
-  return "secondary"
-}
+const getLevelBadgeVariant = () => ({ variant: "secondary" as const, className: "" })
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -537,12 +531,17 @@ useEffect(() => {
                               {course.description}
                             </p>
                           </div>
-                          <Badge
-                            variant={getLevelBadgeVariant(course.level)}
-                            className="text-xs uppercase tracking-wide self-start sm:self-center flex-shrink-0"
-                          >
-                            {(course.level ?? "LEVEL").toUpperCase()}
-                          </Badge>
+                          {(() => {
+                            const { variant, className } = getLevelBadgeVariant()
+                            return (
+                              <Badge
+                                variant={variant}
+                                className={`text-xs uppercase tracking-wide self-start sm:self-center flex-shrink-0 ${className}`}
+                              >
+                                {(course.level ?? "LEVEL").toUpperCase()}
+                              </Badge>
+                            )
+                          })()}
                         </div>
                         <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                           <div className="flex-1">
@@ -692,15 +691,20 @@ useEffect(() => {
                           className="group rounded-xl border border-border/50 bg-background/70 p-4 md:p-5 backdrop-blur-sm transition-all hover:border-emerald-200 hover:bg-background/90 hover:shadow-md flex flex-col h-full"
                         >
                           <div className="mb-3 md:mb-4 flex items-start justify-between">
-                            <Badge
-                              variant={getLevelBadgeVariant(course.level)}
-                              className="text-xs md:text-sm uppercase tracking-wide"
-                            >
-                              {(course.level ?? "LEVEL").toUpperCase()}
-                            </Badge>
+                            {(() => {
+                              const { variant, className } = getLevelBadgeVariant()
+                              return (
+                                <Badge
+                                  variant={variant}
+                                  className={`text-xs uppercase tracking-wide ${className}`}
+                                >
+                                  {(course.level ?? "LEVEL").toUpperCase()}
+                                </Badge>
+                              )
+                            })()}
                           </div>
 
-                          <h3 className="mb-2 md:mb-3 line-clamp-2 text-lg md:text-xl font-semibold text-foreground group-hover:text-emerald-600">
+                          <h3 className="mb-2 md:mb-3 line-clamp-2 text-lg font-semibold text-foreground group-hover:text-emerald-600">
                             {course.title}
                           </h3>
                           <p className="mb-3 md:mb-4 line-clamp-2 text-sm md:text-base text-muted-foreground flex-grow">
