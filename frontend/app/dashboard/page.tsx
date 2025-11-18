@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Loader2,
   Layers,
+  CheckCircle2,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
@@ -49,6 +50,7 @@ type UpcomingLesson = {
   courseTitle: string
   duration: number
   type: "text" | "video"
+  href: string
 }
 
 type ActivitySummary = {
@@ -71,6 +73,8 @@ export default function DashboardPage() {
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [learningStreak, setLearningStreak] = useState<LearningStreakSummary | null>(null)
   const [isLoadingStreak, setIsLoadingStreak] = useState(false)
+  const [upcomingLessons, setUpcomingLessons] = useState<UpcomingLesson[]>([])
+  const [isLoadingNextLessons, setIsLoadingNextLessons] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -268,35 +272,101 @@ useEffect(() => {
       .slice(0, 3)
   }, [activeEnrollments])
 
-  const upcomingLessons: UpcomingLesson[] = useMemo(() => {
-    if (activeEnrollments.length === 0) {
-      return availableCourses.slice(0, 2).map((course) => ({
-        id: course.id,
-        title: course.title,
-        courseId: course.id,
-        courseTitle: course.title,
-        duration: Math.max(
-          Math.round(course.durationMinutes / Math.max(course.totalLessons || 1, 1)),
-          10,
-        ),
-        type: "text",
-      }))
+  useEffect(() => {
+    let cancelled = false
+
+    const loadNextLessons = async () => {
+      if (activeEnrollments.length === 0) {
+        const fallback = availableCourses.slice(0, 2).map((course) => ({
+          id: course.id,
+          title: course.title,
+          courseId: course.id,
+          courseTitle: course.title,
+          duration: Math.max(
+            Math.round(course.durationMinutes / Math.max(course.totalLessons || 1, 1)),
+            10,
+          ),
+          type: "text" as const,
+          href: `/courses/${course.id}`,
+        }))
+        setUpcomingLessons(fallback)
+        setIsLoadingNextLessons(false)
+        return
+      }
+
+      setIsLoadingNextLessons(true)
+      try {
+        const results: UpcomingLesson[] = []
+        const targets = activeEnrollments.slice(0, 3)
+
+        for (const enrollment of targets) {
+          try {
+            const [progress, detail] = await Promise.all([
+              studentCoursesApi.getProgress(enrollment.course.id),
+              publicCoursesApi.detail(enrollment.course.id),
+            ])
+
+            const nextLessonProgress = progress.sections
+              .flatMap((section) => section.lessons)
+              .find((lesson) => lesson.status !== "completed")
+            const nextLessonId = nextLessonProgress?.id
+            if (!nextLessonId) {
+              continue
+            }
+
+            let lessonTitle = nextLessonProgress.title
+            let lessonDuration = 15
+            let lessonType: UpcomingLesson["type"] = "text"
+
+            detail.sections.some((section) => {
+              const lesson = section.lessons.find((item) => item.id === nextLessonId)
+              if (lesson) {
+                lessonTitle = lesson.title
+                lessonDuration = lesson.durationMinutes
+                lessonType = lesson.contentType === "video" ? "video" : "text"
+                return true
+              }
+              return false
+            })
+
+            results.push({
+              id: nextLessonId,
+              title: lessonTitle,
+              courseId: enrollment.course.id,
+              courseTitle: enrollment.course.title,
+              duration: lessonDuration,
+              type: lessonType,
+              href: `/courses/${enrollment.course.id}/lessons/${nextLessonId}`,
+            })
+          } catch (error) {
+            console.error("Failed to load next lesson for course", enrollment.course.id, error)
+          }
+
+          if (cancelled) {
+            return
+          }
+        }
+
+        if (!cancelled) {
+          setUpcomingLessons(results)
+        }
+      } catch (error) {
+        console.error("Failed to load upcoming lessons", error)
+        if (!cancelled) {
+          setUpcomingLessons([])
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingNextLessons(false)
+        }
+      }
     }
 
-    return activeEnrollments.slice(0, 2).map((enrollment) => ({
-      id: enrollment.course.id,
-      title: `Continue ${enrollment.course.title}`,
-      courseId: enrollment.course.id,
-      courseTitle: enrollment.course.title,
-      duration: Math.max(
-        Math.round(
-          enrollment.course.durationMinutes /
-            Math.max(enrollment.course.totalLessons || 1, 1),
-        ),
-        10,
-      ),
-      type: "video",
-    }))
+    void loadNextLessons()
+
+    return () => {
+      cancelled = true
+    }
   }, [activeEnrollments, availableCourses])
 
   if (!user) {
@@ -361,7 +431,7 @@ useEffect(() => {
               <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3">
                 <div>
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground uppercase tracking-wide">
-                    <BarChart3 className="h-3 w-3" />
+                    <BarChart3 className="h-3 w-3 text-emerald-500" />
                     Overall Progress
                   </div>
                   <div className="mt-2 flex items-center gap-2 sm:gap-3">
@@ -371,8 +441,8 @@ useEffect(() => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground uppercase tracking-wide">
-                    <BookOpen className="h-3 w-3" />
-                    Completed Lessons
+                    <Target className="h-3 w-3 text-amber-500" />
+                    Lessons Completed
                   </div>
                   <div className="mt-2 text-2xl font-semibold text-foreground">
                     {activitySummary.completedLessons}
@@ -380,7 +450,7 @@ useEffect(() => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground uppercase tracking-wide">
-                    <Target className="h-3 w-3" />
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                     Courses Completed
                   </div>
                   <div className="mt-2 text-2xl font-semibold text-foreground">
@@ -636,9 +706,14 @@ useEffect(() => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
-                {upcomingLessons.length > 0 ? (
+                {isLoadingNextLessons ? (
+                  <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading your next lessons...
+                  </div>
+                ) : upcomingLessons.length > 0 ? (
                   upcomingLessons.map((lesson) => (
-                    <Link key={lesson.id} href={`/courses/${lesson.courseId}`} className="block">
+                    <Link key={lesson.id} href={lesson.href} className="block">
                       <div className="flex items-start space-x-3 rounded-lg border border-border/50 bg-background/70 p-3 backdrop-blur-sm transition-all hover:border-emerald-200 hover:bg-background/90 hover:shadow-sm cursor-pointer group">
                         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-100 group-hover:bg-emerald-200 dark:bg-emerald-500/15 dark:group-hover:bg-emerald-500/25 transition-colors">
                           {lesson.type === "video" ? (
