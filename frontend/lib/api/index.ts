@@ -26,6 +26,7 @@ import {
   CourseProgressSummary,
   LessonProgressState,
   LearningStreakSummary,
+  StudentActivityItem,
   AdminDashboardSummary,
 } from '../types'
 import { STORAGE_KEYS } from '../data-utils'
@@ -411,6 +412,10 @@ export const studentCoursesApi = {
 
   getLearningStreak: async (): Promise<LearningStreakSummary> => {
     return apiCall<LearningStreakSummary>('/courses/me/streak')
+  },
+
+  getRecentActivity: async (): Promise<StudentActivityItem[]> => {
+    return apiCall<StudentActivityItem[]>('/courses/me/activity')
   },
 
   getProgress: async (courseId: string): Promise<CourseProgressSummary> => {

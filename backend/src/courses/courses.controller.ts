@@ -41,6 +41,13 @@ export class CoursesController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('student')
+  @Get('me/activity')
+  getRecentActivity(@CurrentUser() user: JwtPayload) {
+    return this.coursesService.getRecentActivity(user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('student')
   @Get(':courseId/enrollment')
   getMyEnrollment(
     @Param('courseId') courseId: string,

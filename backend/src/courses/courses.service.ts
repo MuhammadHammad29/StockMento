@@ -74,6 +74,21 @@ const lessonDetailInclude = Prisma.validator<Prisma.CourseLessonInclude>()({
 type LessonDetailLink = Prisma.CourseLessonGetPayload<{
   include: typeof lessonDetailInclude;
 }>;
+
+type StudentActivityType =
+  | 'course_enrolled'
+  | 'course_completed'
+  | 'lesson_completed';
+
+type StudentActivityEvent = {
+  id: string;
+  type: StudentActivityType;
+  courseId: string;
+  courseTitle: string;
+  lessonId?: string | null;
+  lessonTitle?: string | null;
+  timestamp: Date;
+};
 @Injectable()
 export class CoursesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -202,6 +217,99 @@ export class CoursesService {
           ? uniqueDayStrings[uniqueDayStrings.length - 1]
           : null,
     };
+  }
+
+  async getRecentActivity(userId: string) {
+    const [lessonEvents, enrollmentEvents] = await Promise.all([
+      this.prisma.lessonProgress.findMany({
+        where: {
+          userId,
+          status: LessonProgressStatus.completed,
+          completedAt: { not: null },
+        },
+        orderBy: { completedAt: 'desc' },
+        take: 20,
+        include: {
+          lesson: {
+            select: {
+              title: true,
+              courseLinks: {
+                include: {
+                  course: {
+                    select: {
+                      id: true,
+                      title: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.courseEnrollment.findMany({
+        where: { userId },
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const events: StudentActivityEvent[] = [];
+
+    lessonEvents.forEach((entry) => {
+      if (!entry.completedAt) {
+        return;
+      }
+      const link = entry.lesson.courseLinks[0];
+      if (!link) {
+        return;
+      }
+      events.push({
+        id: `lesson-${entry.id}`,
+        type: 'lesson_completed',
+        courseId: link.courseId,
+        courseTitle: link.course.title,
+        lessonId: entry.lessonId,
+        lessonTitle: entry.lesson.title,
+        timestamp: entry.completedAt,
+      });
+    });
+
+    enrollmentEvents.forEach((enrollment) => {
+      if (enrollment.startedAt) {
+        events.push({
+          id: `enroll-${enrollment.id}`,
+          type: 'course_enrolled',
+          courseId: enrollment.courseId,
+          courseTitle: enrollment.course.title,
+          timestamp: enrollment.startedAt,
+        });
+      }
+      if (enrollment.completedAt) {
+        events.push({
+          id: `complete-${enrollment.id}`,
+          type: 'course_completed',
+          courseId: enrollment.courseId,
+          courseTitle: enrollment.course.title,
+          timestamp: enrollment.completedAt,
+        });
+      }
+    });
+
+    return events
+      .filter((event) => event.timestamp)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, 10)
+      .map((event) => ({
+        ...event,
+        timestamp: event.timestamp.toISOString(),
+      }));
   }
 
   async getUserEnrollment(courseId: string, userId: string) {

@@ -33,15 +33,8 @@ import type {
   CourseEnrollmentSummary,
   PublicCourseSummary,
   LearningStreakSummary,
+  StudentActivityItem,
 } from "@/lib/types"
-
-type RecentActivityItem = {
-  id: string
-  title: string
-  course: string
-  time: string
-  type: "course_complete" | "course_progress" | "course_enrolled"
-}
 
 type UpcomingLesson = {
   id: string
@@ -75,6 +68,8 @@ export default function DashboardPage() {
   const [isLoadingStreak, setIsLoadingStreak] = useState(false)
   const [upcomingLessons, setUpcomingLessons] = useState<UpcomingLesson[]>([])
   const [isLoadingNextLessons, setIsLoadingNextLessons] = useState(false)
+  const [recentActivity, setRecentActivity] = useState<StudentActivityItem[]>([])
+  const [isLoadingActivity, setIsLoadingActivity] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -170,6 +165,38 @@ useEffect(() => {
   }
 }, [user])
 
+useEffect(() => {
+  if (!user) {
+    setRecentActivity([])
+    return
+  }
+
+  let cancelled = false
+  const loadActivity = async () => {
+    setIsLoadingActivity(true)
+    try {
+      const data = await studentCoursesApi.getRecentActivity()
+      if (!cancelled) {
+        setRecentActivity(data)
+      }
+    } catch (error) {
+      console.error("Failed to load recent activity", error)
+      if (!cancelled) {
+        setRecentActivity([])
+      }
+    } finally {
+      if (!cancelled) {
+        setIsLoadingActivity(false)
+      }
+    }
+  }
+
+  void loadActivity()
+  return () => {
+    cancelled = true
+  }
+}, [user])
+
   const activeEnrollments = useMemo(
     () => enrollments.filter((enrollment) => enrollment.status !== "dropped"),
     [enrollments],
@@ -224,72 +251,12 @@ useEffect(() => {
     }
   }, [activeEnrollments])
 
-  const recentActivity: RecentActivityItem[] = useMemo(() => {
-    if (activeEnrollments.length === 0) {
-      return []
-    }
-
-    return activeEnrollments
-      .map((enrollment) => {
-        const isCompleted = enrollment.status === "completed"
-        const percent = enrollment.progressPercent ?? 0
-        const hasProgress = percent > 0
-        const courseTitle = enrollment.course.title
-        const defaultTimestamp =
-          enrollment.course.updatedAt ?? new Date().toISOString()
-
-        if (isCompleted) {
-          return {
-            id: `${enrollment.id}-completed`,
-            course: courseTitle,
-            time: enrollment.completedAt ?? defaultTimestamp,
-            type: "course_complete" as const,
-            title: `Completed "${courseTitle}"`,
-          }
-        }
-
-        if (hasProgress) {
-          return {
-            id: `${enrollment.id}-progress`,
-            course: courseTitle,
-            time: enrollment.course.updatedAt ?? enrollment.startedAt ?? defaultTimestamp,
-            type: "course_progress" as const,
-            title: `Progressed in "${courseTitle}"`,
-          }
-        }
-
-        return {
-          id: `${enrollment.id}-enrolled`,
-          course: courseTitle,
-          time: enrollment.startedAt ?? enrollment.course.createdAt ?? defaultTimestamp,
-          type: "course_enrolled" as const,
-          title: `Enrolled in "${courseTitle}"`,
-        }
-      })
-      .sort(
-        (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime(),
-      )
-      .slice(0, 3)
-  }, [activeEnrollments])
-
   useEffect(() => {
     let cancelled = false
 
     const loadNextLessons = async () => {
       if (activeEnrollments.length === 0) {
-        const fallback = availableCourses.slice(0, 2).map((course) => ({
-          id: course.id,
-          title: course.title,
-          courseId: course.id,
-          courseTitle: course.title,
-          duration: Math.max(
-            Math.round(course.durationMinutes / Math.max(course.totalLessons || 1, 1)),
-            10,
-          ),
-          type: "text" as const,
-          href: `/courses/${course.id}`,
-        }))
-        setUpcomingLessons(fallback)
+        setUpcomingLessons([])
         setIsLoadingNextLessons(false)
         return
       }
@@ -577,22 +544,31 @@ useEffect(() => {
                 <CardDescription className="text-sm">Your learning progress over time</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 pt-0">
-                {isLoadingEnrollments ? (
+                {isLoadingActivity ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
                   </div>
                 ) : recentActivity.length > 0 ? (
                   <div className="space-y-3 sm:space-y-4">
-                    {recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-start space-x-3">
-                        <div className="mt-2 h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground line-clamp-2">{activity.title}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-1">{activity.course}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{formatTimeAgo(activity.time)}</p>
+                    {recentActivity.map((activity) => {
+                      const title =
+                        activity.type === "lesson_completed"
+                          ? `Completed "${activity.lessonTitle ?? "Lesson"}"`
+                          : activity.type === "course_completed"
+                            ? `Completed "${activity.courseTitle}"`
+                            : `Enrolled in "${activity.courseTitle}"`
+
+                      return (
+                        <div key={activity.id} className="flex items-start space-x-3">
+                          <div className="mt-2 h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground line-clamp-2">{title}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">{activity.courseTitle}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{formatTimeAgo(activity.timestamp)}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
@@ -739,7 +715,11 @@ useEffect(() => {
                     </Link>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center">No upcoming lessons scheduled yet.</p>
+                  <p className="text-sm text-muted-foreground text-center">
+                    {activeEnrollments.length === 0
+                      ? "Enroll in a course to start receiving lesson recommendations."
+                      : "No upcoming lessons scheduled yet."}
+                  </p>
                 )}
               </div>
 

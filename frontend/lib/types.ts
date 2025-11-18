@@ -587,6 +587,21 @@ export interface LearningStreakSummary {
   lastActivityDate: string | null;
 }
 
+export type StudentActivityType =
+  | "course_enrolled"
+  | "course_completed"
+  | "lesson_completed"
+
+export interface StudentActivityItem {
+  id: string
+  type: StudentActivityType
+  courseId: string
+  courseTitle: string
+  lessonId?: string | null
+  lessonTitle?: string | null
+  timestamp: string
+}
+
 export interface AdminDashboardStats {
   totalUsers: number;
   activeUsers: number;
