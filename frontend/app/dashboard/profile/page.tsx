@@ -29,6 +29,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { profileApi, studentCoursesApi } from "@/lib/api"
 import { getAvatarPath, getDefaultAvatarId } from "@/lib/avatar-utils"
@@ -57,6 +58,8 @@ const formatJoinedDate = (iso?: string | null) => {
   if (Number.isNaN(date.getTime())) return ""
   return date.toLocaleDateString(undefined, { month: "long", year: "numeric" })
 }
+
+type ProfileTab = "overview" | "courses" | "settings"
 
 export default function ProfilePage() {
   const { user, refreshUser, logout } = useAuth()
@@ -90,6 +93,32 @@ export default function ProfilePage() {
   const [enrollments, setEnrollments] = useState<CourseEnrollmentSummary[]>([])
   const [isLoadingCourses, setIsLoadingCourses] = useState(false)
   const [coursesError, setCoursesError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const [activeTab, setActiveTab] = useState<ProfileTab>("overview")
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab")
+    if (tabParam === "overview" || tabParam === "courses" || tabParam === "settings") {
+      setActiveTab(tabParam)
+    } else {
+      setActiveTab("overview")
+    }
+  }, [searchParams])
+
+  const handleTabChange = (value: string) => {
+    const nextValue = (value === "overview" || value === "courses" || value === "settings") ? value : "overview"
+    setActiveTab(nextValue)
+    const params = new URLSearchParams(searchParams.toString())
+    if (nextValue === "overview") {
+      params.delete("tab")
+    } else {
+      params.set("tab", nextValue)
+    }
+    const queryString = params.toString()
+    router.replace(`${pathname}${queryString ? `?${queryString}` : ""}`, { scroll: false })
+  }
 
   useEffect(() => {
     if (!user) {
@@ -433,7 +462,7 @@ export default function ProfilePage() {
           </Card>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 h-auto">
             <TabsTrigger value="overview" className="text-xs sm:text-sm">
               Overview

@@ -93,7 +93,7 @@ export default function BaseNavbar({
                   </Avatar>
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-48 p-3 space-y-2">
+              <PopoverContent align="end" className="w-52 p-3 space-y-2">
                 <div className="text-xs text-muted-foreground">
                   Signed in as
                   <div className="text-sm font-medium text-foreground">{userInfo.name ?? "Student"}</div>
@@ -103,7 +103,13 @@ export default function BaseNavbar({
                     href="/dashboard/profile"
                     className="block rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted"
                   >
-                    Profile
+                    Profile Overview
+                  </Link>
+                  <Link
+                    href="/dashboard/profile?tab=settings"
+                    className="block rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted"
+                  >
+                    Account Settings
                   </Link>
                   {onLogout && (
                     <button
