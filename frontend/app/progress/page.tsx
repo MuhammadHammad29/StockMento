@@ -24,6 +24,7 @@ import {
   Loader2,
   PlayCircle,
   Target,
+  ListOrdered,
 } from "lucide-react"
 
 type ProgressMap = Record<string, CourseProgressSummary>
@@ -329,7 +330,7 @@ export default function ProgressPage() {
                               {enrollment.course.sectionsCount} sections
                             </span>
                             <span className="flex items-center gap-1">
-                              <BookOpen className="h-3 w-3" />
+                              <ListOrdered className="h-3 w-3" />
                               {enrollment.course.totalLessons} lessons
                             </span>
                             <span className="flex items-center gap-1">

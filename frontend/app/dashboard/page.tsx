@@ -26,6 +26,7 @@ import {
   FileText,
   GraduationCap,
   FlaskConical,
+  ListOrdered,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
@@ -438,7 +439,8 @@ useEffect(() => {
                       variant="secondary"
                       className="rounded-full px-3 py-1.5 text-sm sm:text-sm bg-emerald-100 text-emerald-800 dark:bg-emerald-700/20 dark:text-emerald-200 shadow-sm hover:opacity-95"
                     >
-                      {inProgressEnrollments.length} active
+                      {inProgressEnrollments.length} active{" "}
+                      {inProgressEnrollments.length === 1 ? "course" : "courses"}
                     </Badge>
                   </Link>
                 ) : (
@@ -585,7 +587,7 @@ useEffect(() => {
                     <p className="mb-6 text-sm text-muted-foreground">
                       Discover our comprehensive courses designed specifically for Pakistani investors
                     </p>
-                    <div className="flex flex-col gap-3 lg:flex-col xl:flex-row xl:justify-center">
+                    <div className="flex flex-col gap-3">
                       <Link href="/courses?filter=beginner" className="flex-1">
                         <Button className="bg-emerald-600 hover:bg-emerald-700 w-full justify-center">
                           <Target className="mr-2 h-4 w-4" />
@@ -711,7 +713,7 @@ useEffect(() => {
                               {course.sectionsCount} sections
                             </span>
                             <span className="flex items-center gap-1">
-                              <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
+                              <ListOrdered className="h-3 w-3 md:h-4 md:w-4" />
                               {course.totalLessons} lessons
                             </span>
                             <span className="flex items-center gap-1">
@@ -720,7 +722,7 @@ useEffect(() => {
                             </span>
                           </div>
 
-                          <div className="flex flex-col xl:flex-row gap-2 mt-auto">
+                          <div className="flex flex-col gap-2 mt-auto">
                             <Link href={`/courses/${course.id}`} className="flex-1">
                               <Button variant="outline" size="sm" className="w-full h-9 text-xs sm:text-sm font-medium">
                                 Preview
