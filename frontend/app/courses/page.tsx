@@ -26,7 +26,6 @@ import { toast } from "sonner"
 type CourseWithMetadata = PublicCourseSummary & {
   progress: number
   isEnrolled: boolean
-  categoryLabel: string
   enrollmentStatus: CourseEnrollmentStatus | null
 }
 
@@ -120,18 +119,27 @@ export default function CoursesPage() {
 
   // Filter courses
   const filteredCourses = useMemo(() => {
-    return coursesWithProgress.filter(course => {
-      const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           course.categoryLabel.toLowerCase().includes(searchQuery.toLowerCase())
-      
-      const matchesLevel = levelFilter === "All" || course.level === levelFilter
-      
-      const matchesDuration = durationFilter === "All" || 
+    const normalizedQuery = searchQuery.trim().toLowerCase()
+    const normalizedLevelFilter = levelFilter === "All" ? null : levelFilter.toLowerCase()
+
+    return coursesWithProgress.filter((course) => {
+      const normalizedLevel = (course.level ?? "").toLowerCase()
+      const matchesSearch =
+        !normalizedQuery ||
+        course.title.toLowerCase().includes(normalizedQuery) ||
+        course.description.toLowerCase().includes(normalizedQuery) ||
+        normalizedLevel.includes(normalizedQuery)
+
+      const matchesLevel = !normalizedLevelFilter || normalizedLevel === normalizedLevelFilter
+
+      const matchesDuration =
+        durationFilter === "All" ||
         (durationFilter === "Short" && course.durationMinutes <= 120) ||
-        (durationFilter === "Medium" && course.durationMinutes > 120 && course.durationMinutes <= 300) ||
+        (durationFilter === "Medium" &&
+          course.durationMinutes > 120 &&
+          course.durationMinutes <= 300) ||
         (durationFilter === "Long" && course.durationMinutes > 300)
-      
+
       return matchesSearch && matchesLevel && matchesDuration
     })
   }, [coursesWithProgress, searchQuery, levelFilter, durationFilter])

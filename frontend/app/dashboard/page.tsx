@@ -22,6 +22,10 @@ import {
   Loader2,
   Layers,
   CheckCircle2,
+  Video,
+  FileText,
+  GraduationCap,
+  FlaskConical,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
@@ -34,6 +38,7 @@ import type {
   PublicCourseSummary,
   LearningStreakSummary,
   StudentActivityItem,
+  AdminLessonContentType,
 } from "@/lib/types"
 import { toast } from "sonner"
 
@@ -43,7 +48,7 @@ type UpcomingLesson = {
   courseId: string
   courseTitle: string
   duration: number
-  type: "text" | "video"
+  type: AdminLessonContentType
   href: string
 }
 
@@ -304,7 +309,7 @@ useEffect(() => {
               if (lesson) {
                 lessonTitle = lesson.title
                 lessonDuration = lesson.durationMinutes
-                lessonType = lesson.contentType === "video" ? "video" : "text"
+                lessonType = lesson.contentType
                 return true
               }
               return false
@@ -373,6 +378,19 @@ useEffect(() => {
       toast.error("Unable to enroll right now. Please try again.")
     } finally {
       setQuickEnrollCourseId(null)
+    }
+  }
+
+  const getUpcomingLessonIcon = (type: AdminLessonContentType) => {
+    switch (type) {
+      case "video":
+        return Video
+      case "quiz":
+        return GraduationCap
+      case "lab":
+        return FlaskConical
+      default:
+        return FileText
     }
   }
 
@@ -470,21 +488,26 @@ useEffect(() => {
 
           {/* Enrolled Courses */}
           <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
-            <Card className="border border-border/60 bg-card/90">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg">
-                  <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
-                  Current Courses
-                </CardTitle>
-                <CardDescription className="text-sm">Your ongoing learning journey</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0">
-                {isLoadingEnrollments ? (
-                  <div className="flex items-center justify-center py-10">
-                    <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
-                  </div>
-                ) : inProgressEnrollments.length > 0 ? (
-                  inProgressEnrollments.map((enrollment) => {
+          <Card className="border border-border/60 bg-card/90">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg">
+                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
+                Current Courses
+              </CardTitle>
+              <CardDescription className="text-sm">Your ongoing learning journey</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              {isLoadingEnrollments ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                </div>
+              ) : inProgressEnrollments.length > 0 ? (
+                <div
+                  className={`space-y-3 sm:space-y-4 ${
+                    inProgressEnrollments.length > 2 ? "max-h-[450px] overflow-y-auto pr-2" : ""
+                  }`}
+                >
+                  {inProgressEnrollments.map((enrollment) => {
                     const { course } = enrollment
                     const progressPercent = enrollment.progressPercent ?? 0
                     const lessonsCompletedEstimate = Math.min(
@@ -545,12 +568,13 @@ useEffect(() => {
                         </div>
                       </div>
                     )
-                  })
-                ) : (
-                  <div className="rounded-xl border border-dashed border-border/50 bg-gradient-to-br from-emerald-50/50 to-blue-50/50 dark:from-emerald-950/20 dark:to-blue-950/20 p-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
-                      <BookOpen className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
-                    </div>
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-border/50 bg-gradient-to-br from-emerald-50/50 to-blue-50/50 dark:from-emerald-950/20 dark:to-blue-950/20 p-8 text-center">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
+                    <BookOpen className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                  </div>
                     <h3 className="mb-2 text-lg font-medium text-foreground">Start Your Learning Journey</h3>
                     <p className="mb-6 text-sm text-muted-foreground">
                       Discover our comprehensive courses designed specifically for Pakistani investors
@@ -742,32 +766,31 @@ useEffect(() => {
                     Loading your next lessons...
                   </div>
                 ) : upcomingLessons.length > 0 ? (
-                  upcomingLessons.map((lesson) => (
-                    <Link key={lesson.id} href={lesson.href} className="block">
-                      <div className="flex items-start space-x-3 rounded-lg border border-border/50 bg-background/70 p-3 backdrop-blur-sm transition-all hover:border-emerald-200 hover:bg-background/90 hover:shadow-sm cursor-pointer group">
-                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-100 group-hover:bg-emerald-200 dark:bg-emerald-500/15 dark:group-hover:bg-emerald-500/25 transition-colors">
-                          {lesson.type === "video" ? (
-                            <Play className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
-                          ) : (
-                            <BookOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="line-clamp-2 text-sm font-medium text-foreground group-hover:text-emerald-600">
-                            {lesson.title}
-                          </h4>
-                          <p className="text-xs text-muted-foreground">{lesson.courseTitle}</p>
-                          <div className="mt-1 flex items-center justify-between">
-                            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              <span>{lesson.duration} min</span>
+                  upcomingLessons.map((lesson) => {
+                    const LessonIcon = getUpcomingLessonIcon(lesson.type)
+                    return (
+                      <Link key={lesson.id} href={lesson.href} className="block">
+                        <div className="flex items-start space-x-3 rounded-lg border border-border/50 bg-background/70 p-3 backdrop-blur-sm transition-all hover:border-emerald-200 hover:bg-background/90 hover:shadow-sm cursor-pointer group">
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-100 group-hover:bg-emerald-200 dark:bg-emerald-500/15 dark:group-hover:bg-emerald-500/25 transition-colors">
+                            <LessonIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="line-clamp-2 text-sm font-medium text-foreground group-hover:text-emerald-600">
+                              {lesson.title}
+                            </h4>
+                            <p className="text-xs text-muted-foreground">{lesson.courseTitle}</p>
+                            <div className="mt-1 flex items-center justify-between">
+                              <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                <span>{lesson.duration} min</span>
+                              </div>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald-600 transition-colors" />
                             </div>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald-600 transition-colors" />
                           </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))
+                      </Link>
+                    )
+                  })
                 ) : (
                   <p className="text-sm text-muted-foreground text-center">
                     {inProgressEnrollments.length === 0

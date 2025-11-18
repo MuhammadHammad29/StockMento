@@ -305,7 +305,7 @@ export class CoursesService {
     return events
       .filter((event) => event.timestamp)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, 10)
+      .slice(0, 6)
       .map((event) => ({
         ...event,
         timestamp: event.timestamp.toISOString(),
