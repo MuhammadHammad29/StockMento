@@ -60,7 +60,7 @@ type ActivitySummary = {
   averageProgress: number
 }
 
-const getLevelBadgeVariant = () => ({ variant: "secondary" as const, className: "" })
+const getLevelBadgeVariant = () => ({ variant: "default" as const, className: "" })
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -587,7 +587,7 @@ useEffect(() => {
                       Discover our comprehensive courses designed specifically for Pakistani investors
                     </p>
                     <div className="flex flex-col gap-3">
-                      <Link href="/courses?filter=beginner" className="flex-1">
+                      <Link href="/courses?level=Beginner" className="flex-1">
                         <Button className="bg-emerald-600 hover:bg-emerald-700 w-full justify-center">
                           <Target className="mr-2 h-4 w-4" />
                           Start with Basics

@@ -17,6 +17,7 @@ import { BookOpen, Clock, Search, ChevronRight, Loader2, Layers, ListOrdered } f
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useMemo, useEffect, useCallback } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { UserNavbar } from "@/components/navigation"
 import { publicCoursesApi, studentCoursesApi } from "@/lib/api"
 import { CourseEnrollmentSummary, PublicCourseSummary, CourseEnrollmentStatus } from "@/lib/types"
@@ -40,6 +41,31 @@ export default function CoursesPage() {
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [enrollments, setEnrollments] = useState<CourseEnrollmentSummary[]>([])
   const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(false)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  useEffect(() => {
+    const levelParam = searchParams.get("level")
+    if (levelParam) {
+      if (
+        levelParam === "Beginner" ||
+        levelParam === "Intermediate" ||
+        levelParam === "Advanced"
+      ) {
+        setLevelFilter(levelParam)
+      } else if (levelParam.toLowerCase() === "beginner") {
+        setLevelFilter("Beginner")
+      } else if (levelParam.toLowerCase() === "intermediate") {
+        setLevelFilter("Intermediate")
+      } else if (levelParam.toLowerCase() === "advanced") {
+        setLevelFilter("Advanced")
+      }
+    }
+    const searchParam = searchParams.get("q")
+    if (searchParam) {
+      setSearchQuery(searchParam)
+    }
+  }, [searchParams])
 
   const loadCourses = useCallback(async () => {
     setFetchError(null)
@@ -226,7 +252,16 @@ export default function CoursesPage() {
               <div className="flex flex-col sm:flex-row gap-2">
                 <select
                   value={levelFilter}
-                  onChange={(e) => setLevelFilter(e.target.value)}
+                  onChange={(e) => {
+                    setLevelFilter(e.target.value)
+                    const params = new URLSearchParams(searchParams.toString())
+                    if (e.target.value === "All") {
+                      params.delete("level")
+                    } else {
+                      params.set("level", e.target.value)
+                    }
+                    router.replace(params.toString() ? `?${params.toString()}` : "?", { scroll: false })
+                  }}
                   className="px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-background text-foreground dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="All">All Levels</option>
