@@ -35,6 +35,7 @@ import type {
   LearningStreakSummary,
   StudentActivityItem,
 } from "@/lib/types"
+import { toast } from "sonner"
 
 type UpcomingLesson = {
   id: string
@@ -70,6 +71,8 @@ export default function DashboardPage() {
   const [isLoadingNextLessons, setIsLoadingNextLessons] = useState(false)
   const [recentActivity, setRecentActivity] = useState<StudentActivityItem[]>([])
   const [isLoadingActivity, setIsLoadingActivity] = useState(false)
+  const [quickEnrollCourseId, setQuickEnrollCourseId] = useState<string | null>(null)
+  const [nextLessonMap, setNextLessonMap] = useState<Record<string, { href: string; title: string }>>({})
 
   useEffect(() => {
     let cancelled = false
@@ -202,6 +205,16 @@ useEffect(() => {
     [enrollments],
   )
 
+  const inProgressEnrollments = useMemo(
+    () => activeEnrollments.filter((enrollment) => enrollment.status === "active"),
+    [activeEnrollments],
+  )
+
+  const completedEnrollments = useMemo(
+    () => activeEnrollments.filter((enrollment) => enrollment.status === "completed"),
+    [activeEnrollments],
+  )
+
   const enrollmentCourseIds = useMemo(
     () => new Set(activeEnrollments.map((enrollment) => enrollment.course.id)),
     [activeEnrollments],
@@ -255,8 +268,9 @@ useEffect(() => {
     let cancelled = false
 
     const loadNextLessons = async () => {
-      if (activeEnrollments.length === 0) {
+      if (inProgressEnrollments.length === 0) {
         setUpcomingLessons([])
+        setNextLessonMap({})
         setIsLoadingNextLessons(false)
         return
       }
@@ -264,9 +278,9 @@ useEffect(() => {
       setIsLoadingNextLessons(true)
       try {
         const results: UpcomingLesson[] = []
-        const targets = activeEnrollments.slice(0, 3)
+        const courseNextLinks: Record<string, { href: string; title: string }> = {}
 
-        for (const enrollment of targets) {
+        for (const enrollment of inProgressEnrollments) {
           try {
             const [progress, detail] = await Promise.all([
               studentCoursesApi.getProgress(enrollment.course.id),
@@ -305,6 +319,10 @@ useEffect(() => {
               type: lessonType,
               href: `/courses/${enrollment.course.id}/lessons/${nextLessonId}`,
             })
+            courseNextLinks[enrollment.course.id] = {
+              href: `/courses/${enrollment.course.id}/lessons/${nextLessonId}`,
+              title: lessonTitle,
+            }
           } catch (error) {
             console.error("Failed to load next lesson for course", enrollment.course.id, error)
           }
@@ -315,12 +333,14 @@ useEffect(() => {
         }
 
         if (!cancelled) {
-          setUpcomingLessons(results)
+          setUpcomingLessons(results.slice(0, 2))
+          setNextLessonMap(courseNextLinks)
         }
       } catch (error) {
         console.error("Failed to load upcoming lessons", error)
         if (!cancelled) {
           setUpcomingLessons([])
+          setNextLessonMap({})
         }
       } finally {
         if (!cancelled) {
@@ -334,7 +354,27 @@ useEffect(() => {
     return () => {
       cancelled = true
     }
-  }, [activeEnrollments, availableCourses])
+  }, [inProgressEnrollments, availableCourses])
+
+  const handleQuickEnroll = async (courseId: string) => {
+    if (quickEnrollCourseId) {
+      return
+    }
+    setQuickEnrollCourseId(courseId)
+    try {
+      const enrollment = await studentCoursesApi.enroll(courseId)
+      setEnrollments((prev) => {
+        const next = prev.filter((item) => item.course.id !== courseId)
+        return [...next, enrollment]
+      })
+      toast.success(`You're enrolled in "${enrollment.course.title}"`)
+    } catch (error) {
+      console.error("Failed to enroll", error)
+      toast.error("Unable to enroll right now. Please try again.")
+    } finally {
+      setQuickEnrollCourseId(null)
+    }
+  }
 
   if (!user) {
     return (
@@ -374,7 +414,7 @@ useEffect(() => {
                       variant="secondary"
                       className="rounded-full px-3 py-1.5 text-sm sm:text-sm bg-emerald-100 text-emerald-800 dark:bg-emerald-700/20 dark:text-emerald-200 shadow-sm hover:opacity-95"
                     >
-                      {activitySummary.totalCourses} active
+                      {inProgressEnrollments.length} active
                     </Badge>
                   </Link>
                 ) : (
@@ -443,8 +483,8 @@ useEffect(() => {
                   <div className="flex items-center justify-center py-10">
                     <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
                   </div>
-                ) : activeEnrollments.length > 0 ? (
-                  activeEnrollments.map((enrollment) => {
+                ) : inProgressEnrollments.length > 0 ? (
+                  inProgressEnrollments.map((enrollment) => {
                     const { course } = enrollment
                     const progressPercent = enrollment.progressPercent ?? 0
                     const lessonsCompletedEstimate = Math.min(
@@ -492,7 +532,10 @@ useEffect(() => {
                                 View Course
                               </Button>
                             </Link>
-                            <Link href={`/courses/${course.id}`} className="flex-1 sm:flex-none">
+                            <Link
+                              href={nextLessonMap[course.id]?.href ?? `/courses/${course.id}`}
+                              className="flex-1 sm:flex-none"
+                            >
                               <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-2 sm:px-4 w-full sm:w-auto">
                                 <Play className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                 Continue
@@ -577,6 +620,7 @@ useEffect(() => {
                 )}
               </CardContent>
             </Card>
+
           </div>
 
           {/* Available Courses Section */}
@@ -652,11 +696,21 @@ useEffect(() => {
                                 Preview
                               </Button>
                             </Link>
-                            <Link href={`/courses/${course.id}`} className="flex-1">
-                              <Button size="sm" className="w-full h-9 bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm font-medium">
-                                Start Learning
-                              </Button>
-                            </Link>
+                            <Button
+                              size="sm"
+                              className="w-full h-9 bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm font-medium"
+                              onClick={() => handleQuickEnroll(course.id)}
+                              disabled={quickEnrollCourseId === course.id}
+                            >
+                              {quickEnrollCourseId === course.id ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Enrolling...
+                                </>
+                              ) : (
+                                "Start Learning"
+                              )}
+                            </Button>
                           </div>
                         </div>
                       )
@@ -716,7 +770,7 @@ useEffect(() => {
                   ))
                 ) : (
                   <p className="text-sm text-muted-foreground text-center">
-                    {activeEnrollments.length === 0
+                    {inProgressEnrollments.length === 0
                       ? "Enroll in a course to start receiving lesson recommendations."
                       : "No upcoming lessons scheduled yet."}
                   </p>
@@ -776,6 +830,38 @@ useEffect(() => {
               )}
             </CardContent>
           </Card>
+
+          {completedEnrollments.length > 0 && (
+            <Card className="border border-border/60 bg-card/90">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg text-foreground">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                  Completed Courses
+                </CardTitle>
+                <CardDescription>Courses you&apos;ve finished recently</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {completedEnrollments.map((enrollment) => (
+                  <div
+                    key={enrollment.id}
+                    className="rounded-lg border border-border/40 bg-background/70 p-3 backdrop-blur-sm"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <h3 className="text-sm font-semibold text-foreground">{enrollment.course.title}</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Completed {formatTimeAgo(enrollment.completedAt ?? enrollment.updatedAt ?? new Date())}
+                      </p>
+                      <Link href={`/courses/${enrollment.course.id}`}>
+                        <Button variant="outline" size="sm" className="mt-2 text-xs">
+                          View Course
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

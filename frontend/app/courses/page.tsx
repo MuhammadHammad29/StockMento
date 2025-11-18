@@ -19,7 +19,7 @@ import Image from "next/image"
 import { useState, useMemo, useEffect, useCallback } from "react"
 import { UserNavbar } from "@/components/navigation"
 import { publicCoursesApi, studentCoursesApi } from "@/lib/api"
-import { CourseEnrollmentSummary, PublicCourseSummary } from "@/lib/types"
+import { CourseEnrollmentSummary, PublicCourseSummary, CourseEnrollmentStatus } from "@/lib/types"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 
@@ -27,6 +27,7 @@ type CourseWithMetadata = PublicCourseSummary & {
   progress: number
   isEnrolled: boolean
   categoryLabel: string
+  enrollmentStatus: CourseEnrollmentStatus | null
 }
 
 export default function CoursesPage() {
@@ -112,6 +113,7 @@ export default function CoursesPage() {
         ...course,
         isEnrolled,
         progress: enrollment?.progressPercent ?? 0,
+        enrollmentStatus: enrollment?.status ?? null,
       }
     })
   }, [courses, enrollmentMap])
@@ -303,8 +305,14 @@ export default function CoursesPage() {
                   </div>
                   {course.isEnrolled && (
                     <div className="absolute bottom-6 left-6 z-10">
-                      <Badge className="bg-emerald-600 text-white shadow-sm">
-                        Enrolled
+                      <Badge
+                        className={`rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide border ${
+                          course.enrollmentStatus === "completed"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-blue-50 text-blue-700 border-blue-200"
+                        }`}
+                      >
+                        {course.enrollmentStatus === "completed" ? "COMPLETED" : "IN PROGRESS"}
                       </Badge>
                     </div>
                   )}
@@ -346,12 +354,13 @@ export default function CoursesPage() {
                   <div className="mt-auto">
                     <Link href={`/courses/${course.id}`}>
                       <Button className="w-full bg-emerald-600 hover:bg-emerald-700 group-hover:shadow-md transition-all">
-                        {course.isEnrolled 
-                          ? course.progress > 0 
-                            ? "Continue Learning" 
-                            : "Start Course"
-                          : "View Course"
-                        }
+                        {course.isEnrolled
+                          ? course.enrollmentStatus === "completed"
+                            ? "Review Course"
+                            : course.progress > 0
+                              ? "Continue Learning"
+                              : "Start Course"
+                          : "View Course"}
                         <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </Link>
