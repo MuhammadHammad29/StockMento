@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProfileModule } from './profile/profile.module';
 import { LmsAdminModule } from './lms-admin/lms-admin.module';
 import { CoursesModule } from './courses/courses.module';
+import { AdminAnalyticsModule } from './admin-analytics/admin-analytics.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { CoursesModule } from './courses/courses.module';
     ProfileModule,
     LmsAdminModule,
     CoursesModule,
+    AdminAnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

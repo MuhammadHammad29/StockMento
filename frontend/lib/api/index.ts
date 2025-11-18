@@ -26,6 +26,7 @@ import {
   CourseProgressSummary,
   LessonProgressState,
   LearningStreakSummary,
+  AdminDashboardSummary,
 } from '../types'
 import { STORAGE_KEYS } from '../data-utils'
 
@@ -493,8 +494,8 @@ export const lessonApi = {
 // Analytics APIs
 export const analyticsApi = {
   // Get dashboard stats
-  getDashboardStats: async (): Promise<ApiJson> => {
-    return apiCall<ApiJson>('/admin/analytics/dashboard')
+  getDashboardStats: async (): Promise<AdminDashboardSummary> => {
+    return apiCall<AdminDashboardSummary>('/admin/analytics/dashboard')
   },
 
   // Get course analytics

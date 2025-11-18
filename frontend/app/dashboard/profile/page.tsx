@@ -28,12 +28,12 @@ import {
   Trash2,
 } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { profileApi } from "@/lib/api"
-import { mockUserProgress, getUserCourses } from "@/lib/mock-data"
+import { profileApi, studentCoursesApi } from "@/lib/api"
 import { getAvatarPath, getDefaultAvatarId } from "@/lib/avatar-utils"
-import { getActivitySummary, formatTimeAgo } from "@/lib/data-utils"
+import { formatTimeAgo } from "@/lib/data-utils"
+import type { CourseEnrollmentSummary } from "@/lib/types"
 import { isPasswordValid } from "@/lib/password-utils"
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
 import { toast } from "sonner"
@@ -87,6 +87,9 @@ export default function ProfilePage() {
     joinDate: "",
     avatarId: user?.avatarId ?? null,
   })
+  const [enrollments, setEnrollments] = useState<CourseEnrollmentSummary[]>([])
+  const [isLoadingCourses, setIsLoadingCourses] = useState(false)
+  const [coursesError, setCoursesError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -140,6 +143,101 @@ export default function ProfilePage() {
     }
   }, [user, isEditing])
 
+  useEffect(() => {
+    if (!user) {
+      setEnrollments([])
+      return
+    }
+
+    let cancelled = false
+
+    const loadEnrollments = async () => {
+      setIsLoadingCourses(true)
+      try {
+        const data = await studentCoursesApi.list()
+        if (cancelled) return
+        setEnrollments(data.filter((enrollment) => enrollment.status !== "dropped"))
+        setCoursesError(null)
+      } catch (error) {
+        console.error("Failed to load enrollments", error)
+        if (!cancelled) {
+          setEnrollments([])
+          setCoursesError("Unable to load your courses right now.")
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingCourses(false)
+        }
+      }
+    }
+
+    void loadEnrollments()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+  const overviewSummary = useMemo(() => {
+    if (enrollments.length === 0) {
+      return {
+        totalCourses: 0,
+        completedCourses: 0,
+        completedLessons: 0,
+        averageProgress: 0,
+      }
+    }
+
+    const completedCourses = enrollments.filter((enrollment) => enrollment.status === "completed").length
+    const completedLessons = enrollments.reduce((sum, enrollment) => {
+      const lessons = enrollment.course.totalLessons ?? 0
+      const percent = enrollment.progressPercent ?? 0
+      return sum + Math.round((percent / 100) * lessons)
+    }, 0)
+    const averageProgress = Math.round(
+      enrollments.reduce((sum, enrollment) => sum + (enrollment.progressPercent ?? 0), 0) / enrollments.length,
+    )
+
+    return {
+      totalCourses: enrollments.length,
+      completedCourses,
+      completedLessons,
+      averageProgress,
+    }
+  }, [enrollments])
+
+  const recentActivity = useMemo(() => {
+    if (enrollments.length === 0) {
+      return []
+    }
+    return enrollments
+      .map((enrollment) => {
+        const percent = enrollment.progressPercent ?? 0
+        const timestamp =
+          enrollment.completedAt ?? enrollment.startedAt ?? enrollment.course.updatedAt ?? enrollment.course.createdAt
+        let title = ""
+        let details = ""
+        if (enrollment.status === "completed") {
+          title = `Completed ${enrollment.course.title}`
+          details = `Finished with ${percent}% progress`
+        } else if (percent > 0) {
+          title = `Progress in ${enrollment.course.title}`
+          details = `Currently ${percent}% complete`
+        } else {
+          title = `Enrolled in ${enrollment.course.title}`
+          details = "Getting started"
+        }
+        return {
+          id: enrollment.id,
+          title,
+          details,
+          date: timestamp,
+        }
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 4)
+  }, [enrollments])
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -156,34 +254,6 @@ export default function ProfilePage() {
   }
 
   const resolvedAvatarId = profileData.avatarId ?? user.avatarId ?? getDefaultAvatarId()
-
-  const userProgressData = mockUserProgress.filter((p) => p.userId === user.id)
-  const enrolledCourses = getUserCourses(user.id)
-  const activitySummary = getActivitySummary(userProgressData)
-
-  const recentActivity = [
-    {
-      id: 1,
-      type: "course_complete",
-      title: "Completed PSX Fundamentals",
-      date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      details: "Completed with 88% average score",
-    },
-    {
-      id: 2,
-      type: "quiz_complete",
-      title: "Quiz: Support and Resistance",
-      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      details: "Scored 92% (23/25 correct)",
-    },
-    {
-      id: 3,
-      type: "lesson_complete",
-      title: "Understanding Market Participants",
-      date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      details: "Completed in 18 minutes",
-    },
-  ]
 
   const handleSaveProfile = async () => {
     if (!profileData.firstName.trim() || !profileData.lastName.trim()) {
@@ -383,7 +453,7 @@ export default function ProfilePage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs sm:text-sm font-medium text-muted-foreground">Courses Enrolled</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{activitySummary.totalCourses}</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{overviewSummary.totalCourses}</p>
                     </div>
                     <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                   </div>
@@ -395,7 +465,7 @@ export default function ProfilePage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs sm:text-sm font-medium text-muted-foreground">Lessons Completed</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{activitySummary.totalLessons}</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{overviewSummary.completedLessons}</p>
                     </div>
                     <Target className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
                   </div>
@@ -407,7 +477,7 @@ export default function ProfilePage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs sm:text-sm font-medium text-muted-foreground">Average Progress</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{activitySummary.averageProgress}%</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{overviewSummary.averageProgress}%</p>
                     </div>
                     <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
                   </div>
@@ -418,8 +488,8 @@ export default function ProfilePage() {
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs sm:text-sm font-medium text-muted-foreground">Quizzes Passed</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{activitySummary.totalQuizzes}</p>
+                      <p className="text-xs sm:text-sm font-medium text-muted-foreground">Courses Completed</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{overviewSummary.completedCourses}</p>
                     </div>
                     <Star className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
                   </div>
@@ -435,16 +505,22 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 sm:space-y-4">
-                    {recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-start space-x-3 p-3 border rounded-lg">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground text-sm sm:text-base truncate">{activity.title}</p>
-                          <p className="text-xs sm:text-sm text-muted-foreground">{activity.details}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{formatTimeAgo(activity.date)}</p>
+                    {recentActivity.length > 0 ? (
+                      recentActivity.map((activity) => (
+                        <div key={activity.id} className="flex items-start space-x-3 p-3 border rounded-lg">
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground text-sm sm:text-base truncate">{activity.title}</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{activity.details}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{formatTimeAgo(new Date(activity.date))}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {isLoadingCourses ? "Loading your activity..." : "No recent activity yet."}
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -458,19 +534,18 @@ export default function ProfilePage() {
                   <div>
                     <div className="flex items-center justify-between mb-2 text-sm">
                       <span>Overall Completion</span>
-                      <span className="font-semibold">{activitySummary.averageProgress}%</span>
+                      <span className="font-semibold">{overviewSummary.averageProgress}%</span>
                     </div>
-                    <Progress value={activitySummary.averageProgress} className="h-3" />
+                    <Progress value={overviewSummary.averageProgress} className="h-3" />
                   </div>
 
                   <div className="space-y-3">
-                    {enrolledCourses.slice(0, 3).map((course) => {
-                      const progress = userProgressData.find((p) => p.courseId === course.id)
-                      const completion = progress?.overallProgress ?? 0
+                    {enrollments.slice(0, 3).map((enrollment) => {
+                      const completion = enrollment.progressPercent ?? 0
                       return (
-                        <div key={course.id} className="space-y-2">
+                        <div key={enrollment.id} className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-foreground truncate">{course.title}</span>
+                            <span className="font-medium text-foreground truncate">{enrollment.course.title}</span>
                             <span>{completion}%</span>
                           </div>
                           <Progress value={completion} className="h-2" />
@@ -478,10 +553,13 @@ export default function ProfilePage() {
                       )
                     })}
 
-                    {enrolledCourses.length === 0 && (
+                    {enrollments.length === 0 && !isLoadingCourses && (
                       <p className="text-sm text-muted-foreground">
                         Enroll in a course to start tracking your progress.
                       </p>
+                    )}
+                    {isLoadingCourses && (
+                      <p className="text-sm text-muted-foreground">Loading your courses...</p>
                     )}
                   </div>
                 </CardContent>
@@ -497,27 +575,41 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 sm:space-y-4">
-                  {enrolledCourses.map((course) => {
-                    const progress = userProgressData.find((p) => p.courseId === course.id)
+                  {coursesError && <p className="text-sm text-destructive">{coursesError}</p>}
+
+                  {isLoadingCourses && (
+                    <div className="flex items-center justify-center py-6 text-muted-foreground">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading courses...
+                    </div>
+                  )}
+
+                  {enrollments.map((enrollment) => {
+                    const { course } = enrollment
+                    const progress = enrollment.progressPercent ?? 0
                     return (
                       <div
-                        key={course.id}
+                        key={enrollment.id}
                         className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 p-3 sm:p-4 border rounded-lg"
                       >
-                        <div className="relative w-full sm:w-16 h-32 sm:h-16 rounded-lg overflow-hidden flex-shrink-0">
-                          <Image src={course.thumbnail} alt={course.title} fill className="object-cover" />
+                        <div className="relative w-full sm:w-16 h-32 sm:h-16 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
+                          {course.mediaUrl ? (
+                            <Image src={course.mediaUrl} alt={course.title} fill className="object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                              No image
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 w-full space-y-2">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                             <h3 className="text-base font-semibold text-foreground truncate">{course.title}</h3>
-                            <span className="text-xs sm:text-sm text-muted-foreground">
-                              {progress?.overallProgress ?? 0}% complete
-                            </span>
+                            <span className="text-xs sm:text-sm text-muted-foreground">{progress}% complete</span>
                           </div>
-                          <Progress value={progress?.overallProgress ?? 0} className="h-2" />
+                          <Progress value={progress} className="h-2" />
                           <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-muted-foreground">
                             <span>Lessons: {course.totalLessons}</span>
-                            <span>Quizzes: {course.totalQuizzes}</span>
+                            <span>Sections: {course.sectionsCount}</span>
                             <span>Level: {course.level}</span>
                           </div>
                         </div>
@@ -525,7 +617,7 @@ export default function ProfilePage() {
                     )
                   })}
 
-                  {enrolledCourses.length === 0 && (
+                  {enrollments.length === 0 && !isLoadingCourses && (
                     <div className="text-center py-10">
                       <p className="text-sm text-muted-foreground mb-3">
                         You haven&apos;t enrolled in any courses yet. Start your learning journey today!

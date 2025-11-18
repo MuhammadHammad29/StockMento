@@ -1,58 +1,173 @@
-"use client"
+﻿"use client"
 
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, Users, BookOpen, Target } from "lucide-react"
-import { mockUsers, mockCourses, mockUserProgress, mockLessons } from "@/lib/mock-data"
+import {
+  TrendingUp,
+  Users,
+  BookOpen,
+  Target,
+  Activity,
+  Layers,
+  CheckCircle2,
+  AlertTriangle,
+} from "lucide-react"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { AdminNavbar } from "@/components/navigation"
+import { analyticsApi } from "@/lib/api"
+import type { AdminDashboardSummary } from "@/lib/types"
+
+const EMPTY_STATS: AdminDashboardSummary["stats"] = {
+  totalUsers: 0,
+  activeUsers: 0,
+  totalCourses: 0,
+  publishedCourses: 0,
+  totalLessons: 0,
+  totalSections: 0,
+  avgCompletionRate: 0,
+}
 
 export default function AdminAnalyticsPage() {
   const { adminUser } = useAdminAuth()
   void adminUser
-  const totalUsers = mockUsers.length
-  const activeUsers = mockUsers.filter((user) => user.isActive).length
-  const newUsersThisMonth = mockUsers.filter((user) => {
-    const monthAgo = new Date()
-    monthAgo.setMonth(monthAgo.getMonth() - 1)
-    return user.createdAt > monthAgo
-  }).length
 
-  const totalCourses = mockCourses.length
-  const totalProgress = mockUserProgress.length
-  const completedProgress = mockUserProgress.filter((progress) => progress.overallProgress === 100).length
-  const avgCompletionRate = totalProgress > 0 ? (completedProgress / totalProgress) * 100 : 0
+  const [summary, setSummary] = useState<AdminDashboardSummary | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const metrics = {
-    totalUsers,
-    activeUsers,
-    newUsersThisMonth,
-    userGrowthRate: totalUsers > 0 ? (newUsersThisMonth / totalUsers) * 100 : 0,
-    totalCourses,
-    completedCourses: completedProgress,
-    avgCompletionRate: Math.round(avgCompletionRate * 10) / 10,
-    totalLessons: mockLessons.length,
-    avgProgress:
-      totalProgress > 0
-        ? Math.round((mockUserProgress.reduce((sum, p) => sum + p.overallProgress, 0) / totalProgress) * 10) / 10
-        : 0,
-  }
+  useEffect(() => {
+    let mounted = true
 
-  const topCourses = mockCourses
-    .map((course) => {
-      const enrollments = mockUserProgress.filter((p) => p.courseId === course.id)
-      const completed = enrollments.filter((p) => p.overallProgress === 100).length
-      const completionRate = enrollments.length > 0 ? (completed / enrollments.length) * 100 : 0
+    const load = async () => {
+      setIsLoading(true)
+      try {
+        const data = await analyticsApi.getDashboardStats()
+        if (mounted) {
+          setSummary(data)
+          setError(null)
+        }
+      } catch (err) {
+        console.error("Failed to load analytics", err)
+        if (mounted) {
+          setError("Unable to load analytics right now.")
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
+        }
+      }
+    }
 
-      return {
-        name: course.title,
-        students: enrollments.length,
-        completion: Math.round(completionRate),
-        rating: course.rating,
+    void load()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const stats = summary?.stats ?? EMPTY_STATS
+  const recentUsers = useMemo(() => summary?.recentUsers ?? [], [summary])
+  const recentActivity = useMemo(() => summary?.recentActivity ?? [], [summary])
+  const recentEnrollments = useMemo(() => summary?.recentEnrollments ?? [], [summary])
+
+  const metrics = useMemo(() => {
+    const recentCompletions = recentActivity.filter((item) => item.status === "completed").length
+    const newUsers = recentUsers.length
+
+    return {
+      totalUsers: stats.totalUsers,
+      activeUsers: stats.activeUsers,
+      newUsers,
+      userGrowthRate: stats.totalUsers > 0 ? Math.round((newUsers / stats.totalUsers) * 1000) / 10 : 0,
+      totalCourses: stats.totalCourses,
+      publishedCourses: stats.publishedCourses,
+      completedCourses: recentCompletions,
+      avgCompletionRate: stats.avgCompletionRate,
+      totalLessons: stats.totalLessons,
+      avgProgress: stats.avgCompletionRate,
+      totalSections: stats.totalSections,
+      recentCompletions,
+    }
+  }, [recentActivity, recentUsers, stats])
+
+  const topCourses = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        name: string
+        students: number
+        completed: number
+        level: string | null
+      }
+    >()
+
+    recentEnrollments.forEach((enrollment) => {
+      const entry = map.get(enrollment.courseTitle) ?? {
+        name: enrollment.courseTitle,
+        students: 0,
+        completed: 0,
+        level: enrollment.level ?? null,
+      }
+
+      entry.students += 1
+      if (enrollment.status === "completed") {
+        entry.completed += 1
+      }
+
+      map.set(enrollment.courseTitle, entry)
+    })
+
+    return Array.from(map.values())
+      .map((course) => ({
+        name: course.name,
+        students: course.students,
+        level: course.level,
+        completion: course.students > 0 ? Math.round((course.completed / course.students) * 100) : 0,
+      }))
+      .sort((a, b) => b.students - a.students)
+      .slice(0, 4)
+  }, [recentEnrollments])
+
+  const levelSegments = useMemo(() => {
+    const totals = { beginner: 0, intermediate: 0, advanced: 0 }
+    recentEnrollments.forEach((enrollment) => {
+      if (!enrollment.level) return
+      const key = enrollment.level.toLowerCase()
+      if (key in totals) {
+        totals[key as keyof typeof totals] += 1
       }
     })
-    .sort((a, b) => b.students - a.students)
-    .slice(0, 4)
+    const total = Object.values(totals).reduce((sum, value) => sum + value, 0) || 1
+    return [
+      { label: "Beginner", value: Math.round((totals.beginner / total) * 100) },
+      { label: "Intermediate", value: Math.round((totals.intermediate / total) * 100) },
+      { label: "Advanced", value: Math.round((totals.advanced / total) * 100) },
+    ]
+  }, [recentEnrollments])
+
+  const churnIndicators = useMemo(() => {
+    const inactiveRate =
+      stats.totalUsers > 0 ? Math.max(0, 100 - (stats.activeUsers / stats.totalUsers) * 100) : 0
+    const completionGap = Math.max(0, 100 - stats.avgCompletionRate)
+    const idleCourses = Math.max(0, stats.totalCourses - stats.publishedCourses)
+    return [
+      {
+        label: "Inactive Users",
+        value: `${inactiveRate.toFixed(1)}%`,
+        description: "Users inactive for 14+ days",
+      },
+      {
+        label: "Completion Gap",
+        value: `${completionGap.toFixed(1)}%`,
+        description: "Difference from 100% completion",
+      },
+      {
+        label: "Unpublished Courses",
+        value: idleCourses.toString(),
+        description: "Courses waiting for publication",
+      },
+    ]
+  }, [stats])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
@@ -66,19 +181,24 @@ export default function AdminAnalyticsPage() {
           </p>
         </div>
 
-        {/* Summary Metrics */}
+        {error && (
+          <Card className="mb-4 border border-destructive/30 bg-destructive/10 text-destructive">
+            <CardContent className="py-3 text-sm">{error}</CardContent>
+          </Card>
+        )}
+
         <div className="mb-4 sm:mb-6 lg:mb-8 grid gap-3 sm:gap-4 lg:gap-6 grid-cols-2 lg:grid-cols-4">
           {[
             {
               title: "Total Users",
               value: metrics.totalUsers.toLocaleString(),
-              subtitle: `${metrics.userGrowthRate.toFixed(1)}% growth this month`,
+              subtitle: `${metrics.userGrowthRate}% growth this month`,
               icon: <Users className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-emerald-500" />,
             },
             {
               title: "Active Users",
               value: metrics.activeUsers.toLocaleString(),
-              subtitle: `${metrics.newUsersThisMonth} new this month`,
+              subtitle: `${metrics.newUsers} new this month`,
               icon: <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-blue-500" />,
             },
             {
@@ -102,75 +222,79 @@ export default function AdminAnalyticsPage() {
                     <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-foreground">{item.value}</p>
                     <p className="text-xs text-emerald-600 dark:text-emerald-300 truncate">{item.subtitle}</p>
                   </div>
-                  <div className="flex-shrink-0 ml-2">
-                    {item.icon}
-                  </div>
+                  <div className="flex-shrink-0 ml-2">{item.icon}</div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <div className="grid gap-4 sm:gap-6 lg:grid-cols-[2fr_1fr]">
-          <div className="space-y-4 sm:space-y-6">
+        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+          <div className="space-y-6">
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader>
-                <CardTitle className="text-foreground">Top Courses</CardTitle>
-                <CardDescription>Most popular by enrollment</CardDescription>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-foreground text-lg sm:text-xl">Top Courses</CardTitle>
+                <CardDescription className="text-sm">Performance based on recent enrollments</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {topCourses.map((course) => (
-                  <div
-                    key={course.name}
-                    className="rounded-lg border border-border/40 bg-background/70 p-4 backdrop-blur-sm"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{course.name}</p>
-                        <p className="text-xs text-muted-foreground">{course.students} enrolled</p>
+                {topCourses.length > 0 ? (
+                  topCourses.map((course) => (
+                    <div
+                      key={course.name}
+                      className="rounded-lg border border-border/40 bg-background/70 p-4 backdrop-blur-sm"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{course.name}</p>
+                          <p className="text-xs text-muted-foreground">{course.students} enrolled</p>
+                        </div>
+                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
+                          {course.completion}% completion
+                        </Badge>
                       </div>
-                      <Badge className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
-                        {course.completion}% completion
-                      </Badge>
+                      <p className="mt-2 text-xs text-muted-foreground">Level: {course.level ?? "N/A"}</p>
                     </div>
-                    <p className="mt-2 text-sm text-muted-foreground">Rating: {course.rating.toFixed(1)} / 5</p>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {isLoading ? "Loading course data..." : "No recent enrollment data"}
+                  </p>
+                )}
               </CardContent>
             </Card>
 
             <Card className="border border-border/60 bg-card/90">
               <CardHeader className="p-4 sm:p-6">
                 <CardTitle className="text-foreground text-lg sm:text-xl">Learning Patterns</CardTitle>
-                <CardDescription className="text-sm">When and how students learn best</CardDescription>
+                <CardDescription className="text-sm">Signals from live platform data</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
                 <div className="grid gap-3 sm:gap-4 text-sm text-muted-foreground grid-cols-1 sm:grid-cols-2">
-                  {[
+                  {[ 
                     {
-                      pattern: "Peak Hours",
-                      value: "7-9 PM",
-                      description: "Most active learning time",
-                      icon: "🕰️"
+                      pattern: "Recent Activity",
+                      value: `${recentActivity.length}`,
+                      description: "Engagement events tracked",
+                      icon: <Activity className="h-4 w-4 text-emerald-500" />,
                     },
                     {
-                      pattern: "Preferred Days", 
-                      value: "Weekends",
-                      description: "40% more activity",
-                      icon: "📅"
+                      pattern: "New Enrollments",
+                      value: `${recentEnrollments.length}`,
+                      description: "Learners joined recently",
+                      icon: <Users className="h-4 w-4 text-blue-500" />,
                     },
                     {
-                      pattern: "Session Length",
-                      value: "25 mins",
-                      description: "Average study session",
-                      icon: "⏱️"
+                      pattern: "Published Lessons",
+                      value: metrics.totalLessons.toLocaleString(),
+                      description: "Learning units available",
+                      icon: <Layers className="h-4 w-4 text-purple-500" />,
                     },
                     {
-                      pattern: "Content Type Preferences",
-                      value: "Video 45%",
-                      description: "Most completed content type",
-                      icon: "🎥"
-                    }
+                      pattern: "Avg Completion",
+                      value: `${metrics.avgCompletionRate}%`,
+                      description: "Overall course progress",
+                      icon: <CheckCircle2 className="h-4 w-4 text-amber-500" />,
+                    },
                   ].map((item) => (
                     <div
                       key={item.pattern}
@@ -178,7 +302,9 @@ export default function AdminAnalyticsPage() {
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-foreground text-sm flex items-center gap-2">
-                          <span>{item.icon}</span>
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
+                            {item.icon}
+                          </span>
                           {item.pattern}
                         </span>
                         <Badge className="bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-200 text-xs">
@@ -200,31 +326,14 @@ export default function AdminAnalyticsPage() {
                 <CardDescription>Engagement by experience level</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[
-                  { label: "Beginner", value: 45, trend: "+6%", tone: "emerald" },
-                  { label: "Intermediate", value: 32, trend: "+3%", tone: "blue" },
-                  { label: "Advanced", value: 23, trend: "-1%", tone: "red" },
-                ].map((segment) => (
+                {levelSegments.map((segment) => (
                   <div key={segment.label} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-foreground">{segment.label}</span>
-                      <span
-                        className={
-                          segment.tone === "red"
-                            ? "text-red-500"
-                            : segment.tone === "blue"
-                            ? "text-blue-500"
-                            : "text-emerald-500"
-                        }
-                      >
-                        {segment.trend}
-                      </span>
+                      <span className="text-muted-foreground">{segment.value}%</span>
                     </div>
                     <div className="h-2 rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-emerald-500"
-                        style={{ width: `${segment.value}%` }}
-                      />
+                      <div className="h-full rounded-full bg-emerald-500" style={{ width: `${segment.value}%` }} />
                     </div>
                   </div>
                 ))}
@@ -237,35 +346,15 @@ export default function AdminAnalyticsPage() {
                 <CardDescription>Monitor potential drop-offs</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[
-                  {
-                    label: "Inactive Users",
-                    value: `${(100 - (metrics.activeUsers / Math.max(metrics.totalUsers, 1)) * 100).toFixed(1)}%`,
-                    tone: "amber",
-                    description: "Users inactive for 14+ days",
-                  },
-                  {
-                    label: "Low Completion",
-                    value: `${Math.max(0, 100 - metrics.avgCompletionRate)}%`,
-                    tone: "red",
-                    description: "Courses with <40% completion",
-                  },
-                  {
-                    label: "Low Engagement Content",
-                    value: "23%",
-                    tone: "red",
-                    description: "Risk Assessment Quiz completion rate",
-                  },
-                ].map((item) => (
+                {churnIndicators.map((item) => (
                   <div key={item.label} className="rounded-lg border border-border/40 bg-background/70 p-4 backdrop-blur-sm">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-foreground">{item.label}</p>
                         <p className="text-xs text-muted-foreground">{item.description}</p>
                       </div>
-                      <span
-                        className="text-sm font-semibold"
-                      >
+                      <span className="text-sm font-semibold text-amber-500 flex items-center gap-1">
+                        <AlertTriangle className="h-4 w-4" />
                         {item.value}
                       </span>
                     </div>
@@ -277,46 +366,47 @@ export default function AdminAnalyticsPage() {
             <Card className="border border-border/60 bg-card/90">
               <CardHeader>
                 <CardTitle className="text-foreground">Course Performance Insights</CardTitle>
-                <CardDescription>Key course effectiveness indicators</CardDescription>
+                <CardDescription>Key effectiveness indicators</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {[
-                  {
-                    metric: "Highest Quiz Pass Rate",
-                    value: "92%",
-                    detail: "Technical Analysis",
-                    icon: "📈"
-                  },
-                  {
-                    metric: "Most Engaging Course",
-                    value: "4.8/5",
-                    detail: "PSX Fundamentals",
-                    icon: "🎯"
-                  },
-                  {
-                    metric: "Fastest Completion",
-                    value: "3.2 days",
-                    detail: "Risk Management",
-                    icon: "⚡"
-                  },
-                  {
-                    metric: "Completion Milestones",
-                    value: "68%",
-                    detail: "Course Completion Rate",
-                    icon: "💬"
-                  },
-                ].map((item) => (
-                  <div key={item.metric} className="rounded-lg border border-border/40 bg-background/70 p-4 backdrop-blur-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-lg">{item.icon}</span>
-                      <Badge className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs">
-                        {item.value}
-                      </Badge>
+                {topCourses.length > 0 ? (
+                  [
+                    {
+                      metric: "Highest Completion",
+                      value: `${topCourses[0].completion}%`,
+                      detail: topCourses[0].name,
+                    },
+                    {
+                      metric: "Most Enrollments",
+                      value: `${topCourses[0].students}`,
+                      detail: topCourses[0].name,
+                    },
+                    {
+                      metric: "Published Lessons",
+                      value: metrics.totalLessons.toLocaleString(),
+                      detail: "Across all courses",
+                    },
+                    {
+                      metric: "Published Sections",
+                      value: metrics.totalSections.toLocaleString(),
+                      detail: "Structured units",
+                    },
+                  ].map((item) => (
+                    <div key={item.metric} className="rounded-lg border border-border/40 bg-background/70 p-4 backdrop-blur-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs">
+                          {item.value}
+                        </Badge>
+                      </div>
+                      <p className="text-sm font-medium text-foreground">{item.metric}</p>
+                      <p className="text-xs text-muted-foreground">{item.detail}</p>
                     </div>
-                    <p className="text-sm font-medium text-foreground">{item.metric}</p>
-                    <p className="text-xs text-muted-foreground">{item.detail}</p>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {isLoading ? "Loading performance data..." : "No course insights yet"}
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -325,6 +415,3 @@ export default function AdminAnalyticsPage() {
     </div>
   )
 }
-
-
-

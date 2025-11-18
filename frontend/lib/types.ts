@@ -586,3 +586,48 @@ export interface LearningStreakSummary {
   bestStreak: number;
   lastActivityDate: string | null;
 }
+
+export interface AdminDashboardStats {
+  totalUsers: number;
+  activeUsers: number;
+  totalCourses: number;
+  publishedCourses: number;
+  totalLessons: number;
+  totalSections: number;
+  avgCompletionRate: number;
+}
+
+export interface AdminDashboardRecentUser {
+  id: string;
+  name: string;
+  email: string;
+  status: string;
+  joinedAt: string;
+  avatarUrl: string | null;
+}
+
+export interface AdminDashboardActivityItem {
+  id: string;
+  userName: string;
+  courseTitle: string;
+  action: string;
+  status: CourseEnrollmentStatus;
+  progressPercent: number;
+  timestamp: string;
+}
+
+export interface AdminDashboardEnrollmentItem {
+  id: string;
+  courseTitle: string;
+  studentName: string;
+  level: AdminCourseLevel;
+  status: CourseEnrollmentStatus;
+  timestamp: string;
+}
+
+export interface AdminDashboardSummary {
+  stats: AdminDashboardStats;
+  recentUsers: AdminDashboardRecentUser[];
+  recentActivity: AdminDashboardActivityItem[];
+  recentEnrollments: AdminDashboardEnrollmentItem[];
+}

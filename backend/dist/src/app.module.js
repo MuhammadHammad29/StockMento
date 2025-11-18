@@ -17,6 +17,7 @@ const auth_module_1 = require("./auth/auth.module");
 const profile_module_1 = require("./profile/profile.module");
 const lms_admin_module_1 = require("./lms-admin/lms-admin.module");
 const courses_module_1 = require("./courses/courses.module");
+const admin_analytics_module_1 = require("./admin-analytics/admin-analytics.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -33,6 +34,7 @@ exports.AppModule = AppModule = __decorate([
             profile_module_1.ProfileModule,
             lms_admin_module_1.LmsAdminModule,
             courses_module_1.CoursesModule,
+            admin_analytics_module_1.AdminAnalyticsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
