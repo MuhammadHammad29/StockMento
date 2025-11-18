@@ -59,7 +59,13 @@ type ActivitySummary = {
   averageProgress: number
 }
 
-const getLevelBadgeVariant = () => "secondary"
+const getLevelBadgeVariant = (level?: string): "default" | "secondary" | "outline" => {
+  const normalized = level?.toLowerCase()
+  if (normalized === "beginner") return "default"
+  if (normalized === "intermediate") return "secondary"
+  if (normalized === "advanced") return "outline"
+  return "secondary"
+}
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -872,7 +878,7 @@ useEffect(() => {
                     <div className="flex flex-col gap-1">
                       <h3 className="text-sm font-semibold text-foreground">{enrollment.course.title}</h3>
                       <p className="text-xs text-muted-foreground">
-                        Completed {formatTimeAgo(enrollment.completedAt ?? enrollment.updatedAt ?? new Date())}
+                        Completed {formatTimeAgo(enrollment.completedAt ?? enrollment.startedAt ?? new Date())}
                       </p>
                       <Link href={`/courses/${enrollment.course.id}`}>
                         <Button variant="outline" size="sm" className="mt-2 text-xs">
