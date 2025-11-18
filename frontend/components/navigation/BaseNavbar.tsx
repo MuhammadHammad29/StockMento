@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Menu, LogOut } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import Logo from "@/components/ui/logo"
 
 interface BaseNavbarProps {
@@ -76,34 +77,67 @@ export default function BaseNavbar({
             </span>
           )}
           {desktopActions}
-          {onLogout && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onLogout}
-              className="text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 p-2"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="sr-only">Logout</span>
-            </Button>
-          )}
-          {userInfo && (
-            userInfo.role === 'user' ? (
-              <Link href="/dashboard/profile" className="block" title="Go to Profile">
-                <Avatar className="h-7 w-7 sm:h-8 sm:w-8 hover:ring-2 hover:ring-emerald-200 dark:hover:ring-emerald-700 transition-all cursor-pointer">
+          {userInfo && userInfo.role === 'user' ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  aria-label="User menu"
+                >
+                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8 hover:ring-2 hover:ring-emerald-200 dark:hover:ring-emerald-700 transition-all cursor-pointer">
+                    <AvatarImage src={userInfo.avatar} />
+                    <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs">
+                      {userInfo.name?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-48 p-3 space-y-2">
+                <div className="text-xs text-muted-foreground">
+                  Signed in as
+                  <div className="text-sm font-medium text-foreground">{userInfo.name ?? "Student"}</div>
+                </div>
+                <div className="space-y-1">
+                  <Link
+                    href="/dashboard/profile"
+                    className="block rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted"
+                  >
+                    Profile
+                  </Link>
+                  {onLogout && (
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      className="w-full rounded-md px-2 py-1.5 text-left text-sm text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                    >
+                      Logout
+                    </button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            userInfo && (
+              <>
+                {onLogout && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onLogout}
+                    className="text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 p-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span className="sr-only">Logout</span>
+                  </Button>
+                )}
+                <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
                   <AvatarImage src={userInfo.avatar} />
                   <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs">
-                    {userInfo.name?.charAt(0) || 'U'}
+                    {userInfo.name?.charAt(0) || 'AD'}
                   </AvatarFallback>
                 </Avatar>
-              </Link>
-            ) : (
-              <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
-                <AvatarImage src={userInfo.avatar} />
-                <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs">
-                  {userInfo.name?.charAt(0) || 'AD'}
-                </AvatarFallback>
-              </Avatar>
+              </>
             )
           )}
         </div>
