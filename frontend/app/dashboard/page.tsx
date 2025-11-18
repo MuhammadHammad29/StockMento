@@ -502,7 +502,7 @@ useEffect(() => {
               </CardTitle>
               <CardDescription className="text-sm">Your ongoing learning journey</CardDescription>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
+            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
               {isLoadingEnrollments ? (
                 <div className="flex items-center justify-center py-10">
                   <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
@@ -616,7 +616,7 @@ useEffect(() => {
                 </CardTitle>
                 <CardDescription className="text-sm">Your learning progress over time</CardDescription>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0">
+              <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
                 {isLoadingActivity ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
