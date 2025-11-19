@@ -9,6 +9,7 @@
 
 import React from "react"
 import Link from "next/link"
+import { usePathname, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -39,6 +40,11 @@ export default function BaseNavbar({
   className = ""
 }: BaseNavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const isProfilePage = pathname === "/dashboard/profile"
+  const isAccountSettingsActive = isProfilePage && searchParams?.get("tab") === "settings"
+  const isProfileOverviewActive = isProfilePage && !isAccountSettingsActive
 
   return (
     <nav className={`sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70 overflow-hidden ${className}`}>
@@ -108,16 +114,24 @@ export default function BaseNavbar({
                 <div className="py-2 text-sm">
                   <Link
                     href="/dashboard/profile"
-                    className="flex items-center gap-3 px-4 py-2 hover:bg-muted transition-colors"
-                  >
-                    <User className="h-4 w-4 text-muted-foreground" />
+                    className={`flex items-center gap-3 rounded-lg px-4 py-2 transition-colors ${
+                      isProfileOverviewActive
+                        ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
+                        : "text-muted-foreground hover:text-emerald-600 hover:bg-muted"
+                    }`}
+                    >
+                      <User className="h-4 w-4" />
                     <span>Profile Overview</span>
                   </Link>
                   <Link
                     href="/dashboard/profile?tab=settings"
-                    className="flex items-center gap-3 px-4 py-2 hover:bg-muted transition-colors"
-                  >
-                    <Settings className="h-4 w-4 text-muted-foreground" />
+                    className={`flex items-center gap-3 rounded-lg px-4 py-2 transition-colors ${
+                      isAccountSettingsActive
+                        ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
+                        : "text-muted-foreground hover:text-emerald-600 hover:bg-muted"
+                    }`}
+                    >
+                      <Settings className="h-4 w-4" />
                     <span>Account Settings</span>
                   </Link>
                 </div>
@@ -209,13 +223,17 @@ export default function BaseNavbar({
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
                   {mobileMenuContent}
                   <div className="space-y-2">
                     <Link
                       href="/dashboard/profile"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted"
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
+                        isProfileOverviewActive
+                          ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
+                          : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                      }`}
                     >
                       <User className="h-4 w-4" />
                       <span>Profile Overview</span>
@@ -223,7 +241,11 @@ export default function BaseNavbar({
                     <Link
                       href="/dashboard/profile?tab=settings"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted"
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
+                        isAccountSettingsActive
+                          ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
+                          : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                      }`}
                     >
                       <Settings className="h-4 w-4" />
                       <span>Account Settings</span>
