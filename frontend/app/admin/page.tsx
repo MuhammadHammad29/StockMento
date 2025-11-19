@@ -266,7 +266,7 @@ export default function AdminDashboard() {
                       <div key={user.id} className="flex items-center justify-between gap-1.5 sm:gap-2">
                         <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0 flex-1">
                           <Avatar className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 flex-shrink-0">
-                            <AvatarImage src={user.avatarUrl ?? undefined} alt={`${user.name} Avatar`} />
+                            <AvatarImage src={getAvatarPath(user.avatarUrl)} alt={`${user.name} Avatar`} />
                             <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs">
                               {user.name
                                 .split(" ")
@@ -336,3 +336,4 @@ export default function AdminDashboard() {
     </div>
   )
 }
+import { getAvatarPath } from "@/lib/avatar-utils"

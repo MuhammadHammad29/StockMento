@@ -8,6 +8,9 @@ export const AVATAR_CONFIG = {
 export type AvatarId = `avatar_${number}`
 
 export const getAvatarPath = (avatarId?: string | null): string => {
+  if (avatarId && (avatarId.startsWith('/') || avatarId.startsWith('http'))) {
+    return avatarId
+  }
   const safeId = avatarId && isValidAvatarId(avatarId) ? avatarId : AVATAR_CONFIG.DEFAULT_AVATAR
   return `${AVATAR_CONFIG.BASE_PATH}/${safeId}${AVATAR_CONFIG.FILE_EXTENSION}`
 }

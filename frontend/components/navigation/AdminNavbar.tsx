@@ -83,7 +83,7 @@ export default function AdminNavbar({ className }: AdminNavbarProps) {
       className={className}
       userInfo={{
         name: adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : undefined,
-        avatar: getAvatarPath('avatar_2'), // Using avatar_2 for admin
+        avatar: getAvatarPath(adminUser?.avatarId ?? '/avatars/avatar_admin.png'),
         role: 'admin'
       }}
       onLogout={adminLogout}

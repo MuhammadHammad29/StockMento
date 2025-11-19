@@ -131,8 +131,8 @@ export default function UserNavbar({ className }: UserNavbarProps) {
     </>
   )
 
-  const mobileSecondaryContent = (
-    <div className="space-y-2">
+  const mobileSecondaryContent = user ? (
+    <div className="space-y-2 pt-2">
       <Link
         href="/dashboard/profile"
         className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
@@ -156,7 +156,7 @@ export default function UserNavbar({ className }: UserNavbarProps) {
         <span>Account Settings</span>
       </Link>
     </div>
-  )
+  ) : null
 
   return (
     <BaseNavbar

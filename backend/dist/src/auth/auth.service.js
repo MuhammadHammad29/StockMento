@@ -431,7 +431,7 @@ let AuthService = AuthService_1 = class AuthService {
             email: admin.email,
             firstName: admin.name,
             lastName: '',
-            avatarId: null,
+            avatarId: admin.avatarUrl ?? null,
             role: 'admin',
             status: admin.status === client_1.AdminStatus.active
                 ? client_1.IdentityStatus.active

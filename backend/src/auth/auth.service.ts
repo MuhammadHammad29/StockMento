@@ -33,6 +33,8 @@ import {
 import { AuthTokens, JwtPayload } from './auth.types';
 import { AuthUser } from './interfaces/auth-user.interface';
 
+type AdminIdentityWithAvatar = AdminIdentity & { avatarUrl?: string | null };
+
 /**
  * Verification codes are short lived so users cannot reuse stale codes.
  */
@@ -368,7 +370,7 @@ export class AuthService {
 
       const tokens = this.generateTokens(adminIdentity, 'admin');
       return {
-        user: this.mapAdminToAuthUser(adminIdentity),
+        user: this.mapAdminToAuthUser(adminIdentity as AdminIdentityWithAvatar),
         tokens,
       };
     } catch (error) {
@@ -417,7 +419,9 @@ export class AuthService {
         const tokens = this.generateTokens(adminIdentity, 'admin');
 
         return {
-          user: this.mapAdminToAuthUser(adminIdentity),
+          user: this.mapAdminToAuthUser(
+            adminIdentity as AdminIdentityWithAvatar,
+          ),
           tokens,
         };
       }
@@ -570,7 +574,7 @@ export class AuthService {
         throw new UnauthorizedException();
       }
 
-      return this.mapAdminToAuthUser(adminIdentity);
+      return this.mapAdminToAuthUser(adminIdentity as AdminIdentityWithAvatar);
     }
 
     const identity = await this.prisma.identity.findUnique({
@@ -676,13 +680,13 @@ export class AuthService {
     };
   }
 
-  private mapAdminToAuthUser(admin: AdminIdentity): AuthUser {
+  private mapAdminToAuthUser(admin: AdminIdentityWithAvatar): AuthUser {
     return {
       id: admin.id,
       email: admin.email,
       firstName: admin.name,
       lastName: '',
-      avatarId: null,
+      avatarId: admin.avatarUrl ?? null,
       role: 'admin',
       status:
         admin.status === AdminStatus.active

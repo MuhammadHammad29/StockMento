@@ -9,6 +9,7 @@ async function main() {
     const adminPassword = process.env.ADMIN_PASSWORD;
     const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
     const adminName = process.env.ADMIN_NAME ?? 'Administrator';
+    const adminAvatarUrl = process.env.ADMIN_AVATAR_URL ?? '/avatars/avatar_admin.png';
     if (!adminEmail) {
         throw new Error('ADMIN_EMAIL must be set in the environment before seeding the admin account.');
     }
@@ -31,6 +32,7 @@ async function main() {
                 email: adminEmail,
                 name: adminName,
                 passwordHash,
+                avatarUrl: adminAvatarUrl,
                 status: client_1.AdminStatus.active,
             },
         });
@@ -43,6 +45,9 @@ async function main() {
     }
     if (existingAdmin.status !== client_1.AdminStatus.active) {
         updates.status = client_1.AdminStatus.active;
+    }
+    if (existingAdmin.avatarUrl !== adminAvatarUrl) {
+        updates.avatarUrl = adminAvatarUrl;
     }
     if (adminPasswordHash && existingAdmin.passwordHash !== adminPasswordHash) {
         updates.passwordHash = adminPasswordHash;

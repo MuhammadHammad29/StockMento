@@ -225,6 +225,7 @@ model AdminIdentity {
   name         String
   email        String      @unique @db.Citext
   passwordHash String      @map("password_hash")
+  avatarUrl    String      @map("avatar_url") @default("/avatars/avatar_admin.png")
   status       AdminStatus @default(active)
   lastLoginAt  DateTime?   @map("last_login_at")
   createdAt    DateTime    @default(now()) @map("created_at")
