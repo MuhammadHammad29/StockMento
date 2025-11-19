@@ -12,7 +12,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Menu, LogOut } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import Logo from "@/components/ui/logo"
@@ -167,6 +167,9 @@ export default function BaseNavbar({
               className="w-[280px] sm:w-[340px] p-0 border-l border-border/40 rounded-l-[28px] overflow-hidden"
               aria-describedby={undefined}
             >
+              <SheetHeader className="sr-only">
+                <SheetTitle>{userInfo?.role === 'admin' ? 'Admin navigation' : 'User navigation'}</SheetTitle>
+              </SheetHeader>
               <div className="flex h-full flex-col">
                 <div className="flex items-center gap-3 px-4 py-4 border-b border-border/60">
                   {userInfo && (
