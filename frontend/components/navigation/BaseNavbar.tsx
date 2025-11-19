@@ -12,8 +12,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Menu, LogOut } from "lucide-react"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Menu, LogOut, User, Settings } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import Logo from "@/components/ui/logo"
 
@@ -85,7 +85,7 @@ export default function BaseNavbar({
                   className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                   aria-label="User menu"
                 >
-                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8 hover:ring-2 hover:ring-emerald-200 dark:hover:ring-emerald-700 transition-all cursor-pointer">
+                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8 border border-emerald-200 dark:border-emerald-500/40 transition-all cursor-pointer">
                     <AvatarImage src={userInfo.avatar} />
                     <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs">
                       {userInfo.name?.charAt(0) || 'U'}
@@ -93,34 +93,46 @@ export default function BaseNavbar({
                   </Avatar>
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-52 p-3 space-y-2">
-                <div className="text-xs text-muted-foreground">
-                  Signed in as
-                  <div className="text-sm font-medium text-foreground">{userInfo.name ?? "Student"}</div>
+              <PopoverContent
+                align="end"
+                className="w-56 p-0 rounded-2xl shadow-xl border border-border/80"
+              >
+                <div className="space-y-1 px-4 py-3 border-b border-border/60">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Signed in as
+                  </p>
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    {userInfo.name ?? "Student"}
+                  </p>
                 </div>
-                <div className="space-y-1">
+                <div className="py-2 text-sm">
                   <Link
                     href="/dashboard/profile"
-                    className="block rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted"
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-muted transition-colors"
                   >
-                    Profile Overview
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span>Profile Overview</span>
                   </Link>
                   <Link
                     href="/dashboard/profile?tab=settings"
-                    className="block rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted"
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-muted transition-colors"
                   >
-                    Account Settings
+                    <Settings className="h-4 w-4 text-muted-foreground" />
+                    <span>Account Settings</span>
                   </Link>
-                  {onLogout && (
+                </div>
+                {onLogout && (
+                  <div className="border-t border-border/60 px-4 py-2">
                     <button
                       type="button"
                       onClick={onLogout}
-                      className="w-full rounded-md px-2 py-1.5 text-left text-sm text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                      className="w-full flex items-center gap-2 text-left text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
                     >
-                      Logout
+                      <LogOut className="h-4 w-4" />
+                      <span>Logout</span>
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </PopoverContent>
             </Popover>
           ) : (
@@ -157,13 +169,17 @@ export default function BaseNavbar({
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] sm:w-[350px]" aria-describedby={undefined}>
-              <SheetHeader className="border-b pb-4">
-                <SheetTitle className="flex items-center gap-3 text-left">
+            <SheetContent
+              side="right"
+              className="w-[280px] sm:w-[340px] p-0 border-l border-border/40 rounded-l-[28px] overflow-hidden"
+              aria-describedby={undefined}
+            >
+              <div className="flex h-full flex-col">
+                <div className="flex items-center gap-3 px-4 py-4 border-b border-border/60">
                   {userInfo && (
                     userInfo.role === 'user' ? (
                       <Link href="/dashboard/profile" onClick={() => setMobileMenuOpen(false)} title="Go to Profile">
-                        <Avatar className="h-8 w-8 hover:ring-2 hover:ring-emerald-200 dark:hover:ring-emerald-700 transition-all cursor-pointer">
+                        <Avatar className="h-10 w-10 border border-emerald-200 dark:border-emerald-500/40 transition-all cursor-pointer">
                           <AvatarImage src={userInfo.avatar} />
                           <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                             {userInfo.name?.charAt(0) || 'U'}
@@ -171,7 +187,7 @@ export default function BaseNavbar({
                         </Avatar>
                       </Link>
                     ) : (
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-10 w-10 border border-border/60">
                         <AvatarImage src={userInfo.avatar} />
                         <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
                           {userInfo.name?.charAt(0) || 'AD'}
@@ -179,39 +195,58 @@ export default function BaseNavbar({
                       </Avatar>
                     )
                   )}
-                  <span className="font-medium">{userInfo?.name || "Menu"}</span>
-                </SheetTitle>
-                <div className="text-left text-sm text-muted-foreground">
-                  {userInfo?.role === 'admin' && (
-                    <Badge className="bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-300 text-xs">
-                      Admin Panel
-                    </Badge>
-                  )}
-                  {userInfo?.role === 'user' && (
-                    <Badge className="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300 text-xs">
-                      Student Portal
-                    </Badge>
-                  )}
+                  <div className="truncate">
+                    <p className="text-sm font-semibold text-foreground truncate">{userInfo?.name ?? "Guest"}</p>
+                    {userInfo?.role === 'admin' ? (
+                      <Badge className="mt-1 bg-red-500/10 text-red-600 dark:text-red-300 text-[11px]">
+                        Admin Panel
+                      </Badge>
+                    ) : (
+                      <Badge className="mt-1 bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-[11px]">
+                        Student Portal
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-              </SheetHeader>
-              
-              {mobileMenuContent}
-              
-              {onLogout && (
-                <div className="mt-auto pt-6 border-t">
-                  <Button
-                    onClick={() => {
-                      setMobileMenuOpen(false)
-                      onLogout()
-                    }}
-                    variant="outline"
-                    className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:hover:bg-red-950/20"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </Button>
+
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                  {mobileMenuContent}
+                  <div className="space-y-2">
+                    <Link
+                      href="/dashboard/profile"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted"
+                    >
+                      <User className="h-4 w-4" />
+                      <span>Profile Overview</span>
+                    </Link>
+                    <Link
+                      href="/dashboard/profile?tab=settings"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted"
+                    >
+                      <Settings className="h-4 w-4" />
+                      <span>Account Settings</span>
+                    </Link>
+                  </div>
                 </div>
-              )}
+
+                {onLogout && (
+                  <div className="border-t border-border/60 px-4 py-4">
+                    <Button
+                      onClick={() => {
+                        setMobileMenuOpen(false)
+                        onLogout()
+                      }}
+                      variant="outline"
+                      className="w-full justify-center gap-2 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/20"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Logout</span>
+                    </Button>
+                  </div>
+                )}
+              </div>
             </SheetContent>
           </Sheet>
         </div>
