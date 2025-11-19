@@ -9,12 +9,11 @@
 
 import React from "react"
 import Link from "next/link"
-import { usePathname, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, LogOut, User, Settings } from "lucide-react"
+import { Menu, LogOut } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import Logo from "@/components/ui/logo"
 
@@ -27,6 +26,8 @@ interface BaseNavbarProps {
   }
   onLogout?: () => void | Promise<void>
   mobileMenuContent?: React.ReactNode
+  mobileSecondaryContent?: React.ReactNode
+  userMenuItems?: React.ReactNode
   desktopActions?: React.ReactNode
   className?: string
 }
@@ -36,15 +37,12 @@ export default function BaseNavbar({
   userInfo,
   onLogout,
   mobileMenuContent,
+  mobileSecondaryContent,
+  userMenuItems,
   desktopActions,
   className = ""
 }: BaseNavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const isProfilePage = pathname === "/dashboard/profile"
-  const isAccountSettingsActive = isProfilePage && searchParams?.get("tab") === "settings"
-  const isProfileOverviewActive = isProfilePage && !isAccountSettingsActive
 
   return (
     <nav className={`sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/70 overflow-hidden ${className}`}>
@@ -111,30 +109,11 @@ export default function BaseNavbar({
                     {userInfo.name ?? "Student"}
                   </p>
                 </div>
-                <div className="py-2 text-sm">
-                  <Link
-                    href="/dashboard/profile"
-                    className={`flex items-center gap-3 rounded-lg px-4 py-2 transition-colors ${
-                      isProfileOverviewActive
-                        ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
-                        : "text-muted-foreground hover:text-emerald-600 hover:bg-muted"
-                    }`}
-                    >
-                      <User className="h-4 w-4" />
-                    <span>Profile Overview</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/profile?tab=settings"
-                    className={`flex items-center gap-3 rounded-lg px-4 py-2 transition-colors ${
-                      isAccountSettingsActive
-                        ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
-                        : "text-muted-foreground hover:text-emerald-600 hover:bg-muted"
-                    }`}
-                    >
-                      <Settings className="h-4 w-4" />
-                    <span>Account Settings</span>
-                  </Link>
-                </div>
+                {userMenuItems && (
+                  <div className="py-2 text-sm">
+                    {userMenuItems}
+                  </div>
+                )}
                 {onLogout && (
                   <div className="border-t border-border/60 px-4 py-2">
                     <button
@@ -225,32 +204,7 @@ export default function BaseNavbar({
 
                 <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
                   {mobileMenuContent}
-                  <div className="space-y-2">
-                    <Link
-                      href="/dashboard/profile"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
-                        isProfileOverviewActive
-                          ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
-                          : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                      }`}
-                    >
-                      <User className="h-4 w-4" />
-                      <span>Profile Overview</span>
-                    </Link>
-                    <Link
-                      href="/dashboard/profile?tab=settings"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
-                        isAccountSettingsActive
-                          ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
-                          : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                      }`}
-                    >
-                      <Settings className="h-4 w-4" />
-                      <span>Account Settings</span>
-                    </Link>
-                  </div>
+                  {userInfo?.role === "user" && mobileSecondaryContent}
                 </div>
 
                 {onLogout && (
