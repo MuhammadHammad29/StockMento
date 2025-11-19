@@ -37,7 +37,6 @@ import { publicCoursesApi, studentCoursesApi } from "@/lib/api"
 import type {
   CourseEnrollmentSummary,
   PublicCourseSummary,
-  LearningStreakSummary,
   StudentActivityItem,
   AdminLessonContentType,
 } from "@/lib/types"
@@ -71,8 +70,6 @@ export default function DashboardPage() {
   const [catalog, setCatalog] = useState<PublicCourseSummary[]>([])
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(false)
   const [catalogError, setCatalogError] = useState<string | null>(null)
-  const [learningStreak, setLearningStreak] = useState<LearningStreakSummary | null>(null)
-  const [isLoadingStreak, setIsLoadingStreak] = useState(false)
   const [upcomingLessons, setUpcomingLessons] = useState<UpcomingLesson[]>([])
   const [isLoadingNextLessons, setIsLoadingNextLessons] = useState(false)
   const [recentActivity, setRecentActivity] = useState<StudentActivityItem[]>([])
@@ -141,38 +138,6 @@ useEffect(() => {
       cancelled = true
     }
   }, [user])
-
-useEffect(() => {
-  if (!user) {
-    setLearningStreak(null)
-    return
-  }
-
-  let cancelled = false
-  const fetchStreak = async () => {
-    setIsLoadingStreak(true)
-    try {
-      const data = await studentCoursesApi.getLearningStreak()
-      if (!cancelled) {
-        setLearningStreak(data)
-      }
-    } catch (error) {
-      console.error("Failed to load learning streak", error)
-      if (!cancelled) {
-        setLearningStreak(null)
-      }
-    } finally {
-      if (!cancelled) {
-        setIsLoadingStreak(false)
-      }
-    }
-  }
-
-  void fetchStreak()
-  return () => {
-    cancelled = true
-  }
-}, [user])
 
 useEffect(() => {
   if (!user) {
@@ -826,43 +791,6 @@ useEffect(() => {
                   </Button>
                 </Link>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Learning Streak */}
-          <Card className="border border-border/60 bg-card/90">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg text-foreground">
-                <Target className="h-5 w-5 text-amber-500" />
-                Learning Streak
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center space-y-3">
-              {isLoadingStreak ? (
-                <div className="py-6 flex items-center justify-center">
-                  <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
-                </div>
-              ) : (
-                <>
-                  <div className="text-3xl font-bold text-foreground">
-                    {learningStreak?.currentStreak ?? 0}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {learningStreak?.currentStreak === 1 ? "Day in a row" : "Days in a row"}
-                  </p>
-                  <div className="text-xs text-muted-foreground">
-                    Best streak: {learningStreak?.bestStreak ?? 0} days
-                  </div>
-                  <Badge
-                    variant="secondary"
-                    className="bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
-                  >
-                    {learningStreak && learningStreak.currentStreak > 0
-                      ? "Great job!"
-                      : "Let’s start learning"}
-                  </Badge>
-                </>
-              )}
             </CardContent>
           </Card>
 
