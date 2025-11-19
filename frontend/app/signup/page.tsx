@@ -15,7 +15,7 @@ import { validateEmail } from "@/lib/data-utils"
 import { isPasswordValid } from "@/lib/password-utils"
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
 import AvatarPicker from "@/components/avatar-picker"
-import { getDefaultAvatarId, getAvatarPath } from "@/lib/avatar-utils"
+import { getDefaultAvatarId, getAvatarPath, type AvatarId } from "@/lib/avatar-utils"
 import Logo from "@/components/ui/logo"
 import { useAuth } from "@/lib/auth-context"
 import { Textarea } from "@/components/ui/textarea"
@@ -28,7 +28,7 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
-  const [selectedAvatarId, setSelectedAvatarId] = useState(getDefaultAvatarId())
+  const [selectedAvatarId, setSelectedAvatarId] = useState<AvatarId>(getDefaultAvatarId())
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -45,7 +45,7 @@ export default function SignUpPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleAvatarSelect = (avatarId: string) => {
+  const handleAvatarSelect = (avatarId: AvatarId) => {
     setSelectedAvatarId(avatarId)
     setShowAvatarPicker(false)
     toast.success('Avatar selected!')

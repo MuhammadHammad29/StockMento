@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, Target, PartyPopper } from "lucide-react";
+import { Sparkles, PartyPopper } from "lucide-react";
 
 interface CourseCompletionDialogProps {
   isOpen: boolean;
@@ -44,26 +44,12 @@ export default function CourseCompletionDialog({
           </DialogHeader>
 
           <Card className="mb-6">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                    100%
-                  </div>
-                  <div className="text-xs text-muted-foreground">Complete</div>
+            <CardContent className="p-6">
+              <div className="text-center space-y-2">
+                <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">
+                  100%
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    <Target className="mx-auto h-6 w-6" />
-                  </div>
-                  <div className="text-xs text-muted-foreground">Progress</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    XP
-                  </div>
-                  <div className="text-xs text-muted-foreground">Knowledge</div>
-                </div>
+                <p className="text-sm text-muted-foreground">Complete</p>
               </div>
             </CardContent>
           </Card>

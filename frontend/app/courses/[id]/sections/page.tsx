@@ -231,8 +231,16 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
         {/* Course Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
-            <Badge variant={course.level === "Beginner" ? "default" : course.level === "Intermediate" ? "secondary" : "destructive"}>
-              {course.level}
+            <Badge
+              variant={
+                course.level === "beginner"
+                  ? "default"
+                  : course.level === "intermediate"
+                    ? "secondary"
+                    : "destructive"
+              }
+            >
+              {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
             </Badge>
             <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-200">
               {sections.length === 1 ? "Single section" : `${sections.length} sections`}
@@ -328,11 +336,6 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
                           <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1 pr-4">
                             {section.title}
                           </h3>
-                          {section.description && (
-                            <p className="text-xs sm:text-sm text-muted-foreground mb-2 line-clamp-2">
-                              {section.description}
-                            </p>
-                          )}
                           <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                             <span className="flex items-center">
                               <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />

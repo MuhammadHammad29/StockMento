@@ -20,7 +20,12 @@ import { useState, useMemo, useEffect, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { UserNavbar } from "@/components/navigation"
 import { publicCoursesApi, studentCoursesApi } from "@/lib/api"
-import { CourseEnrollmentSummary, PublicCourseSummary, CourseEnrollmentStatus } from "@/lib/types"
+import {
+  CourseEnrollmentSummary,
+  PublicCourseSummary,
+  CourseEnrollmentStatus,
+  AdminCourseLevel,
+} from "@/lib/types"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 
@@ -198,7 +203,13 @@ export default function CoursesPage() {
     return `${mins}m`
   }
 
-  const getLevelVariant = () => "secondary"
+  const levelVariantMap: Record<AdminCourseLevel, "default" | "secondary" | "destructive"> = {
+    beginner: "default",
+    intermediate: "secondary",
+    advanced: "destructive",
+  }
+
+  const getLevelVariant = (level: AdminCourseLevel) => levelVariantMap[level] ?? "secondary"
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">

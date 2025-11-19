@@ -1025,19 +1025,12 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                             ? "border-emerald-200"
                             : "border-border/40"
 
-                        const WrapperComponent = isLocked ? "div" : Link
-                        const wrapperProps = isLocked
-                          ? {}
-                          : { href: `/courses/${courseId}/lessons/${entry.id}` }
+                        const sharedClassName = `flex items-center justify-between rounded-lg border ${rowTone} px-3 py-2 text-sm transition hover:bg-muted/10 ${
+                          isLocked ? "cursor-not-allowed" : ""
+                        }`
 
-                        return (
-                          <WrapperComponent
-                            key={entry.id}
-                            {...wrapperProps}
-                            className={`flex items-center justify-between rounded-lg border ${rowTone} px-3 py-2 text-sm transition hover:bg-muted/10 ${
-                              isLocked ? "cursor-not-allowed" : ""
-                            }`}
-                          >
+                        const rowInner = (
+                          <>
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                                 <LessonIcon className="h-4 w-4 text-muted-foreground" />
@@ -1065,7 +1058,25 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                             {isCompleted && (
                               <CheckCircle className="h-4 w-4 text-emerald-600" aria-label="Lesson completed" />
                             )}
-                          </WrapperComponent>
+                          </>
+                        )
+
+                        if (isLocked) {
+                          return (
+                            <div key={entry.id} className={sharedClassName}>
+                              {rowInner}
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <Link
+                            key={entry.id}
+                            href={`/courses/${courseId}/lessons/${entry.id}`}
+                            className={sharedClassName}
+                          >
+                            {rowInner}
+                          </Link>
                         )
                       })}
                     </div>

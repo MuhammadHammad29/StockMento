@@ -21,7 +21,7 @@ import QuizBuilder, {
 import { AdminNavbar } from "@/components/navigation"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { courseApi, lessonApi } from "@/lib/api"
-import type { AdminCourse, AdminCourseSection } from "@/lib/types"
+import type { AdminCourse, AdminCourseSection, UpdateLessonPayload } from "@/lib/types"
 import { toast } from "sonner"
 
 type LessonType = "text" | "video" | "quiz" | "lab"
@@ -141,7 +141,7 @@ export default function EditLessonPage({ params }: { params: { id: string; lesso
 
     setIsSaving(true)
     try {
-      const payload = {
+      const payload: UpdateLessonPayload = {
         title: formData.title.trim(),
         contentType: formData.contentType,
         durationMinutes: formData.durationMinutes,

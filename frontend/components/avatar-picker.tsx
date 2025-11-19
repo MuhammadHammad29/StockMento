@@ -4,11 +4,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, User } from "lucide-react";
-import { getAvailableAvatars, getAvatarPath, AVATAR_CONFIG } from "@/lib/avatar-utils";
+import { getAvailableAvatars, getAvatarPath, AVATAR_CONFIG, type AvatarId } from "@/lib/avatar-utils";
 
 interface AvatarPickerProps {
-  selectedAvatarId: string;
-  onAvatarSelect: (avatarId: string) => void;
+  selectedAvatarId: AvatarId;
+  onAvatarSelect: (avatarId: AvatarId) => void;
   onSave?: () => void;
   onCancel?: () => void;
   showActions?: boolean;
