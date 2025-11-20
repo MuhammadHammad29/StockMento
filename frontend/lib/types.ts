@@ -610,6 +610,9 @@ export interface AdminDashboardStats {
   totalLessons: number;
   totalSections: number;
   avgCompletionRate: number;
+   completedEnrollments: number;
+   activeEnrollments: number;
+   completionRate: number;
 }
 
 export interface AdminDashboardRecentUser {

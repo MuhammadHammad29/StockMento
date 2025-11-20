@@ -26,6 +26,9 @@ const EMPTY_STATS: AdminDashboardSummary["stats"] = {
   totalLessons: 0,
   totalSections: 0,
   avgCompletionRate: 0,
+  completedEnrollments: 0,
+  activeEnrollments: 0,
+  completionRate: 0,
 }
 
 export default function AdminAnalyticsPage() {
@@ -73,6 +76,7 @@ export default function AdminAnalyticsPage() {
   const metrics = useMemo(() => {
     const recentCompletions = recentActivity.filter((item) => item.status === "completed").length
     const newUsers = recentUsers.length
+    const totalTrackedEnrollments = stats.completedEnrollments + stats.activeEnrollments
 
     return {
       totalUsers: stats.totalUsers,
@@ -81,12 +85,14 @@ export default function AdminAnalyticsPage() {
       userGrowthRate: stats.totalUsers > 0 ? Math.round((newUsers / stats.totalUsers) * 1000) / 10 : 0,
       totalCourses: stats.totalCourses,
       publishedCourses: stats.publishedCourses,
-      completedCourses: recentCompletions,
-      avgCompletionRate: stats.avgCompletionRate,
+      completedEnrollments: stats.completedEnrollments,
+      enrollmentCompletionRate: stats.completionRate,
+      avgCompletionRate: stats.completionRate,
       totalLessons: stats.totalLessons,
       avgProgress: stats.avgCompletionRate,
       totalSections: stats.totalSections,
       recentCompletions,
+      totalTrackedEnrollments,
     }
   }, [recentActivity, recentUsers, stats])
 
@@ -203,7 +209,7 @@ export default function AdminAnalyticsPage() {
             },
             {
               title: "Courses Completed",
-              value: metrics.completedCourses.toLocaleString(),
+              value: metrics.completedEnrollments.toLocaleString(),
               subtitle: `${metrics.totalCourses} courses available`,
               icon: <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-purple-500" />,
             },

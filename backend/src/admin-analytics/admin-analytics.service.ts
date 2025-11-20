@@ -10,6 +10,9 @@ type DashboardStats = {
   totalLessons: number;
   totalSections: number;
   avgCompletionRate: number;
+  completedEnrollments: number;
+  activeEnrollments: number;
+  completionRate: number;
 };
 
 @Injectable()
@@ -25,6 +28,8 @@ export class AdminAnalyticsService {
       totalLessons,
       totalSections,
       enrollmentAggregate,
+      activeEnrollments,
+      completedEnrollments,
     ] = await this.prisma.$transaction([
       this.prisma.identity.count(),
       this.prisma.identity.count({
@@ -40,10 +45,20 @@ export class AdminAnalyticsService {
         _avg: { progressPercent: true },
         _count: { _all: true },
       }),
+      this.prisma.courseEnrollment.count({
+        where: { status: 'active' },
+      }),
+      this.prisma.courseEnrollment.count({
+        where: { status: 'completed' },
+      }),
     ]);
 
     const avgCompletionRate = this.resolveAverageCompletion(
       enrollmentAggregate._avg.progressPercent,
+    );
+    const completionRate = this.resolveCompletionRate(
+      completedEnrollments,
+      activeEnrollments,
     );
 
     const recentUsersRaw = await this.prisma.identity.findMany({
@@ -131,6 +146,9 @@ export class AdminAnalyticsService {
       totalLessons,
       totalSections,
       avgCompletionRate,
+      completedEnrollments,
+      activeEnrollments,
+      completionRate,
     };
 
     return {
@@ -150,6 +168,17 @@ export class AdminAnalyticsService {
       return 0;
     }
     return Math.min(100, Math.max(0, Math.round(asNumber)));
+  }
+
+  private resolveCompletionRate(
+    completed: number,
+    active: number,
+  ): number {
+    const total = completed + active;
+    if (total === 0) {
+      return 0;
+    }
+    return Math.min(100, Math.max(0, Math.round((completed / total) * 100)));
   }
 
   private resolveActivityAction(status: string) {
