@@ -232,11 +232,11 @@ export default function AdminAnalyticsPage() {
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-6">
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader className="p-4 sm:p-6">
+              <CardHeader className="px-4 pt-4 pb-2">
                 <CardTitle className="text-foreground text-lg sm:text-xl">Top Courses</CardTitle>
                 <CardDescription className="text-sm">Performance based on recent enrollments</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="px-4 pt-0 pb-4 space-y-2">
                 {topCourses.length > 0 ? (
                   topCourses.map((course) => (
                     <div
@@ -264,11 +264,11 @@ export default function AdminAnalyticsPage() {
             </Card>
 
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader className="p-4 sm:p-6">
+              <CardHeader className="px-4 pt-4 pb-2">
                 <CardTitle className="text-foreground text-lg sm:text-xl">Learning Patterns</CardTitle>
                 <CardDescription className="text-sm">Signals from live platform data</CardDescription>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6">
+              <CardContent className="px-4 pt-0 pb-4">
                 <div className="grid gap-3 sm:gap-4 text-sm text-muted-foreground grid-cols-1 sm:grid-cols-2">
                   {[ 
                     {
@@ -321,11 +321,11 @@ export default function AdminAnalyticsPage() {
 
           <div className="space-y-6">
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader>
+              <CardHeader className="px-4 pt-4 pb-2">
                 <CardTitle className="text-foreground">Learner Segments</CardTitle>
                 <CardDescription>Engagement by experience level</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="px-4 pt-0 pb-4 space-y-2">
                 {levelSegments.map((segment) => (
                   <div key={segment.label} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
@@ -341,11 +341,11 @@ export default function AdminAnalyticsPage() {
             </Card>
 
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader>
+              <CardHeader className="px-4 pt-4 pb-2">
                 <CardTitle className="text-foreground">Churn Indicators</CardTitle>
                 <CardDescription>Monitor potential drop-offs</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="px-4 pt-0 pb-4 space-y-2">
                 {churnIndicators.map((item) => (
                   <div key={item.label} className="rounded-lg border border-border/40 bg-background/70 p-4 backdrop-blur-sm">
                     <div className="flex items-center justify-between">
@@ -364,11 +364,11 @@ export default function AdminAnalyticsPage() {
             </Card>
 
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader>
+              <CardHeader className="px-4 pt-4 pb-2">
                 <CardTitle className="text-foreground">Course Performance Insights</CardTitle>
                 <CardDescription>Key effectiveness indicators</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="px-4 pt-0 pb-4 space-y-2">
                 {topCourses.length > 0 ? (
                   [
                     {

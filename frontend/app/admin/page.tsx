@@ -159,14 +159,14 @@ export default function AdminDashboard() {
           {/* Overview */}
           <div className="space-y-2 sm:space-y-3 lg:space-y-6 order-1 min-w-0">
             <Card className="border border-border/60 bg-card/90 min-w-0">
-              <CardHeader className="p-2 sm:p-3 lg:p-6">
+              <CardHeader className="px-4 pt-4 pb-2">
                 <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-foreground text-sm sm:text-base lg:text-xl min-w-0">
                   <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500 flex-shrink-0" />
                   <span className="truncate">Platform Overview</span>
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm truncate">Snapshot of current performance</CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-1.5 sm:gap-2 md:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 p-1.5 sm:p-2 lg:p-6">
+              <CardContent className="grid gap-1.5 sm:gap-2 md:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 px-4 pt-0 pb-4">
                 <div className="rounded-xl border border-border/50 bg-background/70 p-1.5 sm:p-2 lg:p-4 backdrop-blur-sm min-w-0">
                   <p className="text-xs text-muted-foreground truncate">Total Lessons</p>
                   <div className="mt-1 text-sm sm:text-base lg:text-2xl font-semibold text-foreground">{stats.totalLessons}</div>
@@ -181,16 +181,16 @@ export default function AdminDashboard() {
             </Card>
 
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader className="p-3 sm:p-4 lg:p-6">
+              <CardHeader className="px-4 pt-4 pb-2">
                 <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg lg:text-xl">
                   <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                   Quick Actions
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">Manage key platform areas</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2 sm:space-y-2.5 lg:space-y-3 p-2 sm:p-3 lg:p-6">
+              <CardContent className="space-y-2 sm:space-y-2.5 lg:space-y-3 px-4 pt-0 pb-4">
                 <Link href="/admin/courses">
-                  <Button variant="outline" className="h-auto w-full justify-start bg-background/70 p-2.5 sm:p-3 lg:p-4">
+                  <Button variant="outline" className="h-auto w-full justify-start bg-background/70 p-2.5 sm:p-3 lg:p-4 mb-3">
                     <BookOpen className="mr-1.5 sm:mr-2 lg:mr-3 h-4 w-4 text-emerald-500 flex-shrink-0" />
                     <div className="text-left min-w-0">
                       <div className="font-medium text-foreground text-xs sm:text-sm lg:text-base">Manage Courses</div>
@@ -211,11 +211,11 @@ export default function AdminDashboard() {
             </Card>
 
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader className="p-3 sm:p-4 lg:p-6">
+              <CardHeader className="px-4 pt-4 pb-2">
                 <CardTitle className="text-foreground text-base sm:text-lg lg:text-xl">Recent Activity</CardTitle>
                 <CardDescription className="text-xs sm:text-sm">Latest user actions on the platform</CardDescription>
               </CardHeader>
-              <CardContent className="p-2 sm:p-3 lg:p-6">
+              <CardContent className="px-4 pt-0 pb-4">
                 {recentActivity.length > 0 ? (
                   <div className="space-y-2 sm:space-y-2.5 lg:space-y-4">
                     {recentActivity.map((activity) => (
@@ -255,11 +255,11 @@ export default function AdminDashboard() {
           {/* Sidebar */}
           <div className="space-y-2 sm:space-y-3 lg:space-y-6 order-2 lg:order-2 min-w-0">
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader className="p-3 sm:p-4 lg:p-6">
+              <CardHeader className="px-4 pt-4 pb-2">
                 <CardTitle className="text-foreground text-base sm:text-lg lg:text-xl">Recent Users</CardTitle>
                 <CardDescription className="text-xs sm:text-sm">Newly registered users</CardDescription>
               </CardHeader>
-              <CardContent className="p-2 sm:p-3 lg:p-6">
+              <CardContent className="px-4 pt-0 pb-4">
                 <div className="space-y-2 sm:space-y-2.5 lg:space-y-4">
                   {recentUsers.length > 0 ? (
                     recentUsers.map((user) => (
@@ -297,11 +297,11 @@ export default function AdminDashboard() {
             </Card>
 
             <Card className="border border-border/60 bg-card/90">
-              <CardHeader className="p-3 sm:p-4 lg:p-6">
+              <CardHeader className="px-4 pt-4 pb-2">
                 <CardTitle className="text-foreground text-base sm:text-lg lg:text-xl">Recent Enrollments</CardTitle>
                 <CardDescription className="text-xs sm:text-sm">Latest course enrollments</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2 sm:space-y-2.5 lg:space-y-3 p-2 sm:p-3 lg:p-6">
+              <CardContent className="space-y-2 sm:space-y-2.5 lg:space-y-3 px-4 pt-0 pb-4">
                 {recentEnrollments.length > 0 ? (
                   recentEnrollments.map((enrollment) => (
                     <div key={enrollment.id} className="flex items-center justify-between gap-1.5 sm:gap-2">

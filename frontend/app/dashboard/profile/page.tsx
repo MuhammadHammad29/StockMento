@@ -32,7 +32,12 @@ import { useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { profileApi, studentCoursesApi } from "@/lib/api"
-import { getAvatarPath, getDefaultAvatarId } from "@/lib/avatar-utils"
+import {
+  getAvatarPath,
+  getDefaultAvatarId,
+  isValidAvatarId,
+  type AvatarId,
+} from "@/lib/avatar-utils"
 import { formatTimeAgo } from "@/lib/data-utils"
 import type { CourseEnrollmentSummary } from "@/lib/types"
 import { isPasswordValid } from "@/lib/password-utils"
@@ -61,6 +66,15 @@ const formatJoinedDate = (iso?: string | null) => {
 
 type ProfileTab = "overview" | "courses" | "settings"
 
+type ProfileFormState = {
+  firstName: string
+  lastName: string
+  email: string
+  bio: string
+  joinDate: string
+  avatarId: AvatarId | null
+}
+
 export default function ProfilePage() {
   const { user, refreshUser, logout } = useAuth()
   const [profileLoading, setProfileLoading] = useState(true)
@@ -82,13 +96,16 @@ export default function ProfilePage() {
     newPassword: "",
     confirmPassword: "",
   })
-  const [profileData, setProfileData] = useState({
+  const normalizeAvatarId = (value?: string | null): AvatarId | null =>
+    value && isValidAvatarId(value) ? (value as AvatarId) : null
+
+  const [profileData, setProfileData] = useState<ProfileFormState>({
     firstName: user?.firstName ?? "",
     lastName: user?.lastName ?? "",
     email: user?.email ?? "",
     bio: "",
     joinDate: "",
-    avatarId: user?.avatarId ?? null,
+    avatarId: normalizeAvatarId(user?.avatarId),
   })
   const [enrollments, setEnrollments] = useState<CourseEnrollmentSummary[]>([])
   const [isLoadingCourses, setIsLoadingCourses] = useState(false)
@@ -141,7 +158,7 @@ export default function ProfilePage() {
             // Preserve edited fields, only update avatar if changed
             return {
               ...prev,
-              avatarId: profile.avatarId ?? prev.avatarId,
+              avatarId: normalizeAvatarId(profile.avatarId) ?? prev.avatarId,
             }
           }
           // Not editing, safe to load all data
@@ -151,7 +168,7 @@ export default function ProfilePage() {
             email: profile.email,
             bio: profile.bio ?? "",
             joinDate: formatJoinedDate(profile.createdAt),
-            avatarId: profile.avatarId ?? null,
+            avatarId: normalizeAvatarId(profile.avatarId),
           }
         })
       } catch (error) {
@@ -282,7 +299,10 @@ export default function ProfilePage() {
     )
   }
 
-  const resolvedAvatarId = profileData.avatarId ?? user.avatarId ?? getDefaultAvatarId()
+  const resolvedAvatarId: AvatarId =
+    profileData.avatarId ??
+    normalizeAvatarId(user.avatarId) ??
+    getDefaultAvatarId()
 
   const handleSaveProfile = async () => {
     if (!profileData.firstName.trim() || !profileData.lastName.trim()) {
@@ -299,13 +319,15 @@ export default function ProfilePage() {
         avatarId: profileData.avatarId ?? null,
       })
 
+      const updatedAvatarId = normalizeAvatarId(updated.avatarId)
+
       setProfileData({
         firstName: updated.firstName ?? "",
         lastName: updated.lastName ?? "",
         email: updated.email,
         bio: updated.bio ?? "",
         joinDate: formatJoinedDate(updated.createdAt),
-        avatarId: updated.avatarId ?? null,
+        avatarId: updatedAvatarId,
       })
 
       await refreshUser()
@@ -319,7 +341,7 @@ export default function ProfilePage() {
     }
   }
 
-  const handleAvatarSelect = async (avatarId: string) => {
+  const handleAvatarSelect = async (avatarId: AvatarId) => {
     if (!avatarId) {
       setShowAvatarPicker(false)
       return
@@ -330,9 +352,13 @@ export default function ProfilePage() {
       const updated = await profileApi.updateProfile({ avatarId })
 
       // Update local state with new avatar
+      const normalizedAvatar =
+        normalizeAvatarId(updated.avatarId ?? avatarId) ??
+        getDefaultAvatarId()
+
       setProfileData((prev) => ({
         ...prev,
-        avatarId: updated.avatarId ?? avatarId,
+        avatarId: normalizedAvatar,
       }))
 
       // Refresh user context to update navbar without losing form data
