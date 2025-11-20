@@ -133,22 +133,33 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="mb-3 sm:mb-4 lg:mb-8 grid gap-1.5 sm:gap-2 lg:gap-6 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-4 sm:mb-6 lg:mb-8 grid gap-3 sm:gap-4 lg:gap-6 grid-cols-2 lg:grid-cols-4">
           {statsCards.map((item) => {
             const IconComponent = item.Icon
             return (
-              <Card key={item.label} className="border border-border/60 bg-card/90 shadow-sm dark:shadow-none min-w-0">
-                <CardContent className="p-1.5 sm:p-2 lg:p-6">
-                  <div className="flex items-center justify-between gap-1 sm:gap-1.5">
+              <Card key={item.label} className="border border-border/60 bg-card/90 shadow-sm dark:shadow-none"
+              >
+                <CardContent className="p-3 sm:p-4 lg:p-6">
+                  <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground truncate">{item.label}</p>
-                      <p className="text-sm sm:text-base lg:text-xl font-bold text-foreground truncate">{item.value}</p>
-                      <p className="text-xs text-emerald-600 dark:text-emerald-300 truncate">{item.change}</p>
+                      {/* Label */}
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                        {item.label}
+                      </p>
+                      {/* Big number */}
+                      <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-foreground">
+                        {item.value}
+                      </p>
+                      {/* Subtitle / change text */}
+                      <p className="text-xs text-emerald-600 dark:text-emerald-300 truncate">
+                        {item.change}
+                      </p>
                     </div>
-                    <div className="flex-shrink-0">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 lg:w-12 lg:h-12 flex items-center justify-center">
-                        <IconComponent className={`h-3 w-3 sm:h-4 sm:w-4 lg:h-6 lg:w-6 ${item.iconClass}`} />
-                      </div>
+                    {/* Icon on right side like */}
+                    <div className="flex-shrink-0 ml-2">
+                      <IconComponent
+                        className={`h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 ${item.iconClass}`}
+                      />
                     </div>
                   </div>
                 </CardContent>
