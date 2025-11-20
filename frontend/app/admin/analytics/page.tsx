@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
-  TrendingUp,
   Users,
   BookOpen,
   Target,
@@ -70,21 +69,14 @@ export default function AdminAnalyticsPage() {
   }, [])
 
   const stats = summary?.stats ?? EMPTY_STATS
-  const recentUsers = useMemo(() => summary?.recentUsers ?? [], [summary])
   const recentActivity = useMemo(() => summary?.recentActivity ?? [], [summary])
   const recentEnrollments = useMemo(() => summary?.recentEnrollments ?? [], [summary])
 
   const metrics = useMemo(() => {
-    const recentCompletions = recentActivity.filter((item) => item.status === "completed").length
-    const newUsers = recentUsers.length
-    const totalTrackedEnrollments = stats.completedEnrollments + stats.activeEnrollments
-
     return {
       totalEnrollments: stats.totalEnrollments,
       totalUsers: stats.totalUsers,
       activeUsers: stats.activeUsers,
-      newUsers,
-      userGrowthRate: stats.totalUsers > 0 ? Math.round((newUsers / stats.totalUsers) * 1000) / 10 : 0,
       totalCourses: stats.totalCourses,
       publishedCourses: stats.publishedCourses,
       completedEnrollments: stats.completedEnrollments,
@@ -92,12 +84,9 @@ export default function AdminAnalyticsPage() {
       enrollmentCompletionRate: stats.completionRate,
       avgCompletionRate: stats.completionRate,
       totalLessons: stats.totalLessons,
-      avgProgress: stats.avgCompletionRate,
       totalSections: stats.totalSections,
-      recentCompletions,
-      totalTrackedEnrollments,
     }
-  }, [recentActivity, recentUsers, stats])
+  }, [stats])
 
   const topCourses = useMemo(() => {
     const map = new Map<

@@ -173,10 +173,7 @@ export class AdminAnalyticsService {
     return Math.min(100, Math.max(0, Math.round(asNumber)));
   }
 
-  private resolveCompletionRate(
-    completed: number,
-    active: number,
-  ): number {
+  private resolveCompletionRate(completed: number, active: number): number {
     const total = completed + active;
     if (total === 0) {
       return 0;
