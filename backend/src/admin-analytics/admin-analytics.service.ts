@@ -13,6 +13,7 @@ type DashboardStats = {
   completedEnrollments: number;
   activeEnrollments: number;
   completionRate: number;
+  totalEnrollments: number;
 };
 
 @Injectable()
@@ -53,6 +54,7 @@ export class AdminAnalyticsService {
       }),
     ]);
 
+    const totalEnrollments = enrollmentAggregate._count._all;
     const avgCompletionRate = this.resolveAverageCompletion(
       enrollmentAggregate._avg.progressPercent,
     );
@@ -149,6 +151,7 @@ export class AdminAnalyticsService {
       completedEnrollments,
       activeEnrollments,
       completionRate,
+      totalEnrollments,
     };
 
     return {

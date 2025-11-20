@@ -29,6 +29,7 @@ const EMPTY_STATS: AdminDashboardSummary["stats"] = {
   completedEnrollments: 0,
   activeEnrollments: 0,
   completionRate: 0,
+  totalEnrollments: 0,
 }
 
 export default function AdminAnalyticsPage() {
@@ -79,6 +80,7 @@ export default function AdminAnalyticsPage() {
     const totalTrackedEnrollments = stats.completedEnrollments + stats.activeEnrollments
 
     return {
+      totalEnrollments: stats.totalEnrollments,
       totalUsers: stats.totalUsers,
       activeUsers: stats.activeUsers,
       newUsers,
@@ -86,6 +88,7 @@ export default function AdminAnalyticsPage() {
       totalCourses: stats.totalCourses,
       publishedCourses: stats.publishedCourses,
       completedEnrollments: stats.completedEnrollments,
+      activeEnrollments: stats.activeEnrollments,
       enrollmentCompletionRate: stats.completionRate,
       avgCompletionRate: stats.completionRate,
       totalLessons: stats.totalLessons,
@@ -196,27 +199,27 @@ export default function AdminAnalyticsPage() {
         <div className="mb-4 sm:mb-6 lg:mb-8 grid gap-3 sm:gap-4 lg:gap-6 grid-cols-2 lg:grid-cols-4">
           {[
             {
-              title: "Total Users",
-              value: metrics.totalUsers.toLocaleString(),
-              subtitle: `${metrics.userGrowthRate}% growth this month`,
+              title: "Total Enrollments",
+              value: metrics.totalEnrollments.toLocaleString(),
+              subtitle: "Across all courses",
               icon: <Users className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-emerald-500" />,
             },
             {
-              title: "Active Users",
-              value: metrics.activeUsers.toLocaleString(),
-              subtitle: `${metrics.newUsers} new this month`,
-              icon: <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-blue-500" />,
+              title: "Active Enrollments",
+              value: metrics.activeEnrollments.toLocaleString(),
+              subtitle: "Currently in progress",
+              icon: <Activity className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-blue-500" />,
             },
             {
-              title: "Courses Completed",
+              title: "Completed Enrollments",
               value: metrics.completedEnrollments.toLocaleString(),
-              subtitle: `${metrics.totalCourses} courses available`,
+              subtitle: "Total enrollments finished",
               icon: <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-purple-500" />,
             },
             {
-              title: "Avg Completion",
+              title: "Enrollment Completion Rate",
               value: `${metrics.avgCompletionRate}%`,
-              subtitle: "Avg progress %",
+              subtitle: "% of active enrollments finished",
               icon: <Target className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-amber-500" />,
             },
           ].map((item) => (

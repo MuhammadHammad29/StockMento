@@ -38,6 +38,7 @@ const EMPTY_STATS: AdminDashboardSummary["stats"] = {
   completedEnrollments: 0,
   activeEnrollments: 0,
   completionRate: 0,
+  totalEnrollments: 0,
 }
 
 export default function AdminDashboard() {
