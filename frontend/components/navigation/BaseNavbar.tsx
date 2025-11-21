@@ -119,7 +119,7 @@ export default function BaseNavbar({
                     <button
                       type="button"
                       onClick={onLogout}
-                      className="w-full flex items-center gap-2 text-left text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
+                      className="w-full flex items-center gap-2 text-left text-sm font-medium text-red-500 hover:text-red-600 transition-colors cursor-pointer"
                     >
                       <LogOut className="h-4 w-4" />
                       <span>Logout</span>
@@ -136,7 +136,7 @@ export default function BaseNavbar({
                     variant="ghost"
                     size="sm"
                     onClick={onLogout}
-                    className="text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 p-2"
+                    className="text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 p-2 cursor-pointer"
                   >
                     <LogOut className="h-4 w-4" />
                     <span className="sr-only">Logout</span>
@@ -218,7 +218,7 @@ export default function BaseNavbar({
                         onLogout()
                       }}
                       variant="outline"
-                      className="w-full justify-center gap-2 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/20"
+                      className="w-full justify-center gap-2 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/20 cursor-pointer"
                     >
                       <LogOut className="h-4 w-4" />
                       <span>Logout</span>
