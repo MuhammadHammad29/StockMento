@@ -129,7 +129,7 @@ export default function ForgotPasswordPage() {
 
               <Button 
                 type="submit" 
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 cursor-pointer"
                 disabled={loading}
               >
                 {loading ? (
@@ -145,7 +145,7 @@ export default function ForgotPasswordPage() {
 
             <div className="text-center pt-4">
               <Link href="/signin">
-                <Button variant="link" className="text-emerald-600 dark:text-emerald-300">
+                <Button variant="link" className="text-emerald-600 dark:text-emerald-300 cursor-pointer">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back to Sign In
                 </Button>

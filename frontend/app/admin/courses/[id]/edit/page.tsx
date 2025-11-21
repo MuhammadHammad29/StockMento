@@ -287,12 +287,12 @@ export default function AdminCourseEditPage({ params }: { params: { id: string }
         </Card>
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-          <Button onClick={() => void loadCourse()} variant="outline" disabled={isSaving}>
+          <Button onClick={() => void loadCourse()} variant="outline" disabled={isSaving} className="cursor-pointer">
             Reset Changes
           </Button>
           <Button
             onClick={() => void handleSave()}
-            className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+            className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 cursor-pointer"
             disabled={isSaving || !hasChanges}
           >
             <Save className="mr-2 h-4 w-4" />

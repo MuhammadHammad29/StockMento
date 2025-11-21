@@ -38,7 +38,7 @@ export function ThemeToggle() {
       size="icon"
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="fixed bottom-6 right-6 z-50 bg-background/80 backdrop-blur dark:bg-background"
+      className="fixed bottom-6 right-6 z-50 bg-background/80 backdrop-blur dark:bg-background cursor-pointer"
     >
       {isDark ? (
         <Sun className="h-4 w-4" />
@@ -49,4 +49,3 @@ export function ThemeToggle() {
     </Button>
   )
 }
-

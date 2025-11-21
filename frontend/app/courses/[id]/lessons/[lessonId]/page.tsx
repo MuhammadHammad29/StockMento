@@ -650,7 +650,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                               type="button"
                               onClick={() => handleQuizChoiceSelect(question.id, choice.id, question.type)}
                               disabled={quizSubmitting}
-                              className={`w-full rounded-md border px-3 py-2 text-left text-sm transition hover:border-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${highlightClass}`}
+                              className={`w-full rounded-md border px-3 py-2 text-left text-sm transition hover:border-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${highlightClass} cursor-pointer`}
                             >
                               <div className="flex items-start gap-3">
                                 <span
@@ -712,7 +712,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                 <Button
                   onClick={handleQuizSubmit}
                   disabled={quizSubmitting || !allQuestionsAnswered}
-                  className="sm:w-auto"
+                  className="sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm h-9 px-4 cursor-pointer"
                 >
                   {quizSubmitting ? "Grading..." : quizResult ? "Retry quiz" : "Submit quiz"}
                 </Button>
@@ -932,6 +932,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                           variant="outline"
                           disabled={isProgressMutationPending}
                           onClick={() => handleLessonProgressUpdate("in_progress")}
+                          className="cursor-pointer"
                         >
                           {isProgressMutationPending ? "Updating..." : "Mark as in progress"}
                         </Button>

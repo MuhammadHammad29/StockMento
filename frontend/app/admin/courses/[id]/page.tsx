@@ -350,12 +350,12 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
             </div>
             <div className="flex items-center gap-2">
               <Link href={`/admin/courses/${courseId}/edit`}>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-3 py-2 h-9">
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-3 py-2 h-9 cursor-pointer">
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Course
                 </Button>
               </Link>
-              <Button variant="outline" onClick={() => void loadCourse()}>
+              <Button variant="outline" onClick={() => void loadCourse()} className="cursor-pointer">
                 Refresh
               </Button>
             </div>
@@ -432,7 +432,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs sm:text-sm h-9 px-4"
+                className="text-xs sm:text-sm h-9 px-4 cursor-pointer"
                 onClick={() => {
                   setIsAddingSection((prev) => !prev)
                   setNewSectionTitle("")
@@ -441,7 +441,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                 {isAddingSection ? "Close Section Form" : "Add Section"}
               </Button>
               <Link href={`/admin/courses/${courseId}/lessons/new`}>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm h-9 px-4">
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm h-9 px-4 cursor-pointer">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Lesson
                 </Button>
@@ -463,7 +463,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => void handleCreateSection()} disabled={isCreatingSection}>
+                  <Button onClick={() => void handleCreateSection()} disabled={isCreatingSection} className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm h-9 px-4 cursor-pointer">
                     {isCreatingSection ? "Saving..." : "Save Section"}
                   </Button>
                   <Button
@@ -474,6 +474,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                       setNewSectionTitle("")
                     }}
                     disabled={isCreatingSection}
+                    className="cursor-pointer"
                   >
                     Cancel
                   </Button>
@@ -501,7 +502,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <Badge variant="outline">{section.lessons?.length ?? 0} lessons</Badge>
                 <Link href={`/admin/courses/${courseId}/lessons/new?sectionId=${section.id}`}>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="cursor-pointer">
                     <Plus className="h-3 w-3 mr-1" />
                     Lesson
                   </Button>
@@ -514,13 +515,14 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                     setEditingSectionTitle(section.title)
                   }}
                   disabled={isUpdatingSection && editingSectionId === section.id}
+                  className="cursor-pointer"
                 >
                   Edit Section
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-red-600 hover:text-red-700"
+                  className="text-red-600 hover:text-red-700 cursor-pointer"
                   onClick={() => setSectionToDelete(section)}
                   disabled={isDeletingSection && sectionToDelete?.id === section.id}
                 >
@@ -540,7 +542,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                   />
                 </div>
                 <div className="flex flex-wrap gap-2 mt-3">
-                  <Button onClick={() => void handleUpdateSection()} disabled={isUpdatingSection}>
+                  <Button onClick={() => void handleUpdateSection()} disabled={isUpdatingSection} className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm h-9 px-4 cursor-pointer">
                     {isUpdatingSection ? "Saving..." : "Save"}
                   </Button>
                   <Button
@@ -551,6 +553,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                       setEditingSectionTitle("")
                     }}
                     disabled={isUpdatingSection}
+                    className="cursor-pointer"
                   >
                     Cancel
                   </Button>
@@ -580,7 +583,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 cursor-pointer"
                             disabled={index === 0 || processingLessonId === lessonLink.lessonId}
                             onClick={() => void handleLessonReorder(section.id, lessonLink.lessonId, "up")}
                           >
@@ -589,7 +592,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 cursor-pointer"
                             disabled={
                               index === (section.lessons?.length ?? 0) - 1 || processingLessonId === lessonLink.lessonId
                             }
@@ -599,7 +602,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                           </Button>
                         </div>
                         <Link href={`/admin/courses/${courseId}/lessons/${lessonLink.lessonId}/edit`}>
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" className="cursor-pointer">
                             <Edit className="h-4 w-4 mr-1" />
                             Edit
                           </Button>
@@ -607,7 +610,7 @@ export default function AdminCourseDetailPage({ params }: { params: { id: string
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-600 hover:text-red-700 cursor-pointer"
                           disabled={processingLessonId === lessonLink.lessonId}
                           onClick={() => setLessonToDelete({ sectionId: section.id, lesson: lessonLink })}
                         >

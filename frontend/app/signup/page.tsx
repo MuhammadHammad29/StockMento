@@ -169,7 +169,7 @@ export default function SignUpPage() {
                       onClick={() => setShowAvatarPicker(true)} 
                       variant="outline" 
                       size="sm"
-                      className="w-full"
+                      className="w-full cursor-pointer"
                     >
                       <Camera className="mr-2 h-4 w-4" />
                       Choose Avatar
@@ -290,7 +290,7 @@ export default function SignUpPage() {
 
               <Button 
                 type="submit" 
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
                 disabled={loading}
               >
                 {loading ? (

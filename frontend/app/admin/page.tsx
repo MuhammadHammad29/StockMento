@@ -210,7 +210,7 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent className="space-y-2 sm:space-y-2.5 lg:space-y-3 px-4 pt-0 pb-4">
                 <Link href="/admin/courses">
-                  <Button variant="outline" className="h-auto w-full justify-start bg-background/70 p-2.5 sm:p-3 lg:p-4 mb-3">
+                  <Button variant="outline" className="h-auto w-full justify-start bg-background/70 p-2.5 sm:p-3 lg:p-4 mb-3 cursor-pointer">
                     <BookOpen className="mr-1.5 sm:mr-2 lg:mr-3 h-4 w-4 text-emerald-500 flex-shrink-0" />
                     <div className="text-left min-w-0">
                       <div className="font-medium text-foreground text-xs sm:text-sm lg:text-base">Manage Courses</div>
@@ -219,7 +219,7 @@ export default function AdminDashboard() {
                   </Button>
                 </Link>
                 <Link href="/admin/analytics">
-                  <Button variant="outline" className="h-auto w-full justify-start bg-background/70 p-2.5 sm:p-3 lg:p-4">
+                  <Button variant="outline" className="h-auto w-full justify-start bg-background/70 p-2.5 sm:p-3 lg:p-4 cursor-pointer">
                     <BarChart3 className="mr-1.5 sm:mr-2 lg:mr-3 h-4 w-4 text-purple-500 flex-shrink-0" />
                     <div className="text-left min-w-0">
                       <div className="font-medium text-foreground text-xs sm:text-sm lg:text-base">View Analytics</div>

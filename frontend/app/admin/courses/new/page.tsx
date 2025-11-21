@@ -219,7 +219,7 @@ export default function CreateCoursePage() {
             <Button
               onClick={() => handleSave(false)}
               variant="outline"
-              className="flex-1 sm:flex-none"
+              className="flex-1 sm:flex-none cursor-pointer"
               disabled={isSaving}
             >
               <Save className="mr-2 h-4 w-4" />
@@ -227,7 +227,7 @@ export default function CreateCoursePage() {
             </Button>
             <Button
               onClick={() => handleSave(true)}
-              className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+              className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 cursor-pointer"
               disabled={isSaving}
             >
               <Eye className="mr-2 h-4 w-4" />

@@ -296,7 +296,7 @@ export default function ProgressPage() {
               <CardDescription>Up-to-date progress pulled from your actual course activity.</CardDescription>
             </div>
             <Link href="/courses">
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2 cursor-pointer">
                 <BookOpen className="h-4 w-4" /> Browse Courses
               </Button>
             </Link>
@@ -357,7 +357,7 @@ export default function ProgressPage() {
                         </p>
                       </div>
                       <Link href={`/courses/${enrollment.courseId}`} className="w-full sm:w-auto">
-                        <Button size="sm" className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700">
+                        <Button size="sm" className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 cursor-pointer">
                           {enrollment.status === "completed" ? "Review Course" : "Resume Course"}
                         </Button>
                       </Link>

@@ -59,12 +59,12 @@ export default function HomePage() {
           {/* Authentication Buttons - Desktop */}
           <div className="hidden items-center space-x-4 md:flex">
             <Link href="/signin">
-              <Button variant="ghost" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
+              <Button variant="ghost" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300 cursor-pointer">
                 Sign In
               </Button>
             </Link>
             <Link href="/signup">
-              <Button className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400">
+              <Button className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 cursor-pointer">
                 Get Started
               </Button>
             </Link>
@@ -73,12 +73,12 @@ export default function HomePage() {
           {/* Mobile Menu - Authentication Buttons Only */}
           <div className="flex items-center space-x-2 md:hidden">
             <Link href="/signin">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-300 cursor-pointer">
                 Sign In
               </Button>
             </Link>
             <Link href="/signup">
-              <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400">
+              <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 cursor-pointer">
                 Get Started
               </Button>
             </Link>
@@ -107,7 +107,7 @@ export default function HomePage() {
           {/* Call-to-Action Buttons */}
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Link href="/signup">
-              <Button size="lg" className="w-full sm:w-auto px-8 text-white">
+              <Button size="lg" className="w-full sm:w-auto px-8 text-white cursor-pointer">
                 Start Learning Free
               </Button>
             </Link>
@@ -115,7 +115,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+                className="w-full border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-500/10 cursor-pointer"
                 onClick={() => setShowDemo((s) => !s)}
               >
                 <Play className="mr-2 h-5 w-5" />
@@ -281,7 +281,7 @@ export default function HomePage() {
             Join thousands of Pakistani investors who are already mastering the stock market
           </p>
           <Link href="/signup">
-            <Button size="lg" className="px-8 bg-white text-emerald-600 hover:bg-emerald-50 dark:bg-white dark:text-emerald-600 dark:hover:bg-emerald-50">
+            <Button size="lg" className="px-8 bg-white text-emerald-600 hover:bg-emerald-50 dark:bg-white dark:text-emerald-600 dark:hover:bg-emerald-50 cursor-pointer">
               Create Free Account
             </Button>
           </Link>

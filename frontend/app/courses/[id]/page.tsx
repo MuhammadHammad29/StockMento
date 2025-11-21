@@ -325,7 +325,7 @@ useEffect(() => {
                             value={section.id}
                             className="border border-border/60 rounded-lg overflow-hidden"
                           >
-                            <AccordionTrigger className="px-3 sm:px-4 py-3 sm:py-4 hover:no-underline hover:bg-muted/30 transition-colors">
+                            <AccordionTrigger className="px-3 sm:px-4 py-3 sm:py-4 hover:no-underline hover:bg-muted/30 transition-colors cursor-pointer">
                               <div className="flex items-start gap-2 sm:gap-3 w-full text-left">
                                 <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
                                   <span className="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300">
@@ -429,7 +429,7 @@ useEffect(() => {
                                           <Link href={`/courses/${courseId}/lessons/${lesson.id}`}>
                                             <Button 
                                               size="sm" 
-                                              className="text-xs px-2 sm:px-3"
+                                              className="text-xs px-2 sm:px-3 cursor-pointer"
                                             >
                                               <span className="hidden sm:inline">
                                                 {isCompleted ? "Review" : "Open Lesson"}
@@ -470,7 +470,7 @@ useEffect(() => {
                     <div className="space-y-4">
                       {lessons && lessons.length > 0 ? (
                         <Link href={`/courses/${course.id}/lessons/${lessons[0].id}`}>
-                          <Button className="w-full bg-emerald-600 hover:bg-emerald-700" size="lg">
+                          <Button className="w-full bg-emerald-600 hover:bg-emerald-700 cursor-pointer" size="lg">
                             {overallProgress > 0 ? "Continue Learning" : "Start Course"}
                             <Play className="ml-2 h-4 w-4" />
                           </Button>

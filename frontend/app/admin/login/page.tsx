@@ -148,7 +148,7 @@ export default function AdminLoginPage() {
             
             <Button
               type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 cursor-pointer"
               disabled={isAuthenticating}
             >
               {isAuthenticating ? "Signing in..." : "Sign In"}

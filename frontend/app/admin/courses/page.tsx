@@ -166,7 +166,7 @@ export default function AdminCoursesPage() {
             </p>
           </div>
           <Link href="/admin/courses/new" className="sm:ml-auto">
-            <Button className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-sm">
+            <Button className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-sm cursor-pointer">
               <Plus className="mr-2 h-4 w-4" />
               Create Course
             </Button>
@@ -360,20 +360,20 @@ export default function AdminCoursesPage() {
                     </div>
                     <div className="flex space-x-2 mt-auto pt-2">
                       <Link href={`/admin/courses/${course.id}`} className="flex-1">
-                        <Button variant="outline" className="w-full bg-transparent text-xs sm:text-sm">
+                        <Button variant="outline" className="w-full bg-transparent text-xs sm:text-sm cursor-pointer">
                           <Eye className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                           View
                         </Button>
                       </Link>
                       <Link href={`/admin/courses/${course.id}/edit`} className="flex-1">
-                        <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm">
+                        <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm cursor-pointer">
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </Button>
                       </Link>
                       <Button
                         variant="outline"
-                        className="bg-transparent text-red-600 hover:text-red-700"
+                        className="bg-transparent text-red-600 hover:text-red-700 cursor-pointer"
                         disabled={deletingId === course.id}
                         onClick={() => setCourseToDelete(course)}
                       >

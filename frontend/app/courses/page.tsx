@@ -273,7 +273,7 @@ export default function CoursesPage() {
                     }
                     router.replace(params.toString() ? `?${params.toString()}` : "?", { scroll: false })
                   }}
-                  className="px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-background text-foreground dark:bg-slate-900 dark:text-slate-100"
+                  className="px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-background text-foreground dark:bg-slate-900 dark:text-slate-100 cursor-pointer"
                 >
                   <option value="All">All Levels</option>
                   <option value="Beginner">Beginner</option>
@@ -284,7 +284,7 @@ export default function CoursesPage() {
                 <select
                   value={durationFilter}
                   onChange={(e) => setDurationFilter(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-background text-foreground dark:bg-slate-900 dark:text-slate-100"
+                  className="px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-background text-foreground dark:bg-slate-900 dark:text-slate-100 cursor-pointer"
                 >
                   <option value="All">Any Duration</option>
                   <option value="Short">Short (&lt;2h)</option>
@@ -407,7 +407,7 @@ export default function CoursesPage() {
 
                   <div className="mt-auto">
                     <Link href={`/courses/${course.id}`}>
-                      <Button className="w-full bg-emerald-600 hover:bg-emerald-700 group-hover:shadow-md transition-all">
+                      <Button className="w-full bg-emerald-600 hover:bg-emerald-700 group-hover:shadow-md transition-all cursor-pointer">
                         {course.isEnrolled
                           ? course.enrollmentStatus === "completed"
                             ? "Review Course"
@@ -430,7 +430,7 @@ export default function CoursesPage() {
           <div className="text-center mt-12">
             <p className="text-muted-foreground mb-4">You&apos;ve seen all available courses!</p>
             <Link href="/dashboard">
-              <Button variant="outline" size="lg">
+              <Button variant="outline" size="lg" className="cursor-pointer">
                 Back to Dashboard
               </Button>
             </Link>

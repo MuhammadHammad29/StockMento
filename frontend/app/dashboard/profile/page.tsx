@@ -490,13 +490,13 @@ export default function ProfilePage() {
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 h-auto">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm cursor-pointer">
               Overview
             </TabsTrigger>
-            <TabsTrigger value="courses" className="text-xs sm:text-sm">
+            <TabsTrigger value="courses" className="text-xs sm:text-sm cursor-pointer">
               Courses
             </TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs sm:text-sm">
+            <TabsTrigger value="settings" className="text-xs sm:text-sm cursor-pointer">
               Account
             </TabsTrigger>
           </TabsList>
@@ -699,6 +699,7 @@ export default function ProfilePage() {
                     onClick={() => setIsEditing(!isEditing)}
                     variant="outline"
                     size="sm"
+                    className="cursor-pointer"
                     disabled={profileLoading || savingProfile}
                   >
                     <Settings className="mr-2 h-4 w-4" />
@@ -721,6 +722,7 @@ export default function ProfilePage() {
                         onClick={() => setShowAvatarPicker(true)}
                         variant="outline"
                         size="sm"
+                        className="cursor-pointer"
                         disabled={avatarUpdating}
                       >
                         {avatarUpdating ? (
@@ -800,6 +802,7 @@ export default function ProfilePage() {
                     <Button
                       onClick={() => setShowChangePassword(!showChangePassword)}
                       variant="outline"
+                      className="cursor-pointer"
                       size="sm"
                     >
                       <Lock className="mr-2 h-4 w-4" />
@@ -825,7 +828,7 @@ export default function ProfilePage() {
                           <button
                             type="button"
                             onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                           >
                             {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
@@ -848,7 +851,7 @@ export default function ProfilePage() {
                           <button
                             type="button"
                             onClick={() => setShowNewPassword(!showNewPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                           >
                             {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
@@ -877,7 +880,7 @@ export default function ProfilePage() {
                           <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                           >
                             {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
@@ -886,7 +889,7 @@ export default function ProfilePage() {
 
                       <Button
                         onClick={handleChangePassword}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700"
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
                         disabled={passwordUpdating}
                       >
                         {passwordUpdating ? (
@@ -913,7 +916,7 @@ export default function ProfilePage() {
                     </p>
                     <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                       <AlertDialogTrigger asChild>
-                        <Button variant="destructive" className="w-full sm:w-auto">
+                        <Button variant="destructive" className="w-full sm:w-auto cursor-pointer">
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete Account
                         </Button>
@@ -941,14 +944,14 @@ export default function ProfilePage() {
                             <button
                               type="button"
                               onClick={() => setShowDeletePassword(!showDeletePassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                             >
                               {showDeletePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
                           </div>
                         </div>
                         <AlertDialogFooter>
-                          <AlertDialogCancel disabled={deletingAccount}>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel className="cursor-pointer" disabled={deletingAccount}>Cancel</AlertDialogCancel>
                           <AlertDialogAction
                             className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
                             disabled={deletingAccount}
@@ -976,7 +979,7 @@ export default function ProfilePage() {
                   <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
                     <Button
                       onClick={handleSaveProfile}
-                      className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
+                      className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto cursor-pointer"
                       disabled={savingProfile || profileLoading}
                     >
                       {savingProfile ? (
@@ -994,7 +997,7 @@ export default function ProfilePage() {
                     <Button
                       onClick={() => setIsEditing(false)}
                       variant="outline"
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto cursor-pointer"
                       disabled={savingProfile}
                     >
                       Cancel

@@ -324,7 +324,7 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
                     value={section.id}
                     className="border border-border/60 rounded-lg overflow-hidden bg-background/80"
                   >
-                    <AccordionTrigger className="px-4 sm:px-6 py-4 hover:no-underline hover:bg-muted/30 transition-colors">
+                    <AccordionTrigger className="px-4 sm:px-6 py-4 hover:no-underline hover:bg-muted/30 transition-colors cursor-pointer">
                       <div className="flex items-start gap-3 sm:gap-4 w-full text-left">
                         <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
                           <span className="text-sm sm:text-base font-bold text-emerald-700 dark:text-emerald-300">
@@ -446,7 +446,7 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
                                   </Button>
                                 ) : (
                                   <Link href={`/courses/${courseId}/lessons/${lesson.id}`}>
-                                    <Button size="sm" className="text-xs sm:text-sm">
+                                    <Button size="sm" className="text-xs sm:text-sm cursor-pointer">
                                       <span className="hidden sm:inline">
                                         {isCompleted ? "Review" : isCurrent ? "Continue" : "Open Lesson"}
                                       </span>
@@ -480,7 +480,7 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
         {/* Back to Course Button */}
         <div className="mt-8 flex justify-center">
           <Link href={`/courses/${courseId}`}>
-            <Button variant="outline" size="lg">
+            <Button variant="outline" size="lg" className="cursor-pointer">
               Back to Course Overview
             </Button>
           </Link>

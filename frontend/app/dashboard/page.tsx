@@ -366,7 +366,7 @@ useEffect(() => {
         <div className="text-center">
           <h1 className="mb-4 text-2xl font-bold text-foreground">Please sign in to access your dashboard</h1>
           <Link href="/signin">
-            <Button className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400">
+            <Button className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 cursor-pointer">
               Sign In
             </Button>
           </Link>
@@ -412,7 +412,7 @@ useEffect(() => {
                 )}
 
                 <Link href="/courses">
-                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm w-full sm:w-auto">
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm w-full sm:w-auto cursor-pointer">
                     <BookOpen className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                     Browse All Courses
                   </Button>
@@ -523,7 +523,7 @@ useEffect(() => {
                         <div className="mt-3 sm:mt-4 flex items-center justify-end">
                           <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
                             <Link href={`/courses/${course.id}`} className="flex-1 sm:flex-none">
-                              <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-4 w-full sm:w-auto">
+                              <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-4 w-full sm:w-auto cursor-pointer">
                                 View Course
                               </Button>
                             </Link>
@@ -531,7 +531,7 @@ useEffect(() => {
                               href={nextLessonMap[course.id]?.href ?? `/courses/${course.id}`}
                               className="flex-1 sm:flex-none"
                             >
-                              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-2 sm:px-4 w-full sm:w-auto">
+                              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm px-2 sm:px-4 w-full sm:w-auto cursor-pointer">
                                 <Play className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                 Continue
                               </Button>
@@ -559,7 +559,7 @@ useEffect(() => {
                         </Button>
                       </Link>
                       <Link href="/courses" className="flex-1">
-                        <Button variant="outline" className="w-full justify-center">
+                        <Button variant="outline" className="w-full justify-center cursor-pointer">
                           <BookOpen className="mr-2 h-4 w-4" />
                           Browse All Courses
                         </Button>
@@ -631,7 +631,7 @@ useEffect(() => {
                   <CardDescription>Continue building your trading expertise</CardDescription>
                 </div>
                 <Link href="/courses">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="cursor-pointer">
                     View All
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
@@ -693,13 +693,13 @@ useEffect(() => {
 
                           <div className="flex flex-col gap-2 mt-auto">
                             <Link href={`/courses/${course.id}`} className="flex-1">
-                              <Button variant="outline" size="sm" className="w-full h-9 text-xs sm:text-sm font-medium">
+                              <Button variant="outline" size="sm" className="w-full h-9 text-xs sm:text-sm font-medium cursor-pointer">
                                 Preview
                               </Button>
                             </Link>
                             <Button
                               size="sm"
-                              className="w-full h-9 bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm font-medium"
+                              className="w-full h-9 bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm font-medium cursor-pointer"
                               onClick={() => handleQuickEnroll(course.id)}
                               disabled={quickEnrollCourseId === course.id}
                             >
@@ -779,13 +779,13 @@ useEffect(() => {
 
               <div className="grid gap-2">
                 <Link href="/courses">
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full cursor-pointer">
                     <BookOpen className="mr-2 h-4 w-4" />
                     Browse All Courses
                   </Button>
                 </Link>
                 <Link href="/progress">
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full cursor-pointer">
                     <BarChart3 className="mr-2 h-4 w-4" />
                     View Progress
                   </Button>
@@ -815,7 +815,7 @@ useEffect(() => {
                         Completed {formatTimeAgo(enrollment.completedAt ?? enrollment.startedAt ?? new Date())}
                       </p>
                       <Link href={`/courses/${enrollment.course.id}`}>
-                        <Button variant="outline" size="sm" className="mt-2 text-xs">
+                        <Button variant="outline" size="sm" className="mt-2 text-xs cursor-pointer">
                           View Course
                         </Button>
                       </Link>
