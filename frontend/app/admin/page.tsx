@@ -82,8 +82,13 @@ export default function AdminDashboard() {
   const stats = dashboardData?.stats ?? EMPTY_STATS
 
   const recentUsers = dashboardData?.recentUsers ?? []
-  const recentActivity = dashboardData?.recentActivity ?? []
   const recentEnrollments = dashboardData?.recentEnrollments ?? []
+  const completionPipeline = dashboardData?.completionPipeline ?? {
+    enrolled: 0,
+    active: 0,
+    nearComplete: 0,
+    completed: 0,
+  }
 
   const statsCards = useMemo(
     () => [
@@ -227,42 +232,72 @@ export default function AdminDashboard() {
 
             <Card className="border border-border/60 bg-card/90">
               <CardHeader className="px-4 pt-4 pb-2">
-                <CardTitle className="text-foreground text-base sm:text-lg lg:text-xl">Recent Activity</CardTitle>
-                <CardDescription className="text-xs sm:text-sm">Latest user actions on the platform</CardDescription>
+                <CardTitle className="text-foreground text-base sm:text-lg lg:text-xl">Completion Pipeline</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Learner distribution across the journey</CardDescription>
               </CardHeader>
               <CardContent className="px-4 pt-0 pb-4">
-                {recentActivity.length > 0 ? (
-                  <div className="space-y-2 sm:space-y-2.5 lg:space-y-4">
-                    {recentActivity.map((activity) => (
-                      <div
-                        key={activity.id}
-                        className="flex items-center space-x-2 sm:space-x-2.5 lg:space-x-4 rounded-lg border border-border/40 bg-background/70 p-2 sm:p-2.5 lg:p-3 backdrop-blur-sm"
-                      >
-                        <Avatar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-10 lg:w-10 flex-shrink-0">
-                          <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200 text-xs">
-                            {activity.userName
-                              .split(" ")
-                              .map((n) => n?.[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground text-xs sm:text-sm lg:text-base truncate">{activity.userName}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {activity.action} · {activity.courseTitle}
-                          </p>
-                        </div>
-                        <div className="text-xs text-muted-foreground flex-shrink-0 hidden xs:block">
-                          {formatTimeAgo(activity.timestamp)}
-                        </div>
+                <div className="space-y-4">
+                  {[
+                    {
+                      label: "Enrolled",
+                      value: completionPipeline.enrolled,
+                      description: "All active enrollments",
+                      percentage: 100,
+                    },
+                    {
+                      label: "Active",
+                      value: completionPipeline.active,
+                      description: "Currently progressing",
+                      percentage:
+                        completionPipeline.enrolled > 0
+                          ? Math.round((completionPipeline.active / completionPipeline.enrolled) * 100)
+                          : 0,
+                    },
+                    {
+                      label: "75%+ Complete",
+                      value: completionPipeline.nearComplete,
+                      description: "Close to finishing",
+                      percentage:
+                        completionPipeline.enrolled > 0
+                          ? Math.round((completionPipeline.nearComplete / completionPipeline.enrolled) * 100)
+                          : 0,
+                    },
+                    {
+                      label: "Completed",
+                      value: completionPipeline.completed,
+                      description: "Courses finished",
+                      percentage:
+                        completionPipeline.enrolled > 0
+                          ? Math.round((completionPipeline.completed / completionPipeline.enrolled) * 100)
+                          : 0,
+                    },
+                  ].map((stage, index) => (
+                    <div key={stage.label} className="space-y-2">
+                      <div className="flex items-center justify-between text-xs sm:text-sm lg:text-base font-medium text-foreground">
+                        <span>{stage.label}</span>
+                        <span>{stage.value.toLocaleString()}</span>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
-                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-emerald-500" /> : "No recent activity yet."}
-                  </div>
-                )}
+                      <div className="h-2 rounded-full bg-muted relative overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            index === 0
+                              ? "bg-emerald-500"
+                              : index === 1
+                              ? "bg-blue-500"
+                              : index === 2
+                              ? "bg-amber-500"
+                              : "bg-purple-500"
+                          }`}
+                          style={{ width: `${Math.min(stage.percentage, 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground flex justify-between">
+                        <span>{stage.description}</span>
+                        <span>{stage.percentage}%</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>

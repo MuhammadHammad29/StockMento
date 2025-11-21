@@ -16,6 +16,13 @@ type DashboardStats = {
   totalEnrollments: number;
 };
 
+type CompletionPipelineStats = {
+  enrolled: number;
+  active: number;
+  nearComplete: number;
+  completed: number;
+};
+
 @Injectable()
 export class AdminAnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -31,6 +38,7 @@ export class AdminAnalyticsService {
       enrollmentAggregate,
       activeEnrollments,
       completedEnrollments,
+      nearCompletionCount,
     ] = await this.prisma.$transaction([
       this.prisma.identity.count(),
       this.prisma.identity.count({
@@ -51,6 +59,14 @@ export class AdminAnalyticsService {
       }),
       this.prisma.courseEnrollment.count({
         where: { status: 'completed' },
+      }),
+      this.prisma.courseEnrollment.count({
+        where: {
+          status: 'active',
+          progressPercent: {
+            gte: new Prisma.Decimal(75),
+          },
+        },
       }),
     ]);
 
@@ -140,6 +156,13 @@ export class AdminAnalyticsService {
       status: record.status,
     }));
 
+    const completionPipeline: CompletionPipelineStats = {
+      enrolled: totalEnrollments,
+      active: activeEnrollments,
+      nearComplete: nearCompletionCount,
+      completed: completedEnrollments,
+    };
+
     const stats: DashboardStats = {
       totalUsers,
       activeUsers,
@@ -159,6 +182,7 @@ export class AdminAnalyticsService {
       recentUsers,
       recentActivity,
       recentEnrollments,
+      completionPipeline,
     };
   }
 

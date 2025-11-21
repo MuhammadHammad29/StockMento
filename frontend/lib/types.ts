@@ -644,9 +644,17 @@ export interface AdminDashboardEnrollmentItem {
   timestamp: string;
 }
 
+export interface AdminCompletionPipeline {
+  enrolled: number;
+  active: number;
+  nearComplete: number;
+  completed: number;
+}
+
 export interface AdminDashboardSummary {
   stats: AdminDashboardStats;
   recentUsers: AdminDashboardRecentUser[];
   recentActivity: AdminDashboardActivityItem[];
   recentEnrollments: AdminDashboardEnrollmentItem[];
+  completionPipeline: AdminCompletionPipeline;
 }
