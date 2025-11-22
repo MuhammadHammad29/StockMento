@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
   Search,
-  Filter,
   Plus,
   Edit,
   Trash2,
@@ -33,6 +32,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const countSections = (course: AdminCourse): number => course.sections?.length ?? 0
 
@@ -79,6 +85,8 @@ export default function AdminCoursesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"All" | "Published" | "Drafts">("All")
+  const [dateSort, setDateSort] = useState<"Newest" | "Oldest">("Newest")
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [courseToDelete, setCourseToDelete] = useState<AdminCourse | null>(null)
   const [isDeletingCourse, setIsDeletingCourse] = useState(false)
@@ -105,17 +113,42 @@ export default function AdminCoursesPage() {
   }, [loadCourses])
 
   const filteredCourses = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return courses
-    }
     const term = searchQuery.trim().toLowerCase()
-    return courses.filter(
-      (course) =>
+
+    let list = courses.filter((course) => {
+      if (!term) {
+        return true
+      }
+      return (
         course.title.toLowerCase().includes(term) ||
         course.slug.toLowerCase().includes(term) ||
-        course.description.toLowerCase().includes(term),
-    )
-  }, [courses, searchQuery])
+        course.description.toLowerCase().includes(term)
+      )
+    })
+
+    if (statusFilter !== "All") {
+      list = list.filter((course) =>
+        statusFilter === "Published" ? course.isPublished : !course.isPublished,
+      )
+    }
+
+    const sorted = [...list].sort((a, b) => {
+      const aDate = new Date(a.createdAt).getTime()
+      const bDate = new Date(b.createdAt).getTime()
+      return dateSort === "Newest" ? bDate - aDate : aDate - bDate
+    })
+
+    return sorted
+  }, [courses, dateSort, searchQuery, statusFilter])
+
+  const isFiltered =
+    Boolean(searchQuery.trim()) || statusFilter !== "All" || dateSort !== "Newest"
+
+  const handleClearFilters = () => {
+    setSearchQuery("")
+    setStatusFilter("All")
+    setDateSort("Newest")
+  }
 
   const aggregateStats = useMemo(() => {
     const published = courses.filter((course) => course.isPublished).length
@@ -240,23 +273,35 @@ export default function AdminCoursesPage() {
                 />
               </div>
               <div className="flex flex-wrap gap-2">
+                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+                  <SelectTrigger className="bg-background/60 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9 cursor-pointer min-w-[140px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All Statuses</SelectItem>
+                    <SelectItem value="Published">Published</SelectItem>
+                    <SelectItem value="Drafts">Drafts</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={dateSort} onValueChange={(value) => setDateSort(value as typeof dateSort)}>
+                  <SelectTrigger className="bg-background/60 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9 cursor-pointer min-w-[140px]">
+                    <SelectValue placeholder="Date sort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Newest">Newest First</SelectItem>
+                    <SelectItem value="Oldest">Oldest First</SelectItem>
+                  </SelectContent>
+                </Select>
+
                 <Button
-                  variant="outline"
-                  className="flex items-center gap-1 sm:gap-2 bg-background/60 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9"
-                  disabled
-                  title="Status filtering will arrive once analytics endpoints are ready"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs sm:text-sm cursor-pointer"
+                  onClick={handleClearFilters}
+                  disabled={!isFiltered}
                 >
-                  <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Status</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex items-center gap-1 sm:gap-2 bg-background/60 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-9"
-                  disabled
-                  title="Sorting controls will be enabled in a future iteration"
-                >
-                  <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Date Created</span>
+                  Clear Filters
                 </Button>
               </div>
             </div>
@@ -293,14 +338,14 @@ export default function AdminCoursesPage() {
               <CardDescription className="text-sm text-muted-foreground">
                 {searchQuery
                   ? "No courses match your search. Try a different keyword."
-                  : "You have not created any courses yet."}
+                  : "No courses match your search. Try clearing the filters or adding a new course."}
               </CardDescription>
               <div className="flex flex-wrap gap-2 justify-center">
-                <Button variant="outline" onClick={() => setSearchQuery("")}>
+                <Button variant="outline" onClick={() => setSearchQuery("")} className="cursor-pointer">
                   Reset Search
                 </Button>
                 <Link href="/admin/courses/new">
-                  <Button>Create your first course</Button>
+                  <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs sm:text-sm h-9 px-4 cursor-pointer">Create Course</Button>
                 </Link>
               </div>
             </CardContent>
