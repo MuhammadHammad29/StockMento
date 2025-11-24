@@ -32,6 +32,10 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [errors, setErrors] = useState({
+    newPassword: "",
+    confirmPassword: "",
+  })
 
   if (!token || !email) {
     return (
@@ -47,24 +51,38 @@ export default function ResetPasswordPage() {
     )
   }
 
+  type ErrorKey = keyof typeof errors
+
+  const validateField = (field: ErrorKey) => {
+    let message = ""
+    if (field === "newPassword") {
+      if (!newPassword) {
+        message = "New password is required."
+      } else if (!isPasswordValid(newPassword)) {
+        message = "Password must meet the security requirements."
+      }
+    } else if (field === "confirmPassword") {
+      if (!confirmPassword) {
+        message = "Please confirm your password."
+      } else if (confirmPassword !== newPassword) {
+        message = "Passwords must match."
+      }
+    }
+    setErrors((prev) => ({ ...prev, [field]: message }))
+    return !message
+  }
+
+  const validateForm = () => {
+    return ["newPassword", "confirmPassword"].every((field) => validateField(field as ErrorKey))
+  }
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
 
-    if (!newPassword || !confirmPassword) {
-      toast.error("Please fill in both password fields")
+    if (!validateForm()) {
+      toast.error("Please fix the highlighted fields before continuing.")
       return
     }
-
-    if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match")
-      return
-    }
-
-    if (!isPasswordValid(newPassword)) {
-      toast.error("Password does not meet security requirements. Please check the password strength indicator.")
-      return
-    }
-
     setLoading(true)
     try {
       await authApi.confirmPasswordReset({
@@ -104,7 +122,7 @@ export default function ResetPasswordPage() {
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
                 <div className="password-input-container">
@@ -113,10 +131,17 @@ export default function ResetPasswordPage() {
                     id="newPassword"
                     type={showNewPassword ? "text" : "password"}
                     placeholder="Enter a new password"
-                    className="pl-10 pr-12 password-input"
+                    className={`pl-10 pr-12 password-input ${errors.newPassword ? "border-destructive focus-visible:ring-destructive" : ""}`}
                     value={newPassword}
-                    onChange={(event) => setNewPassword(event.target.value)}
-                    required
+                    onChange={(event) => {
+                      setNewPassword(event.target.value)
+                      if (errors.newPassword) {
+                        setErrors((prev) => ({ ...prev, newPassword: "" }))
+                      }
+                    }}
+                    onBlur={() => validateField("newPassword")}
+                    aria-invalid={Boolean(errors.newPassword)}
+                    aria-describedby={errors.newPassword ? "reset-newpassword-error" : undefined}
                   />
                   <button
                     type="button"
@@ -127,6 +152,11 @@ export default function ResetPasswordPage() {
                     {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {errors.newPassword && (
+                  <p id="reset-newpassword-error" className="text-xs text-destructive">
+                    {errors.newPassword}
+                  </p>
+                )}
                 
                 {/* Password Strength Indicator */}
                 <PasswordStrengthIndicator 
@@ -143,10 +173,17 @@ export default function ResetPasswordPage() {
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your new password"
-                    className="pl-10 pr-12 password-input"
+                    className={`pl-10 pr-12 password-input ${errors.confirmPassword ? "border-destructive focus-visible:ring-destructive" : ""}`}
                     value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    required
+                    onChange={(event) => {
+                      setConfirmPassword(event.target.value)
+                      if (errors.confirmPassword) {
+                        setErrors((prev) => ({ ...prev, confirmPassword: "" }))
+                      }
+                    }}
+                    onBlur={() => validateField("confirmPassword")}
+                    aria-invalid={Boolean(errors.confirmPassword)}
+                    aria-describedby={errors.confirmPassword ? "reset-confirmpassword-error" : undefined}
                   />
                   <button
                     type="button"
@@ -158,6 +195,11 @@ export default function ResetPasswordPage() {
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {errors.confirmPassword && (
+                  <p id="reset-confirmpassword-error" className="text-xs text-destructive">
+                    {errors.confirmPassword}
+                  </p>
+                )}
               </div>
 
               <Button

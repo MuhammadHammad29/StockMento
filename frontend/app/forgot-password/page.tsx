@@ -19,18 +19,24 @@ import Logo from "@/components/ui/logo"
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [errors, setErrors] = useState({ email: "" })
   const { resetPassword, loading } = useAuth()
+
+  const validateField = () => {
+    let message = ""
+    if (!email.trim()) {
+      message = "Email is required."
+    } else if (!validateEmail(email.trim())) {
+      message = "Enter a valid email address."
+    }
+    setErrors({ email: message })
+    return !message
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!email) {
-      toast.error('Please enter your email address')
-      return
-    }
-
-    if (!validateEmail(email)) {
-      toast.error('Please enter a valid email address')
+    if (!validateField()) {
+      toast.error('Please enter a valid email to continue.')
       return
     }
 
@@ -110,21 +116,31 @@ export default function ForgotPasswordPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input 
                     id="email" 
-                    type="email" 
+                    type="text" 
+                    inputMode="email"
                     placeholder="Enter your email address" 
-                    className="pl-10" 
+                    className={`pl-10 ${errors.email ? "border-destructive focus-visible:ring-destructive" : ""}`} 
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required 
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      if (errors.email) setErrors({ email: "" })
+                    }}
+                    onBlur={validateField}
+                    aria-invalid={Boolean(errors.email)}
+                    aria-describedby={errors.email ? "forgot-email-error" : undefined}
+                    autoComplete="email"
                   />
                 </div>
+                {errors.email && (
+                  <p id="forgot-email-error" className="text-xs text-destructive">{errors.email}</p>
+                )}
               </div>
 
               <Button 

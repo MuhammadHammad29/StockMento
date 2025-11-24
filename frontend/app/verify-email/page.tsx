@@ -28,6 +28,7 @@ export default function VerifyEmailPage() {
   const [loading, setLoading] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
+  const [errors, setErrors] = useState({ code: "" })
 
   // Triggered only via the resend button – we deliberately avoid auto-sending to prevent duplicate emails.
   const sendVerificationEmail = useCallback(async () => {
@@ -60,16 +61,22 @@ export default function VerifyEmailPage() {
     }
   }
 
+  const validateCode = () => {
+    let message = ""
+    if (!verificationCode) {
+      message = "Verification code is required."
+    } else if (verificationCode.length !== 6) {
+      message = "Verification code must be 6 digits."
+    }
+    setErrors({ code: message })
+    return !message
+  }
+
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!verificationCode) {
-      toast.error('Please enter the verification code')
-      return
-    }
-
-    if (verificationCode.length !== 6) {
-      toast.error('Verification code must be 6 digits')
+    if (!validateCode()) {
+      toast.error('Please enter the verification code to continue.')
       return
     }
 
@@ -130,7 +137,7 @@ export default function VerifyEmailPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form onSubmit={handleVerifyCode} className="space-y-4">
+            <form onSubmit={handleVerifyCode} noValidate className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="code">Verification Code</Label>
                 <div className="relative">
@@ -139,20 +146,28 @@ export default function VerifyEmailPage() {
                     id="code" 
                     type="text"
                     placeholder="Enter 6-digit code"
-                    className="pl-10 text-center text-lg tracking-widest font-mono"
+                    className={`pl-10 text-center text-lg tracking-widest font-mono ${errors.code ? "border-destructive focus-visible:ring-destructive" : ""}`}
                     value={verificationCode}
                     onChange={(e) => {
                       // Only allow numbers and limit to 6 digits
                       const value = e.target.value.replace(/\D/g, '').slice(0, 6)
                       setVerificationCode(value)
+                      if (errors.code) {
+                        setErrors({ code: "" })
+                      }
                     }}
                     maxLength={6}
-                    required 
+                    onBlur={validateCode}
+                    aria-invalid={Boolean(errors.code)}
+                    aria-describedby={errors.code ? "verify-code-error" : undefined}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Enter the 6-digit code sent to your email
                 </p>
+                {errors.code && (
+                  <p id="verify-code-error" className="text-xs text-destructive">{errors.code}</p>
+                )}
               </div>
 
               <Button 

@@ -38,11 +38,25 @@ export default function SignUpPage() {
     bio: ''
   })
   const [agreeToTerms, setAgreeToTerms] = useState(false)
+  const [errors, setErrors] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    terms: "",
+  })
   const { signup, loading, user } = useAuth()
   const router = useRouter()
 
-  const handleInputChange = (field: string, value: string) => {
+  type ErrorKey = keyof typeof errors
+  const isErrorField = (field: string): field is ErrorKey => field in errors
+
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+    if (isErrorField(field)) {
+      setErrors((prev) => ({ ...prev, [field]: "" }))
+    }
   }
 
   const handleAvatarSelect = (avatarId: AvatarId) => {
@@ -51,33 +65,55 @@ export default function SignUpPage() {
     toast.success('Avatar selected!')
   }
 
+  const validateField = (field: ErrorKey) => {
+    let message = ""
+    switch (field) {
+      case "firstName":
+        if (!formData.firstName.trim()) message = "First name is required."
+        break
+      case "lastName":
+        if (!formData.lastName.trim()) message = "Last name is required."
+        break
+      case "email":
+        if (!formData.email.trim()) {
+          message = "Email is required."
+        } else if (!validateEmail(formData.email.trim())) {
+          message = "Enter a valid email address."
+        }
+        break
+      case "password":
+        if (!formData.password) {
+          message = "Password is required."
+        } else if (!isPasswordValid(formData.password)) {
+          message = "Password must meet the security requirements."
+        }
+        break
+      case "confirmPassword":
+        if (!formData.confirmPassword) {
+          message = "Confirm your password."
+        } else if (formData.confirmPassword !== formData.password) {
+          message = "Passwords must match."
+        }
+        break
+      case "terms":
+        if (!agreeToTerms) {
+          message = "You must accept the terms."
+        }
+        break
+    }
+    setErrors((prev) => ({ ...prev, [field]: message }))
+    return !message
+  }
+
+  const validateForm = () => {
+    const fields: ErrorKey[] = ["firstName", "lastName", "email", "password", "confirmPassword", "terms"]
+    return fields.every((field) => validateField(field))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validation
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.confirmPassword) {
-      toast.error('Please fill in all required fields')
-      return
-    }
-
-    if (!validateEmail(formData.email)) {
-      toast.error('Please enter a valid email address')
-      return
-    }
-
-    // Use the new password strength validator
-    if (!isPasswordValid(formData.password)) {
-      toast.error('Password does not meet security requirements. Please check the password strength indicator.')
-      return
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match')
-      return
-    }
-
-    if (!agreeToTerms) {
-      toast.error('Please agree to the terms and conditions')
+    if (!validateForm()) {
+      toast.error('Please fix the highlighted fields before continuing.')
       return
     }
 
@@ -121,7 +157,7 @@ export default function SignUpPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
@@ -130,12 +166,17 @@ export default function SignUpPage() {
                     <Input 
                       id="firstName" 
                       placeholder="First Name" 
-                      className="pl-10 text-sm" 
+                      className={`pl-10 text-sm ${errors.firstName ? "border-destructive focus-visible:ring-destructive" : ""}`} 
                       value={formData.firstName}
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      required 
+                      onBlur={() => validateField("firstName")}
+                      aria-invalid={Boolean(errors.firstName)}
+                      aria-describedby={errors.firstName ? "signup-firstname-error" : undefined}
                     />
                   </div>
+                  {errors.firstName && (
+                    <p id="signup-firstname-error" className="text-xs text-destructive">{errors.firstName}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
@@ -144,12 +185,17 @@ export default function SignUpPage() {
                     <Input 
                       id="lastName" 
                       placeholder="Last Name" 
-                      className="pl-10 text-sm" 
+                      className={`pl-10 text-sm ${errors.lastName ? "border-destructive focus-visible:ring-destructive" : ""}`} 
                       value={formData.lastName}
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      required 
+                      onBlur={() => validateField("lastName")}
+                      aria-invalid={Boolean(errors.lastName)}
+                      aria-describedby={errors.lastName ? "signup-lastname-error" : undefined}
                     />
                   </div>
+                  {errors.lastName && (
+                    <p id="signup-lastname-error" className="text-xs text-destructive">{errors.lastName}</p>
+                  )}
                 </div>
               </div>
 
@@ -187,14 +233,21 @@ export default function SignUpPage() {
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   id="email" 
-                  type="email" 
+                  type="text" 
+                  inputMode="email"
                   placeholder="Email" 
-                  className="pl-10 text-sm" 
+                  className={`pl-10 text-sm ${errors.email ? "border-destructive focus-visible:ring-destructive" : ""}`} 
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  required 
+                  onBlur={() => validateField("email")}
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? "signup-email-error" : undefined}
+                  autoComplete="email"
                 />
                 </div>
+                {errors.email && (
+                  <p id="signup-email-error" className="text-xs text-destructive">{errors.email}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -219,11 +272,13 @@ export default function SignUpPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Password"
-                    className="pl-10 pr-12 password-input text-sm"
+                    className={`pl-10 pr-12 password-input text-sm ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
-                    required
+                    onBlur={() => validateField("password")}
                     autoComplete="new-password"
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={errors.password ? "signup-password-error" : undefined}
                   />
                   <button
                     type="button"
@@ -235,6 +290,9 @@ export default function SignUpPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {errors.password && (
+                  <p id="signup-password-error" className="text-xs text-destructive">{errors.password}</p>
+                )}
                 
                 {/* Password Strength Indicator */}
                 <PasswordStrengthIndicator 
@@ -251,11 +309,13 @@ export default function SignUpPage() {
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm Password"
-                    className="pl-10 pr-12 password-input text-sm"
+                    className={`pl-10 pr-12 password-input text-sm ${errors.confirmPassword ? "border-destructive focus-visible:ring-destructive" : ""}`}
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    required
+                    onBlur={() => validateField("confirmPassword")}
                     autoComplete="new-password"
+                    aria-invalid={Boolean(errors.confirmPassword)}
+                    aria-describedby={errors.confirmPassword ? "signup-confirm-error" : undefined}
                   />
                   <button
                     type="button"
@@ -267,13 +327,21 @@ export default function SignUpPage() {
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {errors.confirmPassword && (
+                  <p id="signup-confirm-error" className="text-xs text-destructive">{errors.confirmPassword}</p>
+                )}
               </div>
 
               <div className="flex items-start space-x-2">
                 <Checkbox 
                   id="terms" 
                   checked={agreeToTerms}
-                  onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
+                  onCheckedChange={(checked) => {
+                    setAgreeToTerms(checked as boolean)
+                    if (errors.terms) {
+                      setErrors((prev) => ({ ...prev, terms: "" }))
+                    }
+                  }}
                   className="mt-1"
                 />
                 <Label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
@@ -287,6 +355,9 @@ export default function SignUpPage() {
                   </Link>
                 </Label>
               </div>
+              {errors.terms && (
+                <p className="text-xs text-destructive">{errors.terms}</p>
+              )}
 
               <Button 
                 type="submit" 

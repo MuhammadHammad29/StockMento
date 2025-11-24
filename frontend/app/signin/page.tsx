@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import Logo from "@/components/ui/logo"
+import { validateEmail } from "@/lib/data-utils"
 
 export default function SignInPage() {
   // Form state management
@@ -28,6 +29,10 @@ export default function SignInPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+  })
   
   // Auth context and routing
   const { login, loading, user } = useAuth()
@@ -43,12 +48,40 @@ export default function SignInPage() {
     }
   }, [searchParams])
 
+  const validateField = (field: keyof typeof errors) => {
+    let message = ""
+    if (field === "email") {
+      const trimmed = email.trim()
+      if (!trimmed) {
+        message = "Email is required."
+      } else if (!validateEmail(trimmed)) {
+        message = "Enter a valid email address."
+      }
+    } else if (field === "password") {
+      if (!password) {
+        message = "Password is required."
+      }
+    }
+    setErrors((prev) => ({ ...prev, [field]: message }))
+    return !message
+  }
+
+  const handleBlur = (field: keyof typeof errors) => {
+    validateField(field)
+  }
+
+  const validateForm = () => {
+    const emailValid = validateField("email")
+    const passwordValid = validateField("password")
+    return emailValid && passwordValid
+  }
+
   // Handle form submission with validation
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!email || !password) {
-      toast.error('Please fill in all fields')
+
+    if (!validateForm()) {
+      toast.error("Please fix the errors before continuing.")
       return
     }
 
@@ -92,21 +125,35 @@ export default function SignInPage() {
             <CardDescription className="text-center">Continue your stock market education</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="email" 
-                    type="email" 
+                  <Input
+                    id="email"
+                    type="text"
+                    inputMode="email"
                     placeholder="Email"
-                    className="pl-10 text-sm" 
+                    className={`pl-10 text-sm ${errors.email ? "border-destructive focus-visible:ring-destructive" : ""}`}
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required 
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      if (errors.email) {
+                        setErrors((prev) => ({ ...prev, email: "" }))
+                      }
+                    }}
+                    onBlur={() => handleBlur("email")}
+                    aria-invalid={Boolean(errors.email)}
+                    aria-describedby={errors.email ? "signin-email-error" : undefined}
+                    autoComplete="email"
                   />
                 </div>
+                {errors.email && (
+                  <p id="signin-email-error" className="text-xs text-destructive">
+                    {errors.email}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -117,10 +164,17 @@ export default function SignInPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Password"
-                    className="pl-10 pr-12 password-input text-sm"
+                    className={`pl-10 pr-12 password-input text-sm ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      if (errors.password) {
+                        setErrors((prev) => ({ ...prev, password: "" }))
+                      }
+                    }}
+                    onBlur={() => handleBlur("password")}
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={errors.password ? "signin-password-error" : undefined}
                     autoComplete="current-password"
                     data-lpignore="true"
                     data-form-type="password"
@@ -135,6 +189,11 @@ export default function SignInPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {errors.password && (
+                  <p id="signin-password-error" className="text-xs text-destructive">
+                    {errors.password}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-3">

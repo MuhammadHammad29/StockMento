@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import Logo from "@/components/ui/logo"
+import { validateEmail } from "@/lib/data-utils"
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -18,6 +19,10 @@ export default function AdminLoginPage() {
   const [formData, setFormData] = useState({
     email: "",
     password: ""
+  })
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
   })
 
   useEffect(() => {
@@ -32,6 +37,9 @@ export default function AdminLoginPage() {
       ...prev,
       [name]: value
     }))
+    if (name === "email" || name === "password") {
+      setErrors((prev) => ({ ...prev, [name]: "" }))
+    }
   }
 
   if (adminUser) {
@@ -56,8 +64,33 @@ export default function AdminLoginPage() {
     )
   }
 
+  const validateField = (field: keyof typeof errors) => {
+    let message = ""
+    if (field === "email") {
+      if (!formData.email.trim()) {
+        message = "Email is required."
+      } else if (!validateEmail(formData.email.trim())) {
+        message = "Enter a valid email address."
+      }
+    } else if (field === "password") {
+      if (!formData.password) {
+        message = "Password is required."
+      }
+    }
+    setErrors((prev) => ({ ...prev, [field]: message }))
+    return !message
+  }
+
+  const validateForm = () => {
+    return ["email", "password"].every((field) => validateField(field as keyof typeof errors))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!validateForm()) {
+      toast.error("Please fix the highlighted fields before continuing.")
+      return
+    }
     try {
       await adminLogin({
         email: formData.email,
@@ -97,19 +130,27 @@ export default function AdminLoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 name="email"
-                type="email"
+                type="text"
+                inputMode="email"
                 placeholder="admin@stockmento.com"
+                className={errors.email ? "border-destructive focus-visible:ring-destructive" : undefined}
                 value={formData.email}
                 onChange={handleInputChange}
-                required
+                onBlur={() => validateField("email")}
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? "admin-email-error" : undefined}
+                autoComplete="email"
                 disabled={isAuthenticating}
               />
+              {errors.email && (
+                <p id="admin-email-error" className="text-xs text-destructive">{errors.email}</p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -120,10 +161,12 @@ export default function AdminLoginPage() {
                   name="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                className="pr-12 password-input"
+                className={`pr-12 password-input ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 value={formData.password}
                 onChange={handleInputChange}
-                required
+                onBlur={() => validateField("password")}
+                aria-invalid={Boolean(errors.password)}
+                aria-describedby={errors.password ? "admin-password-error" : undefined}
                 disabled={isAuthenticating}
                 autoComplete="current-password"
               />
@@ -144,6 +187,9 @@ export default function AdminLoginPage() {
                   )}
                 </Button>
               </div>
+              {errors.password && (
+                <p id="admin-password-error" className="text-xs text-destructive">{errors.password}</p>
+              )}
             </div>
             
             <Button
