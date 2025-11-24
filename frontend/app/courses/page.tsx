@@ -203,13 +203,7 @@ export default function CoursesPage() {
     return `${mins}m`
   }
 
-  const levelVariantMap: Record<AdminCourseLevel, "default" | "secondary" | "destructive"> = {
-    beginner: "default",
-    intermediate: "secondary",
-    advanced: "destructive",
-  }
-
-  const getLevelVariant = (level: AdminCourseLevel) => levelVariantMap[level] ?? "secondary"
+  const getLevelLabel = (level?: AdminCourseLevel | null) => (level ? level.toUpperCase() : "LEVEL")
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
@@ -353,8 +347,11 @@ export default function CoursesPage() {
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   />
                   <div className="absolute top-6 left-6 z-10">
-                    <Badge variant={getLevelVariant(course.level)} className="shadow-sm">
-                      {(course.level ?? "LEVEL").toUpperCase()}
+                    <Badge
+                      variant="outline"
+                      className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wide border bg-white text-slate-900 border-slate-200 shadow-md dark:bg-emerald-500 dark:text-white dark:border-transparent"
+                       >
+                      {getLevelLabel(course.level)}
                     </Badge>
                   </div>
                   {course.isEnrolled && (
@@ -440,7 +437,3 @@ export default function CoursesPage() {
     </div>
   )
 }
-
-
-
-
