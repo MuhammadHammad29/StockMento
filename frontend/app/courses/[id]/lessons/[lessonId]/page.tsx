@@ -636,12 +636,12 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                         const isCorrectChoice = choice.isCorrect
                         const highlightClass = showEvaluation
                           ? isCorrectChoice
-                            ? "border-emerald-500 bg-emerald-500/10"
+                            ? "border-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/20 dark:border-emerald-400"
                             : isSelected
-                              ? "border-destructive/60 bg-destructive/10"
+                              ? "border-destructive/60 bg-destructive/10 dark:bg-destructive/20"
                               : "opacity-80"
                           : isSelected
-                            ? "border-emerald-500 bg-emerald-50"
+                            ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/15 dark:border-emerald-400"
                             : "border-border/60"
 
                         return (
