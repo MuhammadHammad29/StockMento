@@ -122,6 +122,31 @@
   body {
     @apply bg-background text-foreground;
   }
+  .prose table {
+    @apply w-full border-collapse text-sm my-4;
+  }
+  .prose thead {
+    @apply bg-muted text-foreground;
+  }
+  .dark .prose thead {
+    @apply bg-muted/40 text-foreground;
+  }
+  .prose th,
+  .prose td {
+    @apply border border-border px-3 py-2 text-left align-top;
+  }
+  .prose tbody tr:nth-child(odd) {
+    @apply bg-muted/20;
+  }
+  .dark .prose tbody tr:nth-child(odd) {
+    @apply bg-muted/10;
+  }
+  .prose ul {
+    @apply list-disc pl-5 space-y-1;
+  }
+  .prose ol {
+    @apply list-decimal pl-5 space-y-1;
+  }
 }
 /* Disable browser native password reveal buttons to prevent double eye icons */
 input[type="password"]::-ms-reveal,
