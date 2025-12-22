@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { BookOpen, Clock, Lock, FileText, Video, Play, Loader2, CheckCircle } from "lucide-react"
+import { BookOpen, Clock, Lock, FileText, Video, Play, Loader2, CheckCircle, GraduationCap, FlaskConical } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
@@ -177,7 +177,16 @@ useEffect(() => {
   }
 
   const getLessonIcon = (type: AdminLessonContentType) => {
-    return type === "video" ? Video : FileText
+    switch (type) {
+      case "video":
+        return Video
+      case "quiz":
+        return GraduationCap
+      case "lab":
+        return FlaskConical
+      default:
+        return FileText
+    }
   }
 
   const getLessonStatus = (lessonId: string) => {
@@ -402,9 +411,17 @@ useEffect(() => {
                                           <span className="text-xs text-muted-foreground flex-shrink-0">
                                             {sectionIndex + 1}.{lessonIndex + 1}
                                           </span>
-                                          <LessonIcon className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${
-                                            lesson.contentType === "video" ? "text-blue-600" : "text-muted-foreground"
-                                          }`} />
+                                          <LessonIcon
+                                            className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${
+                                              lesson.contentType === "video"
+                                                ? "text-blue-500"
+                                                : lesson.contentType === "quiz"
+                                                  ? "text-purple-500"
+                                                  : lesson.contentType === "lab"
+                                                    ? "text-amber-500"
+                                                    : "text-muted-foreground"
+                                            }`}
+                                          />
                                           <span className={`font-medium text-xs sm:text-sm truncate ${
                                             isCompleted
                                               ? "text-emerald-700 dark:text-emerald-300"

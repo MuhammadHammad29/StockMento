@@ -13,6 +13,8 @@ import {
   Trash2,
   Video,
   FileText,
+  GraduationCap,
+  FlaskConical,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -62,6 +64,10 @@ const lessonIcon = (type: string) => {
   switch (type) {
     case "video":
       return <Video className="h-4 w-4 text-blue-500" />
+    case "quiz":
+      return <GraduationCap className="h-4 w-4 text-purple-500" />
+    case "lab":
+      return <FlaskConical className="h-4 w-4 text-amber-500" />
     case "text":
       return <FileText className="h-4 w-4 text-emerald-500" />
     default:

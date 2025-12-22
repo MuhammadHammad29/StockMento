@@ -17,6 +17,7 @@ import {
   Layers,
   ListOrdered,
   CheckCircle,
+  FlaskConical,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
@@ -474,6 +475,8 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
         return Video
       case "quiz":
         return GraduationCap
+      case "lab":
+        return FlaskConical
       default:
         return FileText
     }
@@ -1034,7 +1037,17 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                           <>
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                                <LessonIcon className="h-4 w-4 text-muted-foreground" />
+                                <LessonIcon
+                                  className={`h-4 w-4 ${
+                                    entry.contentType === "video"
+                                      ? "text-blue-500"
+                                      : entry.contentType === "quiz"
+                                        ? "text-purple-500"
+                                        : entry.contentType === "lab"
+                                          ? "text-amber-500"
+                                          : "text-muted-foreground"
+                                  }`}
+                                />
                               </div>
                               <div className="min-w-0">
                                 <p

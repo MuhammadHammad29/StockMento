@@ -14,6 +14,7 @@ import {
   Video, 
   Play,
   GraduationCap,
+  FlaskConical,
   Loader2,
   CheckCircle,
 } from "lucide-react"
@@ -155,7 +156,16 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
   }
 
   const getLessonIcon = (type: AdminLessonContentType) => {
-    return type === "video" ? Video : type === "quiz" ? GraduationCap : FileText
+    switch (type) {
+      case "video":
+        return Video
+      case "quiz":
+        return GraduationCap
+      case "lab":
+        return FlaskConical
+      default:
+        return FileText
+    }
   }
 
   const getLessonStatus = (lessonId: string) => {
@@ -413,13 +423,17 @@ export default function CourseSectionsPage({ params }: { params: { id: string } 
                                 <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
                                     {sectionIndex + 1}.{lessonIndex + 1}
                                   </span>
-                                  <LessonIcon className={`h-4 w-4 flex-shrink-0 ${
-                                    lesson.contentType === "video" 
-                                      ? "text-blue-600" 
-                                      : lesson.contentType === "quiz"
-                                      ? "text-purple-600"
-                                      : "text-muted-foreground"
-                                  }`} />
+                                  <LessonIcon
+                                    className={`h-4 w-4 flex-shrink-0 ${
+                                      lesson.contentType === "video"
+                                        ? "text-blue-500"
+                                        : lesson.contentType === "quiz"
+                                          ? "text-purple-500"
+                                          : lesson.contentType === "lab"
+                                            ? "text-amber-500"
+                                            : "text-muted-foreground"
+                                    }`}
+                                  />
                                   <span className={`font-medium text-sm sm:text-base truncate ${
                                     !isLocked ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"
                                   }`}>

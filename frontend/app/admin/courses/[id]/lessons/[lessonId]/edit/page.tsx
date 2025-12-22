@@ -251,8 +251,8 @@ export default function EditLessonPage({ params }: { params: { id: string; lesso
                   <SelectContent>
                     <SelectItem value="text">Text Lesson</SelectItem>
                     <SelectItem value="video">Video Lesson</SelectItem>
-                    <SelectItem value="quiz">Quiz Placeholder</SelectItem>
-                    <SelectItem value="lab">Lab Placeholder</SelectItem>
+                    <SelectItem value="quiz">Quiz</SelectItem>
+                    <SelectItem value="lab">Lab</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
