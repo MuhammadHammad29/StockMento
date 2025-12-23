@@ -213,14 +213,19 @@ export class LmsAdminService {
         },
       });
 
+      const nextPosition =
+        dto.position ??
+        (((await tx.courseLesson.aggregate({
+          where: { sectionId },
+          _max: { position: true },
+        }))._max.position ?? 0) + 1);
+
       await tx.courseLesson.create({
         data: {
           courseId,
           sectionId,
           lessonId: lesson.id,
-          position:
-            dto.position ??
-            (await tx.courseLesson.count({ where: { sectionId } })) + 1,
+          position: nextPosition,
         },
       });
 
