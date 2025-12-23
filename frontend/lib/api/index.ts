@@ -28,6 +28,9 @@ import {
   LearningStreakSummary,
   StudentActivityItem,
   AdminDashboardSummary,
+  SimPortfolio,
+  SimTick,
+  SimTicker,
 } from '../types'
 import { STORAGE_KEYS } from '../data-utils'
 
@@ -54,8 +57,40 @@ type UpdateLessonProgressPayload = {
   status: LessonProgressState
 }
 
+type SimulatorOrderPayload = {
+  symbol: string
+  side: 'buy' | 'sell'
+  orderType: 'market' | 'limit' | 'stop_limit'
+  quantity: number
+  limitPrice?: number
+  triggerPrice?: number
+  stopLimitPrice?: number
+  currentPrice?: number
+  buyVolume?: number
+  sellVolume?: number
+}
+
+type SimulatorStartResponse = {
+  portfolio: SimPortfolio
+  ticks: SimTick[]
+  symbol: string
+}
+
+type SimulatorTickerResponse = Record<string, SimTick | null>
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 const isBrowser = typeof window !== 'undefined'
+
+const buildQueryString = (params: Record<string, string | number | undefined | null>) => {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      query.append(key, String(value))
+    }
+  }
+  const qs = query.toString()
+  return qs ? `?${qs}` : ''
+}
 
 // Track if a token refresh is already in progress to avoid multiple simultaneous refresh attempts
 let isRefreshing = false
@@ -495,6 +530,45 @@ export const lessonApi = {
     )
   },
 }
+// Simulator APIs
+export const simulatorApi = {
+  start: async (symbol = 'ATRL'): Promise<{ portfolio: SimPortfolio; ticks: SimTick[]; symbol: string }> => {
+    const query = symbol ? `?symbol=${encodeURIComponent(symbol)}` : ''
+    return apiCall(`/simulator/start_simulator${query}`)
+  },
+  tickers: async (symbols?: string): Promise<Record<string, SimTick | null>> => {
+    const query = symbols ? `?symbols=${encodeURIComponent(symbols)}` : ''
+    return apiCall(`/simulator/tickers${query}`)
+  },
+  ticks: async (symbol = 'ATRL', limit = 200): Promise<SimTick[]> => {
+    const query = `?symbol=${encodeURIComponent(symbol)}&limit=${limit}`
+    return apiCall(`/simulator/ticks${query}`)
+  },
+  klines: async (symbol = 'ATRL', timeframe: '1d' | '15m' = '1d'): Promise<any[]> => {
+    const query = `?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`
+    return apiCall(`/simulator/klines${query}`)
+  },
+  placeOrder: async (
+    payload: {
+      symbol: string
+      side: 'buy' | 'sell'
+      orderType: 'market' | 'limit' | 'stop_limit'
+      quantity: number
+      limitPrice?: number
+      triggerPrice?: number
+      stopLimitPrice?: number
+      currentPrice?: number
+      buyVolume?: number
+      sellVolume?: number
+    },
+  ): Promise<SimPortfolio> => {
+    return apiCall<SimPortfolio>(`/simulator/orders`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+}
+
 
 // Analytics APIs
 export const analyticsApi = {
@@ -703,6 +777,7 @@ export const api = {
   auth: authApi,
   profile: profileApi,
   progress: progressApi,
+  simulator: simulatorApi,
 }
 
 export default api

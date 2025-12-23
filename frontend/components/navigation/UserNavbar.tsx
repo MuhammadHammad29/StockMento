@@ -9,8 +9,11 @@
 
 import React from "react"
 import Link from "next/link"
+
 import { usePathname, useSearchParams } from "next/navigation"
-import { Home, BookOpen, TrendingUp, User as UserIcon, Settings } from "lucide-react"
+import { Home, BookOpen, TrendingUp, LineChart, User as UserIcon, Settings } from "lucide-react"
+
+
 import BaseNavbar from "./BaseNavbar"
 import { useAuth } from "@/lib/auth-context"
 import { getAvatarPath } from "@/lib/avatar-utils"
@@ -27,9 +30,12 @@ export default function UserNavbar({ className }: UserNavbarProps) {
   const isDashboardActive = pathname === '/dashboard'
   const isCoursesActive = pathname.startsWith('/courses')
   const isProgressActive = pathname === '/progress'
+  const isSimulatorActive = pathname.startsWith('/simulator')
+
   const isProfilePage = pathname === '/dashboard/profile'
   const isAccountSettingsActive = isProfilePage && searchParams?.get('tab') === 'settings'
   const isProfileOverviewActive = isProfilePage && !isAccountSettingsActive
+
 
   const mobileMenuContent = (
     <nav className="flex flex-col gap-3 mt-6">
@@ -66,6 +72,17 @@ export default function UserNavbar({ className }: UserNavbarProps) {
         <TrendingUp className="h-4 w-4" />
         Progress
       </Link>
+      <Link 
+        href="/simulator" 
+        className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
+          isSimulatorActive 
+            ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' 
+            : 'text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20'
+        }`}
+      >
+        <LineChart className="h-4 w-4" />
+        Simulator
+      </Link>
     </nav>
   )
 
@@ -100,6 +117,16 @@ export default function UserNavbar({ className }: UserNavbarProps) {
         }`}
       >
         Progress
+      </Link>
+      <Link 
+        href="/simulator"
+        className={`hidden lg:flex text-xs sm:text-sm transition-colors ${
+          isSimulatorActive 
+            ? 'text-emerald-600 font-medium' 
+            : 'text-muted-foreground hover:text-emerald-600'
+        }`}
+      >
+        Simulator
       </Link>
     </>
   )

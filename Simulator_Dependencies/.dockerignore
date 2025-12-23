@@ -1,0 +1,9 @@
+.git
+node_modules
+apps/**/node_modules
+apps/**/.next
+apps/**/dist
+psx_ticks/saved_psx
+psx_ticks/__pycache__
+npm-debug.log*
+.DS_Store

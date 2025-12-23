@@ -1,0 +1,44 @@
+services:
+  redis:
+    build:
+      context: .
+      dockerfile: redis/Dockerfile
+    ports:
+      - '6379:6379'
+    restart: unless-stopped
+
+  psx_ticks_ws:
+    build:
+      context: .
+      dockerfile: psx_ticks/Dockerfile
+    command: ['python', 'psx_ticks_ws.py']
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      PSX_SAVE_DIR: /data/saved_psx
+      PSX_BASE_DIR: /opt/psx_state
+    volumes:
+      - psx_ticks_state:/opt/psx_state
+      - psx_ticks_saved:/data/saved_psx
+    restart: unless-stopped
+
+  proxy_populator:
+    build:
+      context: .
+      dockerfile: psx_ticks/Dockerfile
+    command: ['sh', '-c', 'while true; do python proxy_populator.py; sleep ${PROXY_REFRESH_INTERVAL:-21600}; done']
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      PSX_BASE_DIR: /opt/psx_state
+      PROXY_REFRESH_INTERVAL: 21600
+    volumes:
+      - psx_ticks_state:/opt/psx_state
+    restart: unless-stopped
+
+volumes:
+  psx_ticks_state:
+  psx_ticks_saved:

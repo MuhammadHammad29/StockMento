@@ -658,3 +658,57 @@ export interface AdminDashboardSummary {
   recentEnrollments: AdminDashboardEnrollmentItem[];
   completionPipeline: AdminCompletionPipeline;
 }
+
+// ----------------------------------------
+// Simulator (ticks, portfolio, orders)
+// ----------------------------------------
+
+export type SimTick = {
+  timestamp_ms: number;
+  iso_time: string;
+  symbol: string;
+  price: number;
+  change?: number;
+  changePercent?: number;
+  volume?: number;
+  trades?: number;
+  value?: number;
+  bid?: number;
+  ask?: number;
+  bidVol?: number;
+  askVol?: number;
+};
+
+export type SimHolding = {
+  symbol: string;
+  name: string;
+  quantity: number;
+  avgCostPrice: number;
+};
+
+export type SimOrder = {
+  id: string;
+  symbol: string;
+  side: string;
+  orderType: string;
+  quantity: number;
+  filledQty: number;
+  limitPrice?: number | null;
+  triggerPrice?: number | null;
+  status: string;
+  createdAt: string;
+};
+
+export type SimPortfolio = {
+  accountId: string;
+  cashAvailable: number;
+  cashLocked: number;
+  equityLast: number;
+  holdings: SimHolding[];
+  openOrders: SimOrder[];
+};
+
+export type SimTicker = {
+  symbol: string;
+  tick: SimTick | null;
+};
