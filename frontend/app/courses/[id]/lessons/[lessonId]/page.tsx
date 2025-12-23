@@ -72,16 +72,6 @@ const LESSON_STATUS_COPY: Record<LessonProgressState, { label: string; descripti
   },
 }
 
-const stripHtmlToSummary = (value?: string | null, length = 160) => {
-  if (!value) return null
-  const plain = value
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-  if (!plain) return null
-  return plain.length > length ? `${plain.slice(0, length)}…` : plain
-}
-
 const normalizeLessonBody = (value?: string | null) => {
   if (!value) return ""
   return value.includes("<") ? value : value.replace(/\n/g, "<br />")
@@ -209,11 +199,6 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
 
   const lessonTitle = lessonDetail?.title ?? lesson?.title ?? "Lesson"
   const lessonBodyHtml = lessonDetail?.text?.bodyHtml
-  const lessonDescriptionText =
-    lessonDetail?.description ??
-    stripHtmlToSummary(lessonBodyHtml) ??
-    lesson?.description ??
-    "Additional lesson details will be visible here soon."
   const lessonDurationMinutes =
     lessonDetail?.durationMinutes ?? lesson?.durationMinutes ?? 0
   const lessonContentType = lessonDetail?.contentType ?? lesson?.contentType ?? "text"
@@ -873,8 +858,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                   )}
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-foreground mb-3">{lessonTitle}</h1>
-                  <p className="text-muted-foreground text-sm">{lessonDescriptionText}</p>
+                <h1 className="text-2xl font-bold text-foreground">{lessonTitle}</h1>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-muted-foreground">
