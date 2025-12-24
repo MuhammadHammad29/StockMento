@@ -80,6 +80,11 @@ export class SimulatorController {
     private readonly tickService: TickService,
   ) {}
 
+  @Get('account')
+  accountStatus(@CurrentUser() user: JwtPayload) {
+    return this.simulatorService.getAccountStatus(user);
+  }
+
   @Get()
   info() {
     return {

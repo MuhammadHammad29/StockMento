@@ -30,7 +30,8 @@ import {
   AdminDashboardSummary,
   SimPortfolio,
   SimTick,
-  SimTicker,
+  SimKlinePoint,
+  SimAccountStatusResponse,
 } from '../types'
 import { STORAGE_KEYS } from '../data-utils'
 
@@ -532,36 +533,22 @@ export const lessonApi = {
 }
 // Simulator APIs
 export const simulatorApi = {
-  start: async (symbol = 'ATRL'): Promise<{ portfolio: SimPortfolio; ticks: SimTick[]; symbol: string }> => {
-    const query = symbol ? `?symbol=${encodeURIComponent(symbol)}` : ''
-    return apiCall(`/simulator/start_simulator${query}`)
+  account: async (): Promise<SimAccountStatusResponse> => {
+    return apiCall<SimAccountStatusResponse>('/simulator/account')
   },
-  tickers: async (symbols?: string): Promise<Record<string, SimTick | null>> => {
-    const query = symbols ? `?symbols=${encodeURIComponent(symbols)}` : ''
-    return apiCall(`/simulator/tickers${query}`)
+  start: async (symbol = 'ATRL'): Promise<SimulatorStartResponse> => {
+    const query = buildQueryString({ symbol })
+    return apiCall<SimulatorStartResponse>(`/simulator/start_simulator${query}`)
   },
-  ticks: async (symbol = 'ATRL', limit = 200): Promise<SimTick[]> => {
-    const query = `?symbol=${encodeURIComponent(symbol)}&limit=${limit}`
-    return apiCall(`/simulator/ticks${query}`)
+  tickers: async (symbols?: string): Promise<SimulatorTickerResponse> => {
+    const query = buildQueryString({ symbols })
+    return apiCall<SimulatorTickerResponse>(`/simulator/tickers${query}`)
   },
-  klines: async (symbol = 'ATRL', timeframe: '1d' | '15m' = '1d'): Promise<any[]> => {
-    const query = `?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`
-    return apiCall(`/simulator/klines${query}`)
+  klines: async (symbol = 'ATRL', timeframe: '1d' | '15m' = '1d'): Promise<SimKlinePoint[]> => {
+    const query = buildQueryString({ symbol, timeframe })
+    return apiCall<SimKlinePoint[]>(`/simulator/klines${query}`)
   },
-  placeOrder: async (
-    payload: {
-      symbol: string
-      side: 'buy' | 'sell'
-      orderType: 'market' | 'limit' | 'stop_limit'
-      quantity: number
-      limitPrice?: number
-      triggerPrice?: number
-      stopLimitPrice?: number
-      currentPrice?: number
-      buyVolume?: number
-      sellVolume?: number
-    },
-  ): Promise<SimPortfolio> => {
+  placeOrder: async (payload: SimulatorOrderPayload): Promise<SimPortfolio> => {
     return apiCall<SimPortfolio>(`/simulator/orders`, {
       method: 'POST',
       body: JSON.stringify(payload),

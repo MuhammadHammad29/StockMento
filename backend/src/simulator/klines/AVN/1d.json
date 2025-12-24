@@ -1278,5 +1278,75 @@
     "low": 43,
     "close": 43.31,
     "volume": 465617
+  },
+  {
+    "symbol": "AVN",
+    "timeframe": "1d",
+    "timestamp": 1765756800000,
+    "open": 43.48,
+    "high": 43.9,
+    "low": 43.35,
+    "close": 43.46,
+    "volume": 752596
+  },
+  {
+    "symbol": "AVN",
+    "timeframe": "1d",
+    "timestamp": 1765843200000,
+    "open": 43.71,
+    "high": 43.97,
+    "low": 43.11,
+    "close": 43.41,
+    "volume": 658501
+  },
+  {
+    "symbol": "AVN",
+    "timeframe": "1d",
+    "timestamp": 1765929600000,
+    "open": 43.41,
+    "high": 43.82,
+    "low": 43.2,
+    "close": 43.36,
+    "volume": 414386
+  },
+  {
+    "symbol": "AVN",
+    "timeframe": "1d",
+    "timestamp": 1766016000000,
+    "open": 43.5,
+    "high": 45.8,
+    "low": 43.5,
+    "close": 44.6,
+    "volume": 4705808
+  },
+  {
+    "symbol": "AVN",
+    "timeframe": "1d",
+    "timestamp": 1766102400000,
+    "open": 44.71,
+    "high": 46.24,
+    "low": 44.51,
+    "close": 44.95,
+    "volume": 2516692
+  },
+  {
+    "symbol": "AVN",
+    "timeframe": "1d",
+    "timestamp": 1766361600000,
+    "open": 45.25,
+    "high": 45.29,
+    "low": 44.35,
+    "close": 44.6,
+    "volume": 750395
+  },
+  {
+    "symbol": "AVN",
+    "timeframe": "1d",
+    "timestamp": 1766448000000,
+    "open": 44.51,
+    "high": 44.6,
+    "low": 43.51,
+    "close": 43.61,
+    "volume": 604529
   }
 ]

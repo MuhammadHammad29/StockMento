@@ -10,11 +10,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Lock } from "lucide-react"
+import { Info, Lock } from "lucide-react"
 import UserNavbar from "@/components/navigation/UserNavbar"
 import { useAuth } from "@/lib/auth-context"
 import { simulatorApi } from "@/lib/api"
-import type { SimPortfolio, SimTick } from "@/lib/types"
+import type { SimAccountStatusResponse, SimPortfolio, SimTick } from "@/lib/types"
 import { PriceChart } from "@/components/simulator/PriceChart"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
@@ -86,6 +86,11 @@ export default function SimulatorPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+  const [accountStatus, setAccountStatus] = useState<SimAccountStatusResponse | null>(null)
+  const [accountChecking, setAccountChecking] = useState(true)
+  const [accountError, setAccountError] = useState<string | null>(null)
+  const [activating, setActivating] = useState(false)
+  const [accountCheckNonce, setAccountCheckNonce] = useState(0)
 
   const formatCurrency = (value?: number | null, withSign = false) => {
     if (value === null || value === undefined || Number.isNaN(value)) return "—"
@@ -107,7 +112,37 @@ export default function SimulatorPage() {
   }
 
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      setAccountStatus(null)
+      setAccountChecking(false)
+      return
+    }
+    let active = true
+    setAccountChecking(true)
+    setAccountError(null)
+    ;(async () => {
+      try {
+        const status = await simulatorApi.account()
+        if (!active) return
+        setAccountStatus(status)
+      } catch (err) {
+        console.error(err)
+        if (active) {
+          setAccountError("Unable to verify simulator access. Please try again.")
+        }
+      } finally {
+        if (active) {
+          setAccountChecking(false)
+        }
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [user, accountCheckNonce])
+
+  useEffect(() => {
+    if (!user || !accountStatus?.hasAccount) return
     let socket: Socket | null = null
     const load = async () => {
       try {
@@ -142,7 +177,7 @@ export default function SimulatorPage() {
     return () => {
       socket?.disconnect()
     }
-  }, [symbol, user])
+  }, [symbol, user, accountStatus?.hasAccount])
 
   const latestTick = useMemo(() => {
     const last = ticks[ticks.length - 1] ?? null
@@ -317,6 +352,35 @@ export default function SimulatorPage() {
     }
   }
 
+  const handleActivateSimulator = async () => {
+    setActivating(true)
+    setError(null)
+    try {
+      const data = await simulatorApi.start(symbol)
+      setPortfolio(data.portfolio)
+      setTicks((data.ticks ?? []).slice(-MAX_TICKS))
+      const wl = await simulatorApi.tickers(DEFAULT_WATCHLIST.join(","))
+      setWatchlist(wl)
+      setAccountStatus({
+        hasAccount: true,
+        status: "active",
+        activatedAt: new Date().toISOString(),
+      })
+      toast.success("Simulator activated", { position: "top-right" })
+    } catch (err) {
+      console.error(err)
+      toast.error(err instanceof Error ? err.message : "Failed to activate simulator", { position: "top-right" })
+    } finally {
+      setActivating(false)
+    }
+  }
+
+  const handleRetryAccountCheck = () => {
+    setAccountError(null)
+    setAccountChecking(true)
+    setAccountCheckNonce((n) => n + 1)
+  }
+
   useEffect(() => {
     if (dateRange !== "1d") {
       setDailyKlines([])
@@ -366,6 +430,75 @@ export default function SimulatorPage() {
   if (!user) {
     router.replace("/signin")
     return null
+  }
+
+  if (accountChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <div className="text-sm text-muted-foreground">Checking simulator access…</div>
+      </div>
+    )
+  }
+
+  if (!accountChecking && accountError && !accountStatus) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100">
+        <UserNavbar />
+        <main className="mx-auto max-w-3xl px-4 py-10">
+          <Card className="border-slate-800 bg-slate-900/80">
+            <CardHeader>
+              <CardTitle className="text-white">Simulator temporarily unavailable</CardTitle>
+              <CardDescription className="text-slate-300">{accountError}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <Button onClick={handleRetryAccountCheck} className="bg-emerald-600 hover:bg-emerald-500">
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    )
+  }
+
+  if (accountStatus && !accountStatus.hasAccount) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100">
+        <UserNavbar />
+        <main className="mx-auto max-w-3xl px-4 py-10 space-y-6">
+          <Card className="border-slate-800 bg-slate-900/80">
+            <CardHeader className="space-y-2">
+              <div className="flex items-center gap-2 text-emerald-300 text-sm font-medium">
+                <Info className="h-5 w-5" />
+                <span>PSX Simulator Overview</span>
+              </div>
+              <CardTitle className="text-white">Activate your day trading sandbox</CardTitle>
+              <CardDescription className="text-slate-300">
+                Practice orders with live Redis ticks. Review the checklist before enabling your training wallet.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-slate-200">
+              <ul className="list-disc space-y-2 pl-5 text-slate-300">
+                <li>Activation creates a PKR-denominated training wallet funded with virtual cash.</li>
+                <li>Orders follow live PSX ticks—market halts pause executions automatically.</li>
+                <li>Use limit/stop orders responsibly; depth follows real bid/ask volume.</li>
+                <li>Your practice stats feed dashboards and learning streaks.</li>
+              </ul>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-xs text-slate-400">You can reset or pause anytime by leaving the simulator.</span>
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-500"
+                  onClick={handleActivateSimulator}
+                  disabled={activating}
+                >
+                  {activating ? "Activating…" : "Activate simulator"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    )
   }
 
   const layoutGrid = layoutMode === "split" ? "grid gap-4 lg:grid-cols-[1.6fr_1fr]" : "grid gap-4"

@@ -663,52 +663,69 @@ export interface AdminDashboardSummary {
 // Simulator (ticks, portfolio, orders)
 // ----------------------------------------
 
-export type SimTick = {
-  timestamp_ms: number;
-  iso_time: string;
-  symbol: string;
-  price: number;
-  change?: number;
-  changePercent?: number;
-  volume?: number;
-  trades?: number;
-  value?: number;
-  bid?: number;
-  ask?: number;
-  bidVol?: number;
-  askVol?: number;
-};
+export type SimAccountStatus = 'active' | 'suspended' | 'closed'
 
-export type SimHolding = {
-  symbol: string;
-  name: string;
-  quantity: number;
-  avgCostPrice: number;
-};
+export interface SimAccountStatusResponse {
+  hasAccount: boolean
+  status?: SimAccountStatus
+  activatedAt?: string | null
+}
 
-export type SimOrder = {
-  id: string;
-  symbol: string;
-  side: string;
-  orderType: string;
-  quantity: number;
-  filledQty: number;
-  limitPrice?: number | null;
-  triggerPrice?: number | null;
-  status: string;
-  createdAt: string;
-};
+export interface SimTick {
+  timestamp_ms?: number
+  iso_time?: string
+  symbol: string
+  price?: number
+  change?: number
+  changePercent?: number
+  volume?: number
+  trades?: number
+  value?: number
+  bid?: number
+  ask?: number
+  bidVol?: number
+  askVol?: number
+}
 
-export type SimPortfolio = {
-  accountId: string;
-  cashAvailable: number;
-  cashLocked: number;
-  equityLast: number;
-  holdings: SimHolding[];
-  openOrders: SimOrder[];
-};
+export interface SimHolding {
+  symbol: string
+  name: string
+  quantity: number
+  avgCostPrice: number
+  livePrice?: number | null
+  value?: number | null
+  pnl?: number | null
+}
 
-export type SimTicker = {
-  symbol: string;
-  tick: SimTick | null;
-};
+export interface SimOrder {
+  id: string
+  symbol: string
+  side: 'buy' | 'sell'
+  orderType: 'market' | 'limit' | 'stop_limit'
+  quantity: number
+  filledQty: number
+  limitPrice?: number | null
+  triggerPrice?: number | null
+  status: string
+  createdAt: string
+}
+
+export interface SimPortfolio {
+  accountId: string
+  cashAvailable: number
+  cashLocked: number
+  equityLast: number
+  holdings: SimHolding[]
+  openOrders: SimOrder[]
+}
+
+export interface SimKlinePoint {
+  symbol: string
+  timeframe: string
+  timestamp: number
+  open: number
+  high: number
+  low: number
+  close: number
+  volume?: number | null
+}

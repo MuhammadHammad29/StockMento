@@ -53,6 +53,29 @@ export class SimulatorService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  async getAccountStatus(user: JwtPayload) {
+    const account = await this.prisma.simAccount.findFirst({
+      where: { userId: user.sub },
+      select: {
+        id: true,
+        status: true,
+        activatedAt: true,
+      },
+    });
+
+    if (!account) {
+      return {
+        hasAccount: false,
+      };
+    }
+
+    return {
+      hasAccount: true,
+      status: account.status,
+      activatedAt: account.activatedAt?.toISOString() ?? null,
+    };
+  }
+
   private async ensureSimAccount(user: JwtPayload) {
     const existing = await this.prisma.simAccount.findFirst({
       where: { userId: user.sub },
