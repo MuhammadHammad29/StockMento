@@ -93,22 +93,22 @@ export default function SimulatorPage() {
   const [accountCheckNonce, setAccountCheckNonce] = useState(0)
 
   const formatCurrency = (value?: number | null, withSign = false) => {
-    if (value === null || value === undefined || Number.isNaN(value)) return "—"
+    if (value === null || value === undefined || Number.isNaN(value)) return "--"
     const fixed = value.toFixed(2)
     const sign = withSign && value > 0 ? "+" : ""
     return `PKR ${sign}${fixed}`
   }
 
   const formatVolume = (value?: number | null) => {
-    if (value === null || value === undefined || Number.isNaN(value)) return "—"
+    if (value === null || value === undefined || Number.isNaN(value)) return "--"
     return value.toLocaleString("en-US")
   }
 
   const pnlColor = (value?: number | null) => {
-    if (value === null || value === undefined || Number.isNaN(value)) return "text-slate-400"
+    if (value === null || value === undefined || Number.isNaN(value)) return "text-muted-foreground"
     if (value > 0) return "text-emerald-400"
     if (value < 0) return "text-red-400"
-    return "text-slate-300"
+    return "text-muted-foreground"
   }
 
   useEffect(() => {
@@ -263,20 +263,26 @@ export default function SimulatorPage() {
     const source = recent.length > 0 ? recent : sortedTicks
     const volumeMap: Record<string, number> = {}
 
-    const areaData = source.map((t, idx) => {
-      const tsMs = Number(t.timestamp_ms ?? 0)
-      const baseTs = Number.isFinite(tsMs) ? tsMs : Date.parse(t.iso_time ?? "")
-      const safeTs = Number.isFinite(baseTs) ? baseTs : Date.now()
-      const time = safeTs / 1000 + idx * 0.001
-      const vol = Number(t.volume ?? t.trades)
-      if (Number.isFinite(vol)) {
-        volumeMap[String(Math.round(time * 1000))] = vol
-      }
-      return {
-        time,
-        value: t.price,
-      }
-    })
+    const areaData = source
+      .map((t, idx) => {
+        const tsMs = Number(t.timestamp_ms ?? 0)
+        const baseTs = Number.isFinite(tsMs) ? tsMs : Date.parse(t.iso_time ?? "")
+        const safeTs = Number.isFinite(baseTs) ? baseTs : Date.now()
+        const time = safeTs / 1000 + idx * 0.001
+        const vol = Number(t.volume ?? t.trades)
+        if (Number.isFinite(vol)) {
+          volumeMap[String(Math.round(time * 1000))] = vol
+        }
+        const price = Number(t.price)
+        if (!Number.isFinite(price)) {
+          return null
+        }
+        return {
+          time,
+          value: price,
+        }
+      })
+      .filter((point): point is { time: number; value: number } => Boolean(point))
 
     let prevPrice: number | null = null
 
@@ -442,13 +448,13 @@ export default function SimulatorPage() {
 
   if (!accountChecking && accountError && !accountStatus) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="min-h-screen bg-background text-foreground">
         <UserNavbar />
         <main className="mx-auto max-w-3xl px-4 py-10">
-          <Card className="border-slate-800 bg-slate-900/80">
+          <Card className="border-border bg-card/90 dark:bg-card/80">
             <CardHeader>
-              <CardTitle className="text-white">Simulator temporarily unavailable</CardTitle>
-              <CardDescription className="text-slate-300">{accountError}</CardDescription>
+              <CardTitle className="text-foreground">Simulator temporarily unavailable</CardTitle>
+              <CardDescription className="text-muted-foreground">{accountError}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
               <Button onClick={handleRetryAccountCheck} className="bg-emerald-600 hover:bg-emerald-500">
@@ -463,29 +469,29 @@ export default function SimulatorPage() {
 
   if (accountStatus && !accountStatus.hasAccount) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="min-h-screen bg-background text-foreground">
         <UserNavbar />
         <main className="mx-auto max-w-3xl px-4 py-10 space-y-6">
-          <Card className="border-slate-800 bg-slate-900/80">
+          <Card className="border-border bg-card/90 dark:bg-card/80">
             <CardHeader className="space-y-2">
-              <div className="flex items-center gap-2 text-emerald-300 text-sm font-medium">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-300 text-sm font-medium">
                 <Info className="h-5 w-5" />
                 <span>PSX Simulator Overview</span>
               </div>
-              <CardTitle className="text-white">Activate your day trading sandbox</CardTitle>
-              <CardDescription className="text-slate-300">
+              <CardTitle className="text-foreground">Activate your day trading sandbox</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 Practice orders with live Redis ticks. Review the checklist before enabling your training wallet.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm text-slate-200">
-              <ul className="list-disc space-y-2 pl-5 text-slate-300">
+            <CardContent className="space-y-4 text-sm text-foreground">
+              <ul className="list-disc space-y-2 pl-5 text-muted-foreground">
                 <li>Activation creates a PKR-denominated training wallet funded with virtual cash.</li>
-                <li>Orders follow live PSX ticks—market halts pause executions automatically.</li>
+                <li>Orders follow live PSX ticks - market halts pause executions automatically.</li>
                 <li>Use limit/stop orders responsibly; depth follows real bid/ask volume.</li>
                 <li>Your practice stats feed dashboards and learning streaks.</li>
               </ul>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-xs text-slate-400">You can reset or pause anytime by leaving the simulator.</span>
+                <span className="text-xs text-muted-foreground">You can reset or pause anytime by leaving the simulator.</span>
                 <Button
                   className="bg-emerald-600 hover:bg-emerald-500"
                   onClick={handleActivateSimulator}
@@ -505,28 +511,28 @@ export default function SimulatorPage() {
   const chartHeight = layoutMode === "stack" ? 420 : 320
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-background text-foreground">
       <UserNavbar />
       <main className="mx-auto max-w-6xl px-4 py-6 space-y-4">
-        <div className="rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+        <div className="rounded-md border border-amber-500/50 bg-amber-50 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-100 px-3 py-2">
           Trading uses live Redis ticks. If halted, order placement will pause automatically.
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-white">PSX Day Trading Simulator</h1>
-              <p className="text-sm text-slate-400">Live market data streamed from Redis</p>
+              <h1 className="text-2xl font-bold text-foreground">PSX Day Trading Simulator</h1>
+              <p className="text-sm text-muted-foreground">Live market data streamed from Redis</p>
             </div>
-            <div className="flex items-center gap-1 rounded border border-slate-800 bg-slate-900/70 px-2 py-1 text-xs">
+            <div className="flex items-center gap-1 rounded border border-border bg-card/90 dark:bg-card/80 px-2 py-1 text-xs">
               <button
-                className={`rounded px-2 py-1 ${dateRange === "15m" ? "bg-slate-800 text-white" : "text-slate-400"}`}
+                className={`rounded px-2 py-1 ${dateRange === "15m" ? "bg-muted/60 text-foreground dark:bg-slate-900/60" : "text-muted-foreground"}`}
                 onClick={() => setDateRange("15m")}
               >
                 15m
               </button>
               <button
-                className={`rounded px-2 py-1 ${dateRange === "1d" ? "bg-slate-800 text-white" : "text-slate-400"}`}
+                className={`rounded px-2 py-1 ${dateRange === "1d" ? "bg-muted/60 text-foreground dark:bg-slate-900/60" : "text-muted-foreground"}`}
                 onClick={() => setDateRange("1d")}
               >
                 1d
@@ -535,23 +541,23 @@ export default function SimulatorPage() {
           </div>
           <div className="flex flex-col items-end gap-2 text-sm">
             <div className="text-right">
-              <div className="text-slate-400">Selected Symbol</div>
-              <div className="text-lg font-semibold text-white">{symbol}</div>
+              <div className="text-muted-foreground">Selected Symbol</div>
+              <div className="text-lg font-semibold text-foreground">{symbol}</div>
             </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="outline"
-                className="border-slate-700 bg-slate-900/70 text-xs text-slate-200"
+                className="border-border bg-card/90 dark:bg-card/80 text-xs text-foreground"
                 onClick={() => setLayoutMode((m) => (m === "split" ? "stack" : "split"))}
               >
                 View: {layoutMode === "split" ? "Side by Side" : "Stacked (Big Chart)"}
               </Button>
               {klinesPending ? (
-                <div className="text-[11px] text-slate-400">Loading {dateRange.toUpperCase()}…</div>
+                <div className="text-[11px] text-muted-foreground">Loading {dateRange.toUpperCase()}…</div>
               ) : null}
               {marketDown ? (
-                <div className="flex items-center gap-1 rounded border border-red-500/60 bg-red-950/50 px-2 py-1 text-[11px] font-semibold text-red-200">
+                <div className="flex items-center gap-1 rounded border border-red-500/60 bg-red-50 text-[11px] font-semibold text-red-700 dark:bg-red-950/50 dark:text-red-200 px-2 py-1">
                   <Lock size={12} />
                   <span>Market Halted</span>
                 </div>
@@ -564,9 +570,9 @@ export default function SimulatorPage() {
         {error ? <div className="text-sm text-red-400">{error}</div> : null}
 
         <div className={layoutGrid}>
-          <Card className="border-slate-800 bg-slate-900/70">
+          <Card className="border-border bg-card/90 dark:bg-card/80">
             <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="text-white">Price Action</CardTitle>
+              <CardTitle className="text-foreground">Price Action</CardTitle>
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -600,10 +606,10 @@ export default function SimulatorPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-800 bg-slate-900/70">
+          <Card className="border-border bg-card/90 dark:bg-card/80">
             <CardHeader>
-              <CardTitle className="text-white">Order Ticket</CardTitle>
-              <CardDescription className="text-slate-400">Simulate trades instantly with the latest quote.</CardDescription>
+              <CardTitle className="text-foreground">Order Ticket</CardTitle>
+              <CardDescription className="text-muted-foreground">Simulate trades instantly with the latest quote.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <Row label="Last Price" value={latestPrice ?? undefined} highlight />
@@ -620,13 +626,23 @@ export default function SimulatorPage() {
 
               <div className="grid grid-cols-2 gap-2">
                 <Button
-                  className={`w-full ${form.side === "buy" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-slate-800"}`}
+                  variant="outline"
+                  className={`w-full ${
+                    form.side === "buy"
+                      ? "border-0 bg-emerald-600 text-white hover:bg-emerald-500"
+                      : "border-0 bg-muted text-foreground/70 hover:text-foreground dark:bg-slate-900/60 dark:text-muted-foreground"
+                  }`}
                   onClick={() => setForm((p) => ({ ...p, side: "buy" }))}
                 >
                   Buy
                 </Button>
                 <Button
-                  className={`w-full ${form.side === "sell" ? "bg-red-600 hover:bg-red-500" : "bg-slate-800"}`}
+                  variant="outline"
+                  className={`w-full ${
+                    form.side === "sell"
+                      ? "border-0 bg-red-600 text-white hover:bg-red-500"
+                      : "border-0 bg-muted text-foreground/70 hover:text-foreground dark:bg-slate-900/60 dark:text-muted-foreground"
+                  }`}
                   onClick={() => setForm((p) => ({ ...p, side: "sell" }))}
                 >
                   Sell
@@ -635,12 +651,12 @@ export default function SimulatorPage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <Label className="text-slate-300">Order Type</Label>
+                  <Label className="text-muted-foreground">Order Type</Label>
                   <Select
                     value={form.orderType}
                     onValueChange={(value: OrderForm["orderType"]) => setForm((p) => ({ ...p, orderType: value }))}
                   >
-                    <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                    <SelectTrigger className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground">
                       <SelectValue placeholder="Type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -651,9 +667,9 @@ export default function SimulatorPage() {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-slate-300">Quantity</Label>
+                  <Label className="text-muted-foreground">Quantity</Label>
                   <Input
-                    className="bg-slate-800 border-slate-700 text-white"
+                    className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
                     type="number"
                     min={1}
                     value={form.quantity}
@@ -664,9 +680,9 @@ export default function SimulatorPage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <Label className="text-slate-300">Limit Price</Label>
+                  <Label className="text-muted-foreground">Limit Price</Label>
                   <Input
-                    className="bg-slate-800 border-slate-700 text-white"
+                    className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
                     type="number"
                     value={form.limitPrice ?? ""}
                     onChange={(e) => setForm((p) => ({ ...p, limitPrice: Number(e.target.value) }))}
@@ -675,9 +691,9 @@ export default function SimulatorPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-slate-300">Trigger Price</Label>
+                  <Label className="text-muted-foreground">Trigger Price</Label>
                   <Input
-                    className="bg-slate-800 border-slate-700 text-white"
+                    className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
                     type="number"
                     value={form.triggerPrice ?? ""}
                     onChange={(e) => setForm((p) => ({ ...p, triggerPrice: Number(e.target.value) }))}
@@ -687,9 +703,9 @@ export default function SimulatorPage() {
               </div>
               {form.orderType === "stop_limit" ? (
                 <div className="space-y-1">
-                  <Label className="text-slate-300">Stop Limit Price</Label>
+                  <Label className="text-muted-foreground">Stop Limit Price</Label>
                   <Input
-                    className="bg-slate-800 border-slate-700 text-white"
+                    className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
                     type="number"
                     value={form.stopLimitPrice ?? ""}
                     onChange={(e) => setForm((p) => ({ ...p, stopLimitPrice: Number(e.target.value) }))}
@@ -705,17 +721,17 @@ export default function SimulatorPage() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-          <Card className="border-slate-800 bg-slate-900/70">
+          <Card className="border-border bg-card/90 dark:bg-card/80">
             <CardHeader>
-              <CardTitle className="text-white">Holdings</CardTitle>
-              <CardDescription className="text-slate-400">Current positions</CardDescription>
+              <CardTitle className="text-foreground">Holdings</CardTitle>
+              <CardDescription className="text-muted-foreground">Current positions</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {holdingMetrics?.rows.length ? (
                 <>
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                     <span>Est. proceeds if sold now:</span>
-                    <span className="rounded bg-slate-800 px-2 py-0.5 text-slate-100">
+                    <span className="rounded bg-muted/40 dark:bg-slate-900/60 px-2 py-0.5 text-foreground">
                       {formatCurrency(holdingMetrics.totalValue)}
                     </span>
                     <span>Unrealized P/L:</span>
@@ -725,7 +741,7 @@ export default function SimulatorPage() {
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="text-slate-400">
+                      <thead className="text-muted-foreground">
                         <tr>
                           <th className="text-left p-2">Symbol</th>
                           <th className="text-left p-2">Qty</th>
@@ -737,7 +753,7 @@ export default function SimulatorPage() {
                       </thead>
                       <tbody>
                         {holdingMetrics.rows.map((h) => (
-                          <tr key={h.symbol} className="border-b border-slate-800">
+                          <tr key={h.symbol} className="border-b border-border">
                             <td className="p-2">{h.symbol}</td>
                             <td className="p-2">{h.quantity}</td>
                             <td className="p-2">{formatCurrency(h.avgCostPrice)}</td>
@@ -751,38 +767,38 @@ export default function SimulatorPage() {
                   </div>
                 </>
               ) : (
-                <div className="text-slate-500 text-sm">No holdings yet.</div>
+                <div className="text-muted-foreground text-sm">No holdings yet.</div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="border-slate-800 bg-slate-900/70">
+          <Card className="border-border bg-card/90 dark:bg-card/80">
             <CardHeader>
-              <CardTitle className="text-white">Open Orders</CardTitle>
-              <CardDescription className="text-slate-400">Working and partially filled orders</CardDescription>
+              <CardTitle className="text-foreground">Open Orders</CardTitle>
+              <CardDescription className="text-muted-foreground">Working and partially filled orders</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               {portfolio?.openOrders?.length ? (
                 <div className="space-y-2">
                   {portfolio.openOrders.map((o) => (
-                    <div key={o.id} className="rounded-lg border border-slate-800 p-2">
+                    <div key={o.id} className="rounded-lg border border-border p-2">
                       <div className="flex items-center justify-between">
-                        <div className="font-semibold text-white">{o.symbol}</div>
+                        <div className="font-semibold text-foreground">{o.symbol}</div>
                         <Badge variant="outline" className="text-[10px]">
                           {o.status}
                         </Badge>
                       </div>
-                      <div className="text-xs text-slate-400">
+                      <div className="text-xs text-muted-foreground">
                         {o.side.toUpperCase()} {o.quantity} ({o.filledQty} filled) · {o.orderType}
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-muted-foreground">
                         Limits: {o.limitPrice ?? "-"} | Trigger: {o.triggerPrice ?? "-"}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-slate-500 text-sm">No open orders.</div>
+                <div className="text-muted-foreground text-sm">No open orders.</div>
               )}
             </CardContent>
           </Card>
@@ -798,7 +814,7 @@ export default function SimulatorPage() {
             return (
               <button
                 key={item}
-                className={`rounded-lg border border-slate-800 bg-slate-900/70 p-3 text-left transition hover:border-emerald-500/70 ${
+                className={`rounded-lg border border-border bg-card/90 dark:bg-card/80 p-3 text-left transition hover:border-emerald-500/70 ${
                   item === symbol ? "border-emerald-500/70 shadow-[0_0_0_1px_rgba(16,185,129,0.3)]" : ""
                 }`}
                 onClick={() => {
@@ -806,17 +822,17 @@ export default function SimulatorPage() {
                   setForm((p) => ({ ...p, symbol: item }))
                 }}
               >
-                <div className="flex items-center justify-between text-xs text-slate-400">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{item}</span>
                   <Badge variant="outline" className="text-[10px]">
                     PSX
                   </Badge>
                 </div>
-                <div className="mt-2 text-lg font-semibold text-white">
-                  {price !== null ? `PKR ${price.toFixed(2)}` : "—"}
+                <div className="mt-2 text-lg font-semibold text-foreground">
+                  {price !== null ? `PKR ${price.toFixed(2)}` : "--"}
                 </div>
                 <div className={`text-xs ${up ? "text-emerald-400" : "text-red-400"}`}>
-                  {change !== null ? `${up ? "+" : ""}${change.toFixed(2)}` : "—"}{" "}
+                  {change !== null ? `${up ? "+" : ""}${change.toFixed(2)}` : "--"}{" "}
                   {changePct !== null ? `(${up ? "+" : ""}${changePct.toFixed(2)}%)` : ""}
                 </div>
               </button>
@@ -842,12 +858,14 @@ function Row({
   return (
     <div
       className={`flex items-center justify-between rounded-lg border p-2 ${
-        highlight ? "border-emerald-400/60 bg-emerald-900/30" : "border-slate-800 bg-slate-900/60"
+        highlight
+          ? "border-emerald-400/60 bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-100"
+          : "border-border bg-card/90 dark:bg-card/70"
       }`}
     >
-      <span className="text-xs text-slate-400">{label}</span>
-      <span className="text-sm font-semibold text-white">
-        {value !== undefined ? (format ? format(value) : value.toFixed(2)) : "—"}
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold text-foreground">
+        {value !== undefined ? (format ? format(value) : value.toFixed(2)) : "--"}
       </span>
     </div>
   )
