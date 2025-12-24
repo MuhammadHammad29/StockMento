@@ -26,12 +26,12 @@ type HoverState =
   | { mode: "area"; time: number; value: number; volume?: number | null }
   | { mode: "candles"; time: number; open: number; high: number; low: number; close: number; volume?: number | null }
 
-const formatPrice = (value?: number | null) => (value === undefined || value === null ? "—" : value.toFixed(2))
+const formatPrice = (value?: number | null) => (value === undefined || value === null ? "--" : value.toFixed(2))
 const formatVolume = (value?: number | null) =>
-  value === undefined || value === null || Number.isNaN(value) ? "—" : value.toLocaleString("en-US")
+  value === undefined || value === null || Number.isNaN(value) ? "--" : value.toLocaleString("en-US")
 
 const formatTime = (ts?: number) => {
-  if (!ts || Number.isNaN(ts)) return "—"
+  if (!ts || Number.isNaN(ts)) return "--"
   return new Intl.DateTimeFormat("en-PK", {
     hour: "2-digit",
     minute: "2-digit",
@@ -40,6 +40,23 @@ const formatTime = (ts?: number) => {
     hour12: false,
   }).format(new Date(ts * 1000))
 }
+
+const CHART_PALETTES = {
+  light: {
+    background: "#ffffff",
+    text: "#0f172a",
+    grid: "rgba(15,23,42,0.08)",
+    border: "rgba(15,23,42,0.15)",
+  },
+  dark: {
+    background: "#0b1224",
+    text: "#e2e8f0",
+    grid: "rgba(148,163,184,0.12)",
+    border: "rgba(148,163,184,0.24)",
+  },
+} as const
+
+const getPalette = (isDark: boolean) => (isDark ? CHART_PALETTES.dark : CHART_PALETTES.light)
 
 export function PriceChart({
   data,
@@ -62,6 +79,20 @@ export function PriceChart({
   const isAutoFittingRef = useRef(false)
   const didInitialFitRef = useRef(false)
   const [hoverState, setHoverState] = useState<HoverState | null>(null)
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof document === "undefined") return false
+    return document.documentElement.classList.contains("dark")
+  })
+
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    const root = document.documentElement
+    const update = () => setIsDarkMode(root.classList.contains("dark"))
+    update()
+    const observer = new MutationObserver(update)
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] })
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!containerRef.current || chartRef.current) return
@@ -89,22 +120,23 @@ export function PriceChart({
       styleInjectedRef.current = true
     }
 
+    const palette = getPalette(typeof document !== "undefined" && document.documentElement.classList.contains("dark"))
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { type: ColorType.Solid, color: "#0b1224" },
-        textColor: "#e2e8f0",
+        background: { type: ColorType.Solid, color: palette.background },
+        textColor: palette.text,
         fontFamily: "Inter, system-ui, -apple-system, sans-serif",
       },
       grid: {
-        vertLines: { color: "rgba(148,163,184,0.12)" },
-        horzLines: { color: "rgba(148,163,184,0.12)" },
+        vertLines: { color: palette.grid },
+        horzLines: { color: palette.grid },
       },
       rightPriceScale: {
-        borderColor: "rgba(148,163,184,0.24)",
+        borderColor: palette.border,
         scaleMargins: { top: 0.05, bottom: 0.12 },
       },
       timeScale: {
-        borderColor: "rgba(148,163,184,0.24)",
+        borderColor: palette.border,
         rightOffset: 2,
         timeVisible: true,
         secondsVisible: timeMode !== "date",
@@ -221,6 +253,29 @@ export function PriceChart({
       didInitialFitRef.current = false
     }
   }, [])
+
+  useEffect(() => {
+    if (!chartRef.current) return
+    const palette = getPalette(isDarkMode)
+    chartRef.current.applyOptions({
+      layout: {
+        background: { type: ColorType.Solid, color: palette.background },
+        textColor: palette.text,
+        fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+      },
+      grid: {
+        vertLines: { color: palette.grid },
+        horzLines: { color: palette.grid },
+      },
+      rightPriceScale: {
+        borderColor: palette.border,
+        scaleMargins: { top: 0.05, bottom: 0.12 },
+      },
+      timeScale: {
+        borderColor: palette.border,
+      },
+    })
+  }, [isDarkMode])
 
   useEffect(() => {
     if (!chartRef.current) return
@@ -397,38 +452,38 @@ export function PriceChart({
       ? timeMode === "date"
         ? new Intl.DateTimeFormat("en-PK", { month: "short", day: "2-digit" }).format(new Date(displayState.time * 1000))
         : formatTime(displayState.time)
-      : "—"
+      : "--"
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-lg border border-slate-800/80 bg-gradient-to-b from-slate-950 via-slate-950/70 to-slate-900/50">
-      <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex flex-wrap items-center gap-3 px-3 py-2 text-[11px] font-semibold">
-        <span className="text-slate-400">{viewMode === "candles" ? "Candles" : "Line"} · {timeLabel}</span>
+    <div className="relative h-full w-full overflow-hidden rounded-lg border border-border bg-card">
+      <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex flex-wrap items-center gap-3 px-3 py-2 text-[11px] font-semibold text-muted-foreground">
+        <span>{viewMode === "candles" ? "Candles" : "Line"} · {timeLabel}</span>
         {displayState?.mode === "candles" ? (
           <>
-            <span className="text-slate-400">
-              O <span className="text-slate-100">{formatPrice(displayState.open)}</span>
+            <span>
+              O <span className="text-foreground">{formatPrice(displayState.open)}</span>
             </span>
-            <span className="text-slate-400">
-              H <span className="text-emerald-300">{formatPrice(displayState.high)}</span>
+            <span>
+              H <span className="text-emerald-500 dark:text-emerald-300">{formatPrice(displayState.high)}</span>
             </span>
-            <span className="text-slate-400">
-              L <span className="text-red-300">{formatPrice(displayState.low)}</span>
+            <span>
+              L <span className="text-red-500 dark:text-red-300">{formatPrice(displayState.low)}</span>
             </span>
-            <span className="text-slate-400">
-              C <span className="text-sky-300">{formatPrice(displayState.close)}</span>
+            <span>
+              C <span className="text-sky-600 dark:text-sky-300">{formatPrice(displayState.close)}</span>
             </span>
           </>
         ) : null}
         {displayState?.mode === "area" ? (
-          <span className="text-slate-400">
-            Price <span className="text-sky-300">{formatPrice(displayState.value)}</span>
+          <span>
+            Price <span className="text-sky-600 dark:text-sky-300">{formatPrice(displayState.value)}</span>
           </span>
         ) : null}
-        <span className="text-slate-400">
-          Vol <span className="text-amber-200">{formatVolume(displayState?.volume)}</span>
+        <span>
+          Vol <span className="text-amber-600 dark:text-amber-200">{formatVolume(displayState?.volume)}</span>
         </span>
         {lastPrice ? (
-          <span className="ml-auto rounded bg-sky-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-200">
+          <span className="ml-auto rounded bg-sky-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-700 dark:bg-sky-500/20 dark:text-sky-200">
             Live {formatPrice(lastPrice)}
           </span>
         ) : null}
