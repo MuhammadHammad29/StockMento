@@ -182,8 +182,44 @@ export class SimulatorService {
     },
   ) {
     if (!params.symbol) throw new BadRequestException('Symbol is required');
-    if (!Number.isFinite(params.quantity) || params.quantity <= 0)
+
+    const normalizeOptional = (value?: number | null) => {
+      if (value === null || value === undefined) return undefined;
+      const num = Number(value);
+      return Number.isFinite(num) ? num : undefined;
+    };
+
+    const normalizedQty = Number(params.quantity);
+    if (!Number.isFinite(normalizedQty) || normalizedQty <= 0) {
       throw new BadRequestException('Quantity must be positive');
+    }
+    params.quantity = normalizedQty;
+
+    const normalizedLimit = normalizeOptional(params.limitPrice);
+    const normalizedTrigger = normalizeOptional(params.triggerPrice);
+    const normalizedStopLimit = normalizeOptional(params.stopLimitPrice);
+    const normalizedCurrent = normalizeOptional(params.currentPrice);
+
+    params.limitPrice = normalizedLimit;
+    params.triggerPrice = normalizedTrigger;
+    params.stopLimitPrice = normalizedStopLimit;
+    params.currentPrice = normalizedCurrent;
+
+    if (
+      params.orderType === SimOrderType.limit &&
+      (!normalizedLimit || normalizedLimit <= 0)
+    ) {
+      throw new BadRequestException('Limit price is required for limit orders.');
+    }
+
+    if (params.orderType === SimOrderType.stop_limit) {
+      if (!normalizedTrigger || normalizedTrigger <= 0) {
+        throw new BadRequestException('Trigger price is required for stop-limit orders.');
+      }
+      if (!normalizedStopLimit || normalizedStopLimit <= 0) {
+        throw new BadRequestException('Stop limit price is required for stop-limit orders.');
+      }
+    }
 
     const account = await this.ensureSimAccount(user);
     this.assertActive(account);

@@ -327,16 +327,47 @@ export default function SimulatorPage() {
   }, [portfolio, watchlist, symbol, latestPrice])
 
   const handlePlaceOrder = async () => {
-    setPending(true)
     setError(null)
     setMessage(null)
+
+    const quantity = Number(form.quantity)
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      const msg = "Enter a valid quantity greater than zero."
+      setError(msg)
+      toast.error(msg, { position: "top-right" })
+      return
+    }
+
+    if (form.orderType === "limit" && (!form.limitPrice || form.limitPrice <= 0)) {
+      const msg = "Limit orders need a positive limit price."
+      setError(msg)
+      toast.error(msg, { position: "top-right" })
+      return
+    }
+
+    if (form.orderType === "stop_limit") {
+      if (!form.triggerPrice || form.triggerPrice <= 0) {
+        const msg = "Stop-limit orders need a trigger price."
+        setError(msg)
+        toast.error(msg, { position: "top-right" })
+        return
+      }
+      if (!form.stopLimitPrice || form.stopLimitPrice <= 0) {
+        const msg = "Stop-limit orders need a stop limit price."
+        setError(msg)
+        toast.error(msg, { position: "top-right" })
+        return
+      }
+    }
+
+    setPending(true)
     try {
-      const payload: any = { ...form, quantity: Number(form.quantity) }
+      const payload: any = { ...form, quantity }
       if (form.orderType === "market") {
         payload.currentPrice = latestPrice ?? undefined
       }
-      payload.buyVolume = latestBuyVolume ?? undefined
-      payload.sellVolume = latestSellVolume ?? undefined
+      payload.buyVolume = latestSellVolume ?? undefined
+      payload.sellVolume = latestBuyVolume ?? undefined
       const res = await simulatorApi.placeOrder(payload)
       const nextPortfolio = (res as any)?.portfolio ?? res
       if (nextPortfolio && typeof nextPortfolio === "object" && "holdings" in nextPortfolio) {
