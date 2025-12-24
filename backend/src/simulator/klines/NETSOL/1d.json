@@ -1,0 +1,1272 @@
+[
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1750982400000,
+    "open": 130.6,
+    "high": 133.95,
+    "low": 130.5,
+    "close": 131.84,
+    "volume": 1078726
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1751241600000,
+    "open": 132.02,
+    "high": 134.1,
+    "low": 131,
+    "close": 132.96,
+    "volume": 921219
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1751328000000,
+    "open": 133.91,
+    "high": 146.26,
+    "low": 133.1,
+    "close": 146.26,
+    "volume": 4633608
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1751414400000,
+    "open": 150,
+    "high": 160.89,
+    "low": 150,
+    "close": 160.89,
+    "volume": 6998631
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1751500800000,
+    "open": 165.02,
+    "high": 168.6,
+    "low": 155.1,
+    "close": 157.46,
+    "volume": 6860131
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1751587200000,
+    "open": 156.46,
+    "high": 160.98,
+    "low": 154.23,
+    "close": 159.06,
+    "volume": 3171889
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1751846400000,
+    "open": 160.51,
+    "high": 163.97,
+    "low": 156.2,
+    "close": 162.6,
+    "volume": 4801994
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1751932800000,
+    "open": 163.61,
+    "high": 165.64,
+    "low": 159,
+    "close": 160,
+    "volume": 3682622
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1752019200000,
+    "open": 161.92,
+    "high": 161.92,
+    "low": 157,
+    "close": 157.22,
+    "volume": 1413967
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1752105600000,
+    "open": 157.4,
+    "high": 159.6,
+    "low": 154.5,
+    "close": 155.48,
+    "volume": 2042567
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1752192000000,
+    "open": 155.3,
+    "high": 157.01,
+    "low": 151.1,
+    "close": 153.41,
+    "volume": 1532056
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1752451200000,
+    "open": 154.1,
+    "high": 155.5,
+    "low": 151.85,
+    "close": 152.15,
+    "volume": 1226222
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1752537600000,
+    "open": 152.5,
+    "high": 152.5,
+    "low": 143,
+    "close": 144.45,
+    "volume": 2355679
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1752624000000,
+    "open": 143.25,
+    "high": 148.4,
+    "low": 143,
+    "close": 147.54,
+    "volume": 1526053
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1752710400000,
+    "open": 149,
+    "high": 153.75,
+    "low": 148,
+    "close": 150.52,
+    "volume": 3481002
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1752796800000,
+    "open": 151,
+    "high": 151.69,
+    "low": 144.39,
+    "close": 145.06,
+    "volume": 1177403
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1753056000000,
+    "open": 145,
+    "high": 145.25,
+    "low": 140.6,
+    "close": 143.09,
+    "volume": 1589042
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1753142400000,
+    "open": 143.2,
+    "high": 147.19,
+    "low": 143.2,
+    "close": 144.94,
+    "volume": 1190840
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1753228800000,
+    "open": 146.1,
+    "high": 146.4,
+    "low": 144.46,
+    "close": 144.76,
+    "volume": 315906
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1753315200000,
+    "open": 146,
+    "high": 147.77,
+    "low": 144.14,
+    "close": 144.57,
+    "volume": 1266731
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1753401600000,
+    "open": 144.65,
+    "high": 145.5,
+    "low": 143.5,
+    "close": 143.78,
+    "volume": 358327
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1753660800000,
+    "open": 145.99,
+    "high": 145.99,
+    "low": 139.5,
+    "close": 139.79,
+    "volume": 779267
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1753747200000,
+    "open": 141,
+    "high": 143.6,
+    "low": 140,
+    "close": 140.22,
+    "volume": 949405
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1753833600000,
+    "open": 140.51,
+    "high": 143.98,
+    "low": 140,
+    "close": 140.67,
+    "volume": 913233
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1753920000000,
+    "open": 141.05,
+    "high": 147,
+    "low": 141.05,
+    "close": 145.61,
+    "volume": 2490520
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1754265600000,
+    "open": 142.1,
+    "high": 144,
+    "low": 141.54,
+    "close": 142.54,
+    "volume": 875699
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1754352000000,
+    "open": 143.75,
+    "high": 146.88,
+    "low": 143,
+    "close": 143.68,
+    "volume": 2076863
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1754438400000,
+    "open": 143.98,
+    "high": 144.7,
+    "low": 142.5,
+    "close": 142.66,
+    "volume": 538043
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1754524800000,
+    "open": 142.52,
+    "high": 147.45,
+    "low": 142.52,
+    "close": 143.71,
+    "volume": 2614504
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1754611200000,
+    "open": 144.88,
+    "high": 144.88,
+    "low": 141.5,
+    "close": 142.2,
+    "volume": 570741
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1754870400000,
+    "open": 142.2,
+    "high": 142.95,
+    "low": 141.3,
+    "close": 142,
+    "volume": 226074
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1754956800000,
+    "open": 143.25,
+    "high": 145.24,
+    "low": 142.05,
+    "close": 143,
+    "volume": 1575648
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1755043200000,
+    "open": 144.2,
+    "high": 147,
+    "low": 143.13,
+    "close": 143.99,
+    "volume": 1818514
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1755216000000,
+    "open": 145,
+    "high": 151,
+    "low": 144.3,
+    "close": 149.87,
+    "volume": 3854571
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1755475200000,
+    "open": 151.3,
+    "high": 151.9,
+    "low": 147.5,
+    "close": 148.32,
+    "volume": 1862365
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1755561600000,
+    "open": 148.29,
+    "high": 149.34,
+    "low": 145.5,
+    "close": 146.29,
+    "volume": 969326
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1755648000000,
+    "open": 146.26,
+    "high": 148.25,
+    "low": 145.16,
+    "close": 145.67,
+    "volume": 706204
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1755734400000,
+    "open": 146.79,
+    "high": 147.77,
+    "low": 143,
+    "close": 143.63,
+    "volume": 935223
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1755820800000,
+    "open": 144,
+    "high": 144.99,
+    "low": 143.26,
+    "close": 143.58,
+    "volume": 357843
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1756080000000,
+    "open": 143.58,
+    "high": 144.44,
+    "low": 142.5,
+    "close": 143.46,
+    "volume": 625228
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1756166400000,
+    "open": 144.2,
+    "high": 144.45,
+    "low": 143.49,
+    "close": 143.5,
+    "volume": 78275
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1756252800000,
+    "open": 143.11,
+    "high": 144,
+    "low": 140,
+    "close": 140.67,
+    "volume": 581215
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1756339200000,
+    "open": 141.4,
+    "high": 141.98,
+    "low": 139.9,
+    "close": 140.19,
+    "volume": 535673
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1756425600000,
+    "open": 140.05,
+    "high": 141.3,
+    "low": 139.83,
+    "close": 140.24,
+    "volume": 498390
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1756684800000,
+    "open": 140.98,
+    "high": 142.3,
+    "low": 140,
+    "close": 141.25,
+    "volume": 619320
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1756771200000,
+    "open": 142,
+    "high": 143.88,
+    "low": 141.5,
+    "close": 142.31,
+    "volume": 907804
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1756857600000,
+    "open": 142.88,
+    "high": 144.72,
+    "low": 142.6,
+    "close": 143.02,
+    "volume": 733553
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1756944000000,
+    "open": 143.01,
+    "high": 147.4,
+    "low": 143.01,
+    "close": 146.78,
+    "volume": 2178099
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1757030400000,
+    "open": 150,
+    "high": 150,
+    "low": 145,
+    "close": 146.09,
+    "volume": 2620137
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1757289600000,
+    "open": 146.89,
+    "high": 147,
+    "low": 144.1,
+    "close": 144.6,
+    "volume": 673103
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1757376000000,
+    "open": 144.26,
+    "high": 145.5,
+    "low": 143.61,
+    "close": 143.81,
+    "volume": 427324
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1757462400000,
+    "open": 144,
+    "high": 146.8,
+    "low": 143.2,
+    "close": 146.21,
+    "volume": 1391290
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1757548800000,
+    "open": 146.31,
+    "high": 148.77,
+    "low": 144.6,
+    "close": 145.35,
+    "volume": 1618484
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1757635200000,
+    "open": 146.89,
+    "high": 154.9,
+    "low": 145,
+    "close": 150.55,
+    "volume": 5819729
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1757894400000,
+    "open": 151.79,
+    "high": 154.5,
+    "low": 151,
+    "close": 151.67,
+    "volume": 3753903
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1757980800000,
+    "open": 151.99,
+    "high": 152.9,
+    "low": 150,
+    "close": 151.43,
+    "volume": 2076924
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1758067200000,
+    "open": 152.11,
+    "high": 156.8,
+    "low": 150,
+    "close": 153.7,
+    "volume": 3988158
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1758153600000,
+    "open": 156.22,
+    "high": 159.69,
+    "low": 156,
+    "close": 156.81,
+    "volume": 2941695
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1758240000000,
+    "open": 157.9,
+    "high": 158.69,
+    "low": 151.31,
+    "close": 152.6,
+    "volume": 2060759
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1758499200000,
+    "open": 152.95,
+    "high": 152.95,
+    "low": 149.01,
+    "close": 149.63,
+    "volume": 1594980
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1758585600000,
+    "open": 160.29,
+    "high": 162.19,
+    "low": 156,
+    "close": 157.62,
+    "volume": 2410063
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1758672000000,
+    "open": 154.48,
+    "high": 154.48,
+    "low": 154.48,
+    "close": 154.48,
+    "volume": 2000
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1758758400000,
+    "open": 153.5,
+    "high": 153.99,
+    "low": 149.91,
+    "close": 150.79,
+    "volume": 878134
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1758844800000,
+    "open": 150.3,
+    "high": 153.4,
+    "low": 149,
+    "close": 149.46,
+    "volume": 1567713
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1759104000000,
+    "open": 150.01,
+    "high": 153,
+    "low": 149.35,
+    "close": 150.67,
+    "volume": 1112238
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1759190400000,
+    "open": 151.48,
+    "high": 154.2,
+    "low": 151.01,
+    "close": 151.21,
+    "volume": 1455424
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1759276800000,
+    "open": 151.74,
+    "high": 151.98,
+    "low": 149.22,
+    "close": 150.09,
+    "volume": 900436
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1759363200000,
+    "open": 150.09,
+    "high": 151.35,
+    "low": 149.01,
+    "close": 149.48,
+    "volume": 583304
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1759449600000,
+    "open": 150.5,
+    "high": 151.5,
+    "low": 149.11,
+    "close": 149.49,
+    "volume": 931298
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1759708800000,
+    "open": 149.1,
+    "high": 150,
+    "low": 145,
+    "close": 146.74,
+    "volume": 1006775
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1759795200000,
+    "open": 146,
+    "high": 150,
+    "low": 146,
+    "close": 147.07,
+    "volume": 609996
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1759881600000,
+    "open": 147.48,
+    "high": 148.49,
+    "low": 143.15,
+    "close": 146.41,
+    "volume": 725695
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1759968000000,
+    "open": 147,
+    "high": 148,
+    "low": 144.6,
+    "close": 145.72,
+    "volume": 433336
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1760054400000,
+    "open": 145,
+    "high": 145.79,
+    "low": 143.75,
+    "close": 144.33,
+    "volume": 553685
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1760313600000,
+    "open": 143,
+    "high": 143.95,
+    "low": 139.75,
+    "close": 140.34,
+    "volume": 471159
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1760400000000,
+    "open": 141.1,
+    "high": 146.01,
+    "low": 141.1,
+    "close": 144.27,
+    "volume": 716121
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1760486400000,
+    "open": 145.88,
+    "high": 151.8,
+    "low": 145.55,
+    "close": 148.88,
+    "volume": 3640837
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1760572800000,
+    "open": 150.5,
+    "high": 151.35,
+    "low": 146,
+    "close": 146.29,
+    "volume": 1703288
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1760659200000,
+    "open": 146.29,
+    "high": 147.02,
+    "low": 143,
+    "close": 143.69,
+    "volume": 445841
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1760918400000,
+    "open": 143.75,
+    "high": 144.93,
+    "low": 142.12,
+    "close": 144.2,
+    "volume": 274138
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1761004800000,
+    "open": 146.3,
+    "high": 146.79,
+    "low": 144,
+    "close": 145.36,
+    "volume": 632458
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1761091200000,
+    "open": 146,
+    "high": 150.74,
+    "low": 145,
+    "close": 146.81,
+    "volume": 1849069
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1761177600000,
+    "open": 147,
+    "high": 148.34,
+    "low": 142.55,
+    "close": 143.31,
+    "volume": 811352
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1761264000000,
+    "open": 143.08,
+    "high": 144.48,
+    "low": 140.1,
+    "close": 140.86,
+    "volume": 404309
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1761523200000,
+    "open": 141,
+    "high": 142.49,
+    "low": 140,
+    "close": 141.31,
+    "volume": 410053
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1761609600000,
+    "open": 141,
+    "high": 142.97,
+    "low": 138.56,
+    "close": 139.81,
+    "volume": 351646
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1761696000000,
+    "open": 140,
+    "high": 140.95,
+    "low": 136.21,
+    "close": 137.43,
+    "volume": 385486
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1761782400000,
+    "open": 138.5,
+    "high": 139.1,
+    "low": 130.1,
+    "close": 133.07,
+    "volume": 517930
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1761868800000,
+    "open": 134.1,
+    "high": 136.49,
+    "low": 130.55,
+    "close": 132.79,
+    "volume": 1238471
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1762128000000,
+    "open": 133,
+    "high": 135.75,
+    "low": 132.26,
+    "close": 135.41,
+    "volume": 1357612
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1762214400000,
+    "open": 135.95,
+    "high": 135.99,
+    "low": 133.5,
+    "close": 133.95,
+    "volume": 290570
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1762300800000,
+    "open": 133.02,
+    "high": 137,
+    "low": 133.02,
+    "close": 134.4,
+    "volume": 545944
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1762387200000,
+    "open": 134,
+    "high": 135.99,
+    "low": 134,
+    "close": 134.33,
+    "volume": 77851
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1762473600000,
+    "open": 135.79,
+    "high": 138.87,
+    "low": 134.73,
+    "close": 135.2,
+    "volume": 890912
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1762732800000,
+    "open": 135.99,
+    "high": 137.5,
+    "low": 135.2,
+    "close": 135.97,
+    "volume": 686088
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1762819200000,
+    "open": 135.89,
+    "high": 135.89,
+    "low": 128.99,
+    "close": 129.28,
+    "volume": 704282
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1762905600000,
+    "open": 129.35,
+    "high": 130.98,
+    "low": 127.98,
+    "close": 128.21,
+    "volume": 411698
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1762992000000,
+    "open": 129.05,
+    "high": 129.8,
+    "low": 127.44,
+    "close": 128.6,
+    "volume": 258116
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1763078400000,
+    "open": 129.99,
+    "high": 130.4,
+    "low": 128.75,
+    "close": 129.87,
+    "volume": 150237
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1763337600000,
+    "open": 130,
+    "high": 130.99,
+    "low": 129.2,
+    "close": 129.68,
+    "volume": 224714
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1763424000000,
+    "open": 130.49,
+    "high": 131.89,
+    "low": 128.9,
+    "close": 129,
+    "volume": 371538
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1763510400000,
+    "open": 129.9,
+    "high": 131,
+    "low": 129.5,
+    "close": 129.66,
+    "volume": 179879
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1763596800000,
+    "open": 131,
+    "high": 131,
+    "low": 128.7,
+    "close": 129.08,
+    "volume": 200503
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1763683200000,
+    "open": 128.85,
+    "high": 129.9,
+    "low": 125.84,
+    "close": 126.46,
+    "volume": 370801
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1763942400000,
+    "open": 127,
+    "high": 127.88,
+    "low": 125.6,
+    "close": 127.1,
+    "volume": 172327
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1764028800000,
+    "open": 127,
+    "high": 128.88,
+    "low": 125.1,
+    "close": 126.31,
+    "volume": 303799
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1764115200000,
+    "open": 126,
+    "high": 126.7,
+    "low": 124.45,
+    "close": 125.41,
+    "volume": 246464
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1764201600000,
+    "open": 126,
+    "high": 130.45,
+    "low": 125,
+    "close": 129.13,
+    "volume": 1237419
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1764288000000,
+    "open": 129.9,
+    "high": 133,
+    "low": 128.69,
+    "close": 130.34,
+    "volume": 1866795
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1764547200000,
+    "open": 130.5,
+    "high": 132.26,
+    "low": 129.5,
+    "close": 131.48,
+    "volume": 541988
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1764633600000,
+    "open": 132,
+    "high": 132.5,
+    "low": 130.01,
+    "close": 130.15,
+    "volume": 187018
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1764720000000,
+    "open": 130.9,
+    "high": 133.5,
+    "low": 128.82,
+    "close": 129.27,
+    "volume": 736937
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1764806400000,
+    "open": 129.89,
+    "high": 130.66,
+    "low": 128.22,
+    "close": 128.99,
+    "volume": 295752
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1764892800000,
+    "open": 128.99,
+    "high": 130.94,
+    "low": 128.5,
+    "close": 129.68,
+    "volume": 168482
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1765152000000,
+    "open": 129.02,
+    "high": 132.75,
+    "low": 128.75,
+    "close": 131.25,
+    "volume": 581656
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1765238400000,
+    "open": 131.11,
+    "high": 131.89,
+    "low": 130,
+    "close": 130.69,
+    "volume": 302003
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1765324800000,
+    "open": 131,
+    "high": 131.8,
+    "low": 130,
+    "close": 130.34,
+    "volume": 239823
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1765411200000,
+    "open": 130.5,
+    "high": 130.75,
+    "low": 129.06,
+    "close": 129.71,
+    "volume": 271395
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1765497600000,
+    "open": 129.9,
+    "high": 132.94,
+    "low": 129.9,
+    "close": 132.35,
+    "volume": 565434
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1765756800000,
+    "open": 132.99,
+    "high": 136.5,
+    "low": 131.01,
+    "close": 135.2,
+    "volume": 2006258
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1765843200000,
+    "open": 135.45,
+    "high": 137.48,
+    "low": 132.7,
+    "close": 133.11,
+    "volume": 1044778
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1765929600000,
+    "open": 133.5,
+    "high": 137.25,
+    "low": 133.01,
+    "close": 136.35,
+    "volume": 2734096
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1766016000000,
+    "open": 139,
+    "high": 140,
+    "low": 136.7,
+    "close": 137.02,
+    "volume": 1479555
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1766102400000,
+    "open": 138.39,
+    "high": 138.39,
+    "low": 133.5,
+    "close": 133.86,
+    "volume": 584443
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1766361600000,
+    "open": 135.05,
+    "high": 135.5,
+    "low": 131.73,
+    "close": 131.92,
+    "volume": 550172
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1766448000000,
+    "open": 133,
+    "high": 133,
+    "low": 131.3,
+    "close": 132.18,
+    "volume": 173187
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1766534400000,
+    "open": 132.99,
+    "high": 132.99,
+    "low": 130,
+    "close": 130.61,
+    "volume": 632543
+  }
+]

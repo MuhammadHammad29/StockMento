@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import Redis from 'ioredis';
 import { ConfigService } from '@nestjs/config';
 
@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 export class RedisService implements OnModuleDestroy {
   private client: Redis | null = null;
   private subscriber: Redis | null = null;
+  private readonly logger = new Logger(RedisService.name);
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -29,14 +30,29 @@ export class RedisService implements OnModuleDestroy {
     return this.subscriber;
   }
 
+  private async safeQuit(conn: Redis | null, label: string) {
+    if (!conn) return;
+    const status = conn.status;
+    if (status === 'close' || status === 'end') {
+      this.logger.debug(`Redis ${label} already closed.`);
+      return;
+    }
+    try {
+      await conn.quit();
+    } catch (error) {
+      const err = error as Error;
+      if (err.message?.toLowerCase().includes('connection is closed')) {
+        this.logger.debug(`Redis ${label} connection closed before quit, ignoring`);
+      } else {
+        this.logger.error(`Failed to close Redis ${label}`, err);
+      }
+    }
+  }
+
   async onModuleDestroy() {
-    if (this.subscriber) {
-      await this.subscriber.quit();
-      this.subscriber = null;
-    }
-    if (this.client) {
-      await this.client.quit();
-      this.client = null;
-    }
+    await this.safeQuit(this.subscriber, 'subscriber');
+    this.subscriber = null;
+    await this.safeQuit(this.client, 'client');
+    this.client = null;
   }
 }

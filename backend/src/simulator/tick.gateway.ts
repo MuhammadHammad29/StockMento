@@ -56,16 +56,31 @@ export class TickGateway implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy() {
     if (!this.subscriber) return;
-    try {
-      for (const channel of this.subscriptions) {
+    const status = this.subscriber.status;
+    if (status === 'close' || status === 'end' || status === 'wait' || status === 'reconnecting') {
+      this.logger.debug('Redis subscriber already closed, skipping unsubscribe');
+      return;
+    }
+    for (const channel of this.subscriptions) {
+      try {
         if (channel.includes('*')) {
           await this.subscriber.punsubscribe(channel);
         } else {
           await this.subscriber.unsubscribe(channel);
         }
+      } catch (error) {
+        const err = error as Error;
+        if (err.message?.toLowerCase().includes('connection is closed')) {
+          this.logger.debug(
+            `Redis connection closed while unsubscribing ${channel}, ignoring`,
+          );
+          break;
+        }
+        this.logger.error(
+          `Failed unsubscribing Redis channel ${channel}`,
+          err,
+        );
       }
-    } catch (error) {
-      this.logger.error('Failed unsubscribing Redis', error as Error);
     }
   }
 
