@@ -229,15 +229,15 @@ export class SimulatorService {
       where: { simAccountId_stockId: { simAccountId: account.id, stockId: stock.id } },
     });
 
-    const normalizedQty = Number(params.quantity);
+    const orderQty = params.quantity;
     const heldQty = toNumber(holding?.quantity);
     const cashAvailable = toNumber(account.cashAvailable);
 
-    if (params.side === 'sell' && heldQty < normalizedQty - 1e-6) {
+    if (params.side === 'sell' && heldQty < orderQty - 1e-6) {
       throw new BadRequestException('Insufficient holdings to sell that quantity.');
     }
 
-    if (params.side === 'sell' && params.sellVolume && normalizedQty > params.sellVolume + 1e-6) {
+    if (params.side === 'sell' && params.sellVolume && orderQty > params.sellVolume + 1e-6) {
       throw new BadRequestException('Order size exceeds available ask volume.');
     }
 
@@ -250,11 +250,11 @@ export class SimulatorService {
       if (
         cashCheckPrice &&
         cashCheckPrice > 0 &&
-        cashAvailable + 1e-6 < cashCheckPrice * normalizedQty
+        cashAvailable + 1e-6 < cashCheckPrice * orderQty
       ) {
         throw new BadRequestException('Insufficient cash to place this order.');
       }
-      if (params.buyVolume && normalizedQty > params.buyVolume + 1e-6) {
+      if (params.buyVolume && orderQty > params.buyVolume + 1e-6) {
         throw new BadRequestException('Order size exceeds available buy volume.');
       }
     }
@@ -303,6 +303,52 @@ export class SimulatorService {
     ) {
       await this.executeOrder(order, params.stopLimitPrice ?? params.currentPrice, now);
     }
+
+    return this.getPortfolio(user);
+  }
+
+  async cancelOrder(user: JwtPayload, orderId: string) {
+    if (!orderId) {
+      throw new BadRequestException('Order id is required');
+    }
+
+    const account = await this.ensureSimAccount(user);
+    this.assertActive(account);
+
+    const order = await this.prisma.simOrder.findFirst({
+      where: { id: orderId, simAccountId: account.id },
+    });
+
+    if (!order) {
+      throw new BadRequestException('Order not found');
+    }
+
+    const cancellableStatuses: SimOrderStatus[] = [
+      SimOrderStatus.new,
+      SimOrderStatus.partially_filled,
+    ];
+
+    if (!cancellableStatuses.includes(order.status)) {
+      throw new BadRequestException('Only open orders can be cancelled');
+    }
+
+    const baseMeta =
+      order.meta && typeof order.meta === 'object' && !Array.isArray(order.meta)
+        ? (order.meta as Record<string, unknown>)
+        : {};
+
+    await this.prisma.simOrder.update({
+      where: { id: order.id },
+      data: {
+        status: SimOrderStatus.cancelled,
+        triggerStatus: SimOrderTriggerStatus.cancelled,
+        updatedAt: new Date(),
+        meta: {
+          ...baseMeta,
+          cancelledAt: new Date().toISOString(),
+        },
+      },
+    });
 
     return this.getPortfolio(user);
   }

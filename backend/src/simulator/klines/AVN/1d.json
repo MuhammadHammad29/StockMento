@@ -1348,5 +1348,15 @@
     "low": 43.51,
     "close": 43.61,
     "volume": 604529
+  },
+  {
+    "symbol": "AVN",
+    "timeframe": "1d",
+    "timestamp": 1766534400000,
+    "open": 43.79,
+    "high": 43.9,
+    "low": 43.12,
+    "close": 43.26,
+    "volume": 381226
   }
 ]

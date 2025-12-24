@@ -5,6 +5,8 @@ import {
   Post,
   Query,
   UseGuards,
+  Delete,
+  Param,
 } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import {
@@ -134,5 +136,13 @@ export class SimulatorController {
       ...dto,
       orderType: dto.orderType as any,
     });
+  }
+
+  @Delete('orders/:orderId')
+  cancelOrder(
+    @CurrentUser() user: JwtPayload,
+    @Param('orderId') orderId: string,
+  ) {
+    return this.simulatorService.cancelOrder(user, orderId);
   }
 }

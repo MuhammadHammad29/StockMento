@@ -554,6 +554,11 @@ export const simulatorApi = {
       body: JSON.stringify(payload),
     })
   },
+  cancelOrder: async (orderId: string): Promise<SimPortfolio> => {
+    return apiCall<SimPortfolio>(`/simulator/orders/${orderId}`, {
+      method: 'DELETE',
+    })
+  },
 }
 
 

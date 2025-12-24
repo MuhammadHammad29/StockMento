@@ -91,6 +91,7 @@ export default function SimulatorPage() {
   const [accountError, setAccountError] = useState<string | null>(null)
   const [activating, setActivating] = useState(false)
   const [accountCheckNonce, setAccountCheckNonce] = useState(0)
+  const [cancelPending, setCancelPending] = useState<string | null>(null)
 
   const formatCurrency = (value?: number | null, withSign = false) => {
     if (value === null || value === undefined || Number.isNaN(value)) return "--"
@@ -386,6 +387,24 @@ export default function SimulatorPage() {
       toast.error(err instanceof Error ? err.message : "Order failed", { position: "top-right" })
     } finally {
       setPending(false)
+    }
+  }
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!orderId) return
+    setCancelPending(orderId)
+    setError(null)
+    try {
+      const updated = await simulatorApi.cancelOrder(orderId)
+      setPortfolio(updated)
+      setMessage("Order cancelled.")
+      toast.success("Order cancelled", { position: "top-right" })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unable to cancel order"
+      setError(msg)
+      toast.error(msg, { position: "top-right" })
+    } finally {
+      setCancelPending(null)
     }
   }
 
@@ -812,19 +831,34 @@ export default function SimulatorPage() {
               {portfolio?.openOrders?.length ? (
                 <div className="space-y-2">
                   {portfolio.openOrders.map((o) => (
-                    <div key={o.id} className="rounded-lg border border-border p-2">
-                      <div className="flex items-center justify-between">
+                    <div key={o.id} className="rounded-lg border border-border p-2 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="font-semibold text-foreground">{o.symbol}</div>
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-[10px] uppercase">
                           {o.status}
                         </Badge>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {o.side.toUpperCase()} {o.quantity} ({o.filledQty} filled) · {o.orderType}
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span>
+                          {o.side.toUpperCase()} {o.quantity} ({o.filledQty} filled)
+                        </span>
+                        <span>•</span>
+                        <span>{o.orderType.replace("_", " ")}</span>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        Limits: {o.limitPrice ?? "-"} | Trigger: {o.triggerPrice ?? "-"}
+                        Limit: {o.limitPrice ?? "-"} | Trigger: {o.triggerPrice ?? "-"}
                       </div>
+                      {["new", "partially_filled"].includes(o.status) ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-xs"
+                          onClick={() => handleCancelOrder(o.id)}
+                          disabled={cancelPending === o.id}
+                        >
+                          {cancelPending === o.id ? "Cancelling..." : "Cancel Order"}
+                        </Button>
+                      ) : null}
                     </div>
                   ))}
                 </div>
