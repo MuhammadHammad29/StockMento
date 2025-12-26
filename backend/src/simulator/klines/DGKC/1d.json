@@ -1268,5 +1268,15 @@
     "low": 243.06,
     "close": 244.03,
     "volume": 775079
+  },
+  {
+    "symbol": "DGKC",
+    "timeframe": "1d",
+    "timestamp": 1766707200000,
+    "open": 243,
+    "high": 249.48,
+    "low": 243,
+    "close": 248.5,
+    "volume": 1697516
   }
 ]

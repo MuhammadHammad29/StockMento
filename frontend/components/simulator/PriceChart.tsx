@@ -368,19 +368,27 @@ export function PriceChart({
 
   useEffect(() => {
     if (!areaSeriesRef.current) return
-    areaSeriesRef.current.setData(data)
-    if (viewMode === "area" && data.length > 0 && !hasUserZoomedRef.current && !didInitialFitRef.current) {
-      autoFit()
-      didInitialFitRef.current = true
+    if (viewMode === "area") {
+      areaSeriesRef.current.setData(data)
+      if (data.length > 0 && !hasUserZoomedRef.current && !didInitialFitRef.current) {
+        autoFit()
+        didInitialFitRef.current = true
+      }
+    } else {
+      areaSeriesRef.current.setData([])
     }
   }, [data, viewMode])
 
   useEffect(() => {
     if (!candleSeriesRef.current) return
-    candleSeriesRef.current.setData(candles)
-    if (viewMode === "candles" && candles.length > 0 && !hasUserZoomedRef.current && !didInitialFitRef.current) {
-      autoFit()
-      didInitialFitRef.current = true
+    if (viewMode === "candles") {
+      candleSeriesRef.current.setData(candles)
+      if (candles.length > 0 && !hasUserZoomedRef.current && !didInitialFitRef.current) {
+        autoFit()
+        didInitialFitRef.current = true
+      }
+    } else {
+      candleSeriesRef.current.setData([])
     }
   }, [candles, viewMode])
 

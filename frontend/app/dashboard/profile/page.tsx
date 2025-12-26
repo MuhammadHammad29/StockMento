@@ -28,7 +28,7 @@ import {
   Trash2,
 } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { profileApi, studentCoursesApi } from "@/lib/api"
@@ -75,7 +75,7 @@ type ProfileFormState = {
   avatarId: AvatarId | null
 }
 
-export default function ProfilePage() {
+function ProfilePageInner() {
   const { user, refreshUser, logout } = useAuth()
   const [profileLoading, setProfileLoading] = useState(true)
   const [savingProfile, setSavingProfile] = useState(false)
@@ -1024,5 +1024,19 @@ export default function ProfilePage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
+          <div className="text-muted-foreground">Loading…</div>
+        </div>
+      }
+    >
+      <ProfilePageInner />
+    </Suspense>
   )
 }

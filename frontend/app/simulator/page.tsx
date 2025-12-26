@@ -14,7 +14,7 @@ import { Info, Lock } from "lucide-react"
 import UserNavbar from "@/components/navigation/UserNavbar"
 import { useAuth } from "@/lib/auth-context"
 import { simulatorApi } from "@/lib/api"
-import type { SimAccountStatusResponse, SimPortfolio, SimTick } from "@/lib/types"
+import type { SimAccountStatusResponse, SimIntradayCandle, SimPortfolio, SimTick } from "@/lib/types"
 import { PriceChart } from "@/components/simulator/PriceChart"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
@@ -71,7 +71,8 @@ export default function SimulatorPage() {
   const [symbol, setSymbol] = useState("ATRL")
   const [watchlist, setWatchlist] = useState<Record<string, SimTick | null>>({})
   const [layoutMode, setLayoutMode] = useState<"split" | "stack">("split")
-  const [dateRange, setDateRange] = useState<"15m" | "1d">("15m")
+  const [dateRange, setDateRange] = useState<"1m" | "1d">("1m")
+  const [intradayCandles, setIntradayCandles] = useState<SimIntradayCandle[]>([])
   const [dailyKlines, setDailyKlines] = useState<
     { timestamp: number; open: number; high: number; low: number; close: number; volume?: number }[]
   >([])
@@ -175,10 +176,51 @@ export default function SimulatorPage() {
         return { ...prev, [tick.symbol]: tick }
       })
     })
+    socket.on("intradayCandle", (candle: SimIntradayCandle) => {
+      if (!candle?.symbol) return
+      if (candle.symbol !== symbol) return
+      setIntradayCandles((prev) => {
+        const existingIndex = prev.findIndex((c) => c.minute === candle.minute)
+        if (existingIndex === -1) {
+          const next = [...prev, candle]
+          return next.sort((a, b) => a.minute - b.minute)
+        }
+        const next = [...prev]
+        next[existingIndex] = candle
+        return next
+      })
+    })
     return () => {
       socket?.disconnect()
     }
   }, [symbol, user, accountStatus?.hasAccount])
+
+  useEffect(() => {
+    if (!user || !accountStatus?.hasAccount) {
+      setIntradayCandles([])
+      return
+    }
+    setIntradayCandles([])
+    let active = true
+    const load = async () => {
+      try {
+        const data = await simulatorApi.intradayCandles(symbol)
+        if (active) {
+          const sorted = [...data].sort((a, b) => a.minute - b.minute)
+          setIntradayCandles(sorted)
+        }
+      } catch (err) {
+        console.error(err)
+        if (active) {
+          toast.error("Failed to load intraday candles", { position: "top-right" })
+        }
+      }
+    }
+    void load()
+    return () => {
+      active = false
+    }
+  }, [user, accountStatus?.hasAccount, symbol])
 
   const latestTick = useMemo(() => {
     const last = ticks[ticks.length - 1] ?? null
@@ -262,18 +304,12 @@ export default function SimulatorPage() {
     })
 
     const source = recent.length > 0 ? recent : sortedTicks
-    const volumeMap: Record<string, number> = {}
-
     const areaData = source
       .map((t, idx) => {
         const tsMs = Number(t.timestamp_ms ?? 0)
         const baseTs = Number.isFinite(tsMs) ? tsMs : Date.parse(t.iso_time ?? "")
         const safeTs = Number.isFinite(baseTs) ? baseTs : Date.now()
         const time = safeTs / 1000 + idx * 0.001
-        const vol = Number(t.volume ?? t.trades)
-        if (Number.isFinite(vol)) {
-          volumeMap[String(Math.round(time * 1000))] = vol
-        }
         const price = Number(t.price)
         if (!Number.isFinite(price)) {
           return null
@@ -285,34 +321,26 @@ export default function SimulatorPage() {
       })
       .filter((point): point is { time: number; value: number } => Boolean(point))
 
-    let prevPrice: number | null = null
-
-    const candles = source
-      .map((t, idx) => {
-        const tsMs = Number(t.timestamp_ms ?? 0)
-        const isoTs = Date.parse(t.iso_time ?? "")
-        const baseTs = Number.isFinite(tsMs) ? tsMs : isoTs
-        if (!Number.isFinite(baseTs) || baseTs < cutoff) return null
-        const price = Number(t.price)
-        if (!Number.isFinite(price)) return null
-
-        const open = prevPrice ?? price
-        const high = Math.max(open, price)
-        const low = Math.min(open, price)
-        prevPrice = price
-
+    const candleVolumeMap: Record<string, number> = {}
+    const candles = intradayCandles
+      .map((c) => {
+        candleVolumeMap[String(c.minute)] = c.volume ?? 0
         return {
-          time: baseTs / 1000 + idx * 0.001,
-          open,
-          high,
-          low,
-          close: price,
+          time: c.time,
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
         }
       })
-      .filter((candle): candle is NonNullable<typeof candle> => Boolean(candle))
+      .sort((a, b) => a.time - b.time)
 
-    return { chartData: areaData, candleData: candles, volumeByTime: volumeMap }
-  }, [ticks, dateRange, dailyKlines])
+    return {
+      chartData: areaData,
+      candleData: candles,
+      volumeByTime: candleVolumeMap,
+    }
+  }, [ticks, dateRange, dailyKlines, intradayCandles])
 
   const holdingMetrics = useMemo(() => {
     if (!portfolio) return null
@@ -328,6 +356,12 @@ export default function SimulatorPage() {
   }, [portfolio, watchlist, symbol, latestPrice])
 
   const handlePlaceOrder = async () => {
+    if (marketDown) {
+      const msg = "Trading is halted. Orders cannot be placed right now."
+      setError(msg)
+      toast.error(msg, { position: "top-right" })
+      return
+    }
     setError(null)
     setMessage(null)
 
@@ -574,20 +608,28 @@ export default function SimulatorPage() {
               <h1 className="text-2xl font-bold text-foreground">PSX Day Trading Simulator</h1>
               <p className="text-sm text-muted-foreground">Live market data streamed from Redis</p>
             </div>
-            <div className="flex items-center gap-1 rounded border border-border bg-card/90 dark:bg-card/80 px-2 py-1 text-xs">
-              <button
-                className={`rounded px-2 py-1 ${dateRange === "15m" ? "bg-muted/60 text-foreground dark:bg-slate-900/60" : "text-muted-foreground"}`}
-                onClick={() => setDateRange("15m")}
-              >
-                15m
-              </button>
-              <button
-                className={`rounded px-2 py-1 ${dateRange === "1d" ? "bg-muted/60 text-foreground dark:bg-slate-900/60" : "text-muted-foreground"}`}
-                onClick={() => setDateRange("1d")}
-              >
-                1d
-              </button>
-            </div>
+              <div className="flex items-center gap-1 rounded border border-border bg-card/90 dark:bg-card/80 px-2 py-1 text-xs">
+                <button
+                  className={`rounded px-2 py-1 font-medium transition ${
+                    dateRange === "1m"
+                      ? "border border-primary/40 bg-primary/10 text-primary dark:bg-primary/20"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setDateRange("1m")}
+                >
+                  1m
+                </button>
+                <button
+                  className={`rounded px-2 py-1 font-medium transition ${
+                    dateRange === "1d"
+                      ? "border border-primary/40 bg-primary/10 text-primary dark:bg-primary/20"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setDateRange("1d")}
+                >
+                  1d
+                </button>
+              </div>
           </div>
           <div className="flex flex-col items-end gap-2 text-sm">
             <div className="text-right">
@@ -763,7 +805,11 @@ export default function SimulatorPage() {
                 </div>
               ) : null}
 
-              <Button className="w-full bg-sky-600 hover:bg-sky-500" onClick={handlePlaceOrder} disabled={pending}>
+              <Button
+                className="w-full bg-sky-600 hover:bg-sky-500"
+                onClick={handlePlaceOrder}
+                disabled={pending || marketDown}
+              >
                 Place Order
               </Button>
             </CardContent>

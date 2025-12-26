@@ -16,14 +16,14 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { useState, useEffect, useRef } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import Logo from "@/components/ui/logo"
 import { validateEmail } from "@/lib/data-utils"
 
-export default function SignInPage() {
+function SignInPageInner() {
   // Form state management
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
@@ -242,6 +242,20 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
+          <div className="text-muted-foreground">Loading…</div>
+        </div>
+      }
+    >
+      <SignInPageInner />
+    </Suspense>
   )
 }
 

@@ -1266,7 +1266,57 @@
     "open": 479.11,
     "high": 495.03,
     "low": 477,
-    "close": 490,
-    "volume": 949530
+    "close": 485.49,
+    "volume": 1456032
+  },
+  {
+    "symbol": "LUCK",
+    "timeframe": "1d",
+    "timestamp": 1766102400000,
+    "open": 485.67,
+    "high": 503,
+    "low": 485.67,
+    "close": 499.04,
+    "volume": 2918362
+  },
+  {
+    "symbol": "LUCK",
+    "timeframe": "1d",
+    "timestamp": 1766361600000,
+    "open": 498.99,
+    "high": 529.5,
+    "low": 495,
+    "close": 512.7,
+    "volume": 3860681
+  },
+  {
+    "symbol": "LUCK",
+    "timeframe": "1d",
+    "timestamp": 1766448000000,
+    "open": 509.99,
+    "high": 520,
+    "low": 505.1,
+    "close": 509.2,
+    "volume": 1265993
+  },
+  {
+    "symbol": "LUCK",
+    "timeframe": "1d",
+    "timestamp": 1766534400000,
+    "open": 496.87,
+    "high": 502,
+    "low": 487.96,
+    "close": 490.42,
+    "volume": 1659599
+  },
+  {
+    "symbol": "LUCK",
+    "timeframe": "1d",
+    "timestamp": 1766707200000,
+    "open": 491.89,
+    "high": 497.8,
+    "low": 485,
+    "close": 486.36,
+    "volume": 1277031
   }
 ]

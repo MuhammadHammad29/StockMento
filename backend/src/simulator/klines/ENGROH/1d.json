@@ -1264,9 +1264,59 @@
     "timeframe": "1d",
     "timestamp": 1766016000000,
     "open": 213.2,
-    "high": 231.99,
+    "high": 232.99,
     "low": 213.2,
-    "close": 229,
-    "volume": 11839664
+    "close": 230.93,
+    "volume": 14805283
+  },
+  {
+    "symbol": "ENGROH",
+    "timeframe": "1d",
+    "timestamp": 1766102400000,
+    "open": 231.01,
+    "high": 235,
+    "low": 226.51,
+    "close": 229.24,
+    "volume": 4050761
+  },
+  {
+    "symbol": "ENGROH",
+    "timeframe": "1d",
+    "timestamp": 1766361600000,
+    "open": 229.26,
+    "high": 233.84,
+    "low": 226.2,
+    "close": 230.53,
+    "volume": 3052824
+  },
+  {
+    "symbol": "ENGROH",
+    "timeframe": "1d",
+    "timestamp": 1766448000000,
+    "open": 230.48,
+    "high": 234.97,
+    "low": 226.75,
+    "close": 227.48,
+    "volume": 2032833
+  },
+  {
+    "symbol": "ENGROH",
+    "timeframe": "1d",
+    "timestamp": 1766534400000,
+    "open": 228.11,
+    "high": 230,
+    "low": 224.17,
+    "close": 225,
+    "volume": 1377591
+  },
+  {
+    "symbol": "ENGROH",
+    "timeframe": "1d",
+    "timestamp": 1766707200000,
+    "open": 227.5,
+    "high": 237.44,
+    "low": 226,
+    "close": 235.99,
+    "volume": 4019606
   }
 ]

@@ -31,6 +31,7 @@ import {
   SimPortfolio,
   SimTick,
   SimKlinePoint,
+  SimIntradayCandle,
   SimAccountStatusResponse,
 } from '../types'
 import { STORAGE_KEYS } from '../data-utils'
@@ -547,6 +548,10 @@ export const simulatorApi = {
   klines: async (symbol = 'ATRL', timeframe: '1d' | '15m' = '1d'): Promise<SimKlinePoint[]> => {
     const query = buildQueryString({ symbol, timeframe })
     return apiCall<SimKlinePoint[]>(`/simulator/klines${query}`)
+  },
+  intradayCandles: async (symbol = 'ATRL'): Promise<SimIntradayCandle[]> => {
+    const query = buildQueryString({ symbol })
+    return apiCall<SimIntradayCandle[]>(`/simulator/candles/intraday${query}`)
   },
   placeOrder: async (payload: SimulatorOrderPayload): Promise<SimPortfolio> => {
     return apiCall<SimPortfolio>(`/simulator/orders`, {

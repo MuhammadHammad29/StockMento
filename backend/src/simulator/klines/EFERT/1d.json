@@ -1268,5 +1268,25 @@
     "low": 218.02,
     "close": 219.61,
     "volume": 477029
+  },
+  {
+    "symbol": "EFERT",
+    "timeframe": "1d",
+    "timestamp": 1766534400000,
+    "open": 219.99,
+    "high": 221.5,
+    "low": 219.5,
+    "close": 220.49,
+    "volume": 664646
+  },
+  {
+    "symbol": "EFERT",
+    "timeframe": "1d",
+    "timestamp": 1766707200000,
+    "open": 222,
+    "high": 222.45,
+    "low": 220,
+    "close": 222.4,
+    "volume": 559170
   }
 ]

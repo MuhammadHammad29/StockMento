@@ -9,16 +9,24 @@ import { KlineController } from './kline.controller';
 import { TickGateway } from './tick.gateway';
 import { RedisService } from './redis.service';
 import { PrismaModule } from '../prisma/prisma.module';
+import { IntradayCandleService } from './intraday-candle.service';
+import { IntradayCandleController } from './intraday-candle.controller';
 
 @Module({
   imports: [ConfigModule, PrismaModule],
-  controllers: [SimulatorController, TickController, KlineController],
+  controllers: [
+    SimulatorController,
+    TickController,
+    KlineController,
+    IntradayCandleController,
+  ],
   providers: [
     SimulatorService,
     TickService,
     KlineService,
     TickGateway,
     RedisService,
+    IntradayCandleService,
     {
       provide: 'REDIS_OPTIONS',
       useValue: {},

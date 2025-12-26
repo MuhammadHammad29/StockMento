@@ -1268,5 +1268,15 @@
     "low": 130,
     "close": 130.61,
     "volume": 632543
+  },
+  {
+    "symbol": "NETSOL",
+    "timeframe": "1d",
+    "timestamp": 1766707200000,
+    "open": 131.1,
+    "high": 131.9,
+    "low": 129.24,
+    "close": 130.1,
+    "volume": 412925
   }
 ]

@@ -1268,5 +1268,25 @@
     "low": 19.18,
     "close": 19.21,
     "volume": 2680189
+  },
+  {
+    "symbol": "FFL",
+    "timeframe": "1d",
+    "timestamp": 1766534400000,
+    "open": 19.21,
+    "high": 19.43,
+    "low": 19.06,
+    "close": 19.11,
+    "volume": 2595489
+  },
+  {
+    "symbol": "FFL",
+    "timeframe": "1d",
+    "timestamp": 1766707200000,
+    "open": 19.2,
+    "high": 19.29,
+    "low": 19.01,
+    "close": 19.06,
+    "volume": 5354190
   }
 ]

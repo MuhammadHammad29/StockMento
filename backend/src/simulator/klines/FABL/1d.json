@@ -1265,8 +1265,18 @@
     "timestamp": 1766534400000,
     "open": 90,
     "high": 91.4,
-    "low": 89.8,
-    "close": 90.13,
-    "volume": 446758
+    "low": 89.12,
+    "close": 90,
+    "volume": 747916
+  },
+  {
+    "symbol": "FABL",
+    "timeframe": "1d",
+    "timestamp": 1766707200000,
+    "open": 89.65,
+    "high": 91,
+    "low": 89.65,
+    "close": 89.75,
+    "volume": 769183
   }
 ]

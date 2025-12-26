@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Mail, Shield, ArrowLeft, Loader2, RefreshCw } from "lucide-react"
 import Link from "next/link"
-import { useState, useEffect, useCallback } from "react"
+import { Suspense, useCallback, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
@@ -16,7 +16,7 @@ import Logo from "@/components/ui/logo"
  * Email verification step shown right after signup.
  * Users enter the one-time code and can request manual resends with cooldown protection.
  */
-export default function VerifyEmailPage() {
+function VerifyEmailPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { verifyEmail, sendVerificationCode } = useAuth()
@@ -240,6 +240,20 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
+          <div className="text-muted-foreground">Loading…</div>
+        </div>
+      }
+    >
+      <VerifyEmailPageInner />
+    </Suspense>
   )
 }
 

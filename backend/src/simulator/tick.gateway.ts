@@ -11,6 +11,7 @@ import { RedisService } from './redis.service';
 import type { Tick } from './tick.service';
 import { TickService } from './tick.service';
 import { SimulatorService } from './simulator.service';
+import { IntradayCandleService } from './intraday-candle.service';
 
 @WebSocketGateway({
   cors: {
@@ -37,6 +38,7 @@ export class TickGateway implements OnModuleInit, OnModuleDestroy {
     private readonly redisService: RedisService,
     private readonly simulatorService: SimulatorService,
     private readonly tickService: TickService,
+    private readonly intradayCandleService: IntradayCandleService,
   ) {}
 
   async onModuleInit() {
@@ -112,6 +114,20 @@ export class TickGateway implements OnModuleInit, OnModuleDestroy {
             normalized.price,
             new Date(normalized.timestamp_ms),
           );
+          void this.intradayCandleService
+            .recordTick(normalized)
+            .then((candle) => {
+              if (candle) {
+                this.server?.emit('intradayCandle', candle);
+              }
+            })
+            .catch((error) =>
+              this.logger.debug(
+                `Failed to record intraday candle for ${normalized.symbol}: ${
+                  (error as Error).message
+                }`,
+              ),
+            );
         }
         this.server?.emit('tick', normalized);
         return;

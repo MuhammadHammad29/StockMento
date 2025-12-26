@@ -1,0 +1,1272 @@
+[
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1751241600000,
+    "open": 85.55,
+    "high": 86.2,
+    "low": 83.9,
+    "close": 84.28,
+    "volume": 4958160
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1751328000000,
+    "open": 84.53,
+    "high": 85,
+    "low": 82.5,
+    "close": 83.45,
+    "volume": 11369739
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1751414400000,
+    "open": 84,
+    "high": 84.5,
+    "low": 83,
+    "close": 83.61,
+    "volume": 6782834
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1751500800000,
+    "open": 83.62,
+    "high": 84.25,
+    "low": 83,
+    "close": 83.46,
+    "volume": 3266319
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1751587200000,
+    "open": 83.98,
+    "high": 83.98,
+    "low": 82,
+    "close": 82.66,
+    "volume": 3515802
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1751846400000,
+    "open": 83.01,
+    "high": 85.17,
+    "low": 81.9,
+    "close": 84.63,
+    "volume": 12693209
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1751932800000,
+    "open": 85.34,
+    "high": 86.9,
+    "low": 83.11,
+    "close": 85.25,
+    "volume": 15130701
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1752019200000,
+    "open": 85.44,
+    "high": 85.5,
+    "low": 84.01,
+    "close": 84.93,
+    "volume": 3117366
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1752105600000,
+    "open": 85.5,
+    "high": 85.5,
+    "low": 83.7,
+    "close": 84.07,
+    "volume": 3784454
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1752192000000,
+    "open": 84.51,
+    "high": 87.85,
+    "low": 84.01,
+    "close": 84.73,
+    "volume": 13747900
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1752451200000,
+    "open": 85.1,
+    "high": 86.2,
+    "low": 84.6,
+    "close": 84.83,
+    "volume": 2858626
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1752537600000,
+    "open": 84.5,
+    "high": 85.37,
+    "low": 82.79,
+    "close": 84.48,
+    "volume": 3859934
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1752624000000,
+    "open": 84.01,
+    "high": 85.15,
+    "low": 83.9,
+    "close": 84.87,
+    "volume": 3334011
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1752710400000,
+    "open": 85,
+    "high": 86.3,
+    "low": 84.7,
+    "close": 85.44,
+    "volume": 4451577
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1752796800000,
+    "open": 85.43,
+    "high": 85.99,
+    "low": 83,
+    "close": 84.02,
+    "volume": 4598030
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1753056000000,
+    "open": 84.8,
+    "high": 84.8,
+    "low": 83.03,
+    "close": 83.19,
+    "volume": 1874506
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1753142400000,
+    "open": 83.2,
+    "high": 84.55,
+    "low": 83.19,
+    "close": 83.57,
+    "volume": 4404946
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1753228800000,
+    "open": 84.16,
+    "high": 84.2,
+    "low": 82.45,
+    "close": 82.72,
+    "volume": 3017793
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1753315200000,
+    "open": 83.39,
+    "high": 83.5,
+    "low": 82.1,
+    "close": 82.51,
+    "volume": 1958654
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1753401600000,
+    "open": 82.88,
+    "high": 83,
+    "low": 81.3,
+    "close": 81.54,
+    "volume": 3166984
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1753660800000,
+    "open": 82.48,
+    "high": 84.01,
+    "low": 81.6,
+    "close": 83.3,
+    "volume": 5729101
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1753747200000,
+    "open": 83.65,
+    "high": 83.89,
+    "low": 81.01,
+    "close": 81.75,
+    "volume": 3562736
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1753833600000,
+    "open": 82.26,
+    "high": 83,
+    "low": 78.11,
+    "close": 79.62,
+    "volume": 14501544
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1753920000000,
+    "open": 80,
+    "high": 81.97,
+    "low": 79,
+    "close": 81.35,
+    "volume": 4855419
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1754265600000,
+    "open": 83.89,
+    "high": 85.54,
+    "low": 83.25,
+    "close": 84.98,
+    "volume": 12138161
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1754352000000,
+    "open": 85.25,
+    "high": 86.75,
+    "low": 84.2,
+    "close": 84.41,
+    "volume": 9576738
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1754438400000,
+    "open": 84.45,
+    "high": 85.9,
+    "low": 84.2,
+    "close": 85.08,
+    "volume": 5518269
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1754524800000,
+    "open": 85.51,
+    "high": 85.75,
+    "low": 82.45,
+    "close": 83.3,
+    "volume": 6882612
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1754611200000,
+    "open": 83.68,
+    "high": 83.99,
+    "low": 82.06,
+    "close": 83.19,
+    "volume": 3883865
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1754870400000,
+    "open": 83.75,
+    "high": 85,
+    "low": 82,
+    "close": 84.58,
+    "volume": 4068468
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1754956800000,
+    "open": 84.65,
+    "high": 86.5,
+    "low": 84.2,
+    "close": 85.66,
+    "volume": 8204992
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1755043200000,
+    "open": 85.89,
+    "high": 87.5,
+    "low": 85.1,
+    "close": 85.98,
+    "volume": 10464915
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1755216000000,
+    "open": 86.5,
+    "high": 87.24,
+    "low": 85.51,
+    "close": 85.95,
+    "volume": 2468596
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1755475200000,
+    "open": 85.75,
+    "high": 90.08,
+    "low": 85.75,
+    "close": 89.55,
+    "volume": 14553824
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1755561600000,
+    "open": 89.99,
+    "high": 95.4,
+    "low": 89.75,
+    "close": 92.49,
+    "volume": 20615863
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1755648000000,
+    "open": 92.95,
+    "high": 94.9,
+    "low": 91.4,
+    "close": 93.04,
+    "volume": 5585020
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1755734400000,
+    "open": 93.94,
+    "high": 96.5,
+    "low": 91.5,
+    "close": 93.78,
+    "volume": 14950735
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1755820800000,
+    "open": 94.24,
+    "high": 97.75,
+    "low": 93.6,
+    "close": 95.32,
+    "volume": 8317198
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1756080000000,
+    "open": 96,
+    "high": 96,
+    "low": 94.45,
+    "close": 94.64,
+    "volume": 1777164
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1756166400000,
+    "open": 96.75,
+    "high": 97,
+    "low": 95.9,
+    "close": 96.2,
+    "volume": 1587532
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1756252800000,
+    "open": 96.94,
+    "high": 96.94,
+    "low": 93.84,
+    "close": 94.15,
+    "volume": 4478123
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1756339200000,
+    "open": 94.9,
+    "high": 96.25,
+    "low": 93.14,
+    "close": 95.86,
+    "volume": 3784353
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1756425600000,
+    "open": 96.26,
+    "high": 105.1,
+    "low": 96.05,
+    "close": 102.68,
+    "volume": 19323994
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1756684800000,
+    "open": 103,
+    "high": 106.74,
+    "low": 100.4,
+    "close": 104.83,
+    "volume": 12272497
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1756771200000,
+    "open": 104.5,
+    "high": 105.75,
+    "low": 103.2,
+    "close": 103.77,
+    "volume": 5074570
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1756857600000,
+    "open": 103.86,
+    "high": 105.94,
+    "low": 103.25,
+    "close": 103.8,
+    "volume": 5694921
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1756944000000,
+    "open": 104.74,
+    "high": 107.8,
+    "low": 104,
+    "close": 105.98,
+    "volume": 10160204
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1757030400000,
+    "open": 105.98,
+    "high": 110.99,
+    "low": 105.7,
+    "close": 109.33,
+    "volume": 14761266
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1757289600000,
+    "open": 110.5,
+    "high": 114.5,
+    "low": 107.1,
+    "close": 109.13,
+    "volume": 12992430
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1757376000000,
+    "open": 108.99,
+    "high": 109.24,
+    "low": 105.83,
+    "close": 107.06,
+    "volume": 6031784
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1757462400000,
+    "open": 107,
+    "high": 108.48,
+    "low": 105.99,
+    "close": 106.84,
+    "volume": 7107537
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1757548800000,
+    "open": 106.95,
+    "high": 108.75,
+    "low": 106,
+    "close": 106.24,
+    "volume": 3825125
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1757635200000,
+    "open": 106.24,
+    "high": 106.98,
+    "low": 101.01,
+    "close": 102.35,
+    "volume": 8399946
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1757894400000,
+    "open": 102.5,
+    "high": 106.2,
+    "low": 102,
+    "close": 105.5,
+    "volume": 4859770
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1757980800000,
+    "open": 105.98,
+    "high": 107.55,
+    "low": 105.74,
+    "close": 106.13,
+    "volume": 4746783
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1758067200000,
+    "open": 106.72,
+    "high": 107.98,
+    "low": 105.11,
+    "close": 107.15,
+    "volume": 5729029
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1758153600000,
+    "open": 108.15,
+    "high": 108.96,
+    "low": 107.64,
+    "close": 108.13,
+    "volume": 2723435
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1758240000000,
+    "open": 108,
+    "high": 108.69,
+    "low": 103.01,
+    "close": 107.53,
+    "volume": 3519656
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1758499200000,
+    "open": 107.5,
+    "high": 109.6,
+    "low": 105,
+    "close": 105.94,
+    "volume": 3465385
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1758585600000,
+    "open": 107.2,
+    "high": 108.25,
+    "low": 105.9,
+    "close": 106.97,
+    "volume": 1597128
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1758672000000,
+    "open": 107.3,
+    "high": 107.3,
+    "low": 107.3,
+    "close": 107.3,
+    "volume": 11226
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1758758400000,
+    "open": 107.7,
+    "high": 108.3,
+    "low": 107.15,
+    "close": 107.48,
+    "volume": 1731123
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1758844800000,
+    "open": 107.55,
+    "high": 113.5,
+    "low": 107.55,
+    "close": 110.77,
+    "volume": 14192944
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1759104000000,
+    "open": 111,
+    "high": 111.3,
+    "low": 107.99,
+    "close": 108.78,
+    "volume": 3900367
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1759190400000,
+    "open": 108.78,
+    "high": 111.5,
+    "low": 107.77,
+    "close": 109.61,
+    "volume": 9394347
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1759276800000,
+    "open": 110.1,
+    "high": 110.3,
+    "low": 107.02,
+    "close": 108.59,
+    "volume": 4720825
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1759363200000,
+    "open": 108.97,
+    "high": 109.4,
+    "low": 107.7,
+    "close": 107.97,
+    "volume": 2506701
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1759449600000,
+    "open": 108.56,
+    "high": 112,
+    "low": 108.1,
+    "close": 108.91,
+    "volume": 6714543
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1759708800000,
+    "open": 108.9,
+    "high": 108.9,
+    "low": 106.25,
+    "close": 107.35,
+    "volume": 3045097
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1759795200000,
+    "open": 107.37,
+    "high": 107.9,
+    "low": 105.4,
+    "close": 105.8,
+    "volume": 2226077
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1759881600000,
+    "open": 105.5,
+    "high": 106.6,
+    "low": 104,
+    "close": 104.14,
+    "volume": 2215784
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1759968000000,
+    "open": 104.1,
+    "high": 105.84,
+    "low": 100.5,
+    "close": 102.1,
+    "volume": 3415709
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1760054400000,
+    "open": 102,
+    "high": 106.79,
+    "low": 99.5,
+    "close": 105,
+    "volume": 5194926
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1760313600000,
+    "open": 102.11,
+    "high": 104.7,
+    "low": 98.6,
+    "close": 100.47,
+    "volume": 11125705
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1760400000000,
+    "open": 104.3,
+    "high": 106,
+    "low": 102.39,
+    "close": 105.57,
+    "volume": 5605124
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1760486400000,
+    "open": 107.49,
+    "high": 107.49,
+    "low": 102.01,
+    "close": 102.47,
+    "volume": 5098090
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1760572800000,
+    "open": 103.48,
+    "high": 104.87,
+    "low": 102.05,
+    "close": 102.54,
+    "volume": 7300442
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1760659200000,
+    "open": 102.7,
+    "high": 103.85,
+    "low": 100,
+    "close": 100.96,
+    "volume": 5954788
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1760918400000,
+    "open": 102,
+    "high": 102.38,
+    "low": 100.01,
+    "close": 101.4,
+    "volume": 3162526
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1761004800000,
+    "open": 101.4,
+    "high": 102.5,
+    "low": 101.01,
+    "close": 101.38,
+    "volume": 3078038
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1761091200000,
+    "open": 102.1,
+    "high": 102.7,
+    "low": 100.5,
+    "close": 101.1,
+    "volume": 2395660
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1761177600000,
+    "open": 101.6,
+    "high": 101.6,
+    "low": 97.52,
+    "close": 98.84,
+    "volume": 2908737
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1761264000000,
+    "open": 99.2,
+    "high": 99.8,
+    "low": 96.92,
+    "close": 97.5,
+    "volume": 2144532
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1761523200000,
+    "open": 97.5,
+    "high": 98.99,
+    "low": 95.1,
+    "close": 97.84,
+    "volume": 1832366
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1761609600000,
+    "open": 97,
+    "high": 98.98,
+    "low": 93,
+    "close": 94.13,
+    "volume": 2936675
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1761696000000,
+    "open": 94.13,
+    "high": 95.4,
+    "low": 92,
+    "close": 92.29,
+    "volume": 2028351
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1761782400000,
+    "open": 93,
+    "high": 93.8,
+    "low": 90.55,
+    "close": 92.15,
+    "volume": 3995394
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1761868800000,
+    "open": 93.2,
+    "high": 96.5,
+    "low": 93.01,
+    "close": 95.89,
+    "volume": 3256565
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1762128000000,
+    "open": 96.6,
+    "high": 98,
+    "low": 95.98,
+    "close": 97.01,
+    "volume": 2120136
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1762214400000,
+    "open": 97.2,
+    "high": 97.5,
+    "low": 94.9,
+    "close": 95.35,
+    "volume": 2172659
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1762300800000,
+    "open": 95.35,
+    "high": 96,
+    "low": 92.25,
+    "close": 95.45,
+    "volume": 4525511
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1762387200000,
+    "open": 95.9,
+    "high": 95.9,
+    "low": 90.5,
+    "close": 91.83,
+    "volume": 3126303
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1762473600000,
+    "open": 91.99,
+    "high": 93.39,
+    "low": 91.01,
+    "close": 91.29,
+    "volume": 3190763
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1762732800000,
+    "open": 92.5,
+    "high": 96.46,
+    "low": 91.01,
+    "close": 94.45,
+    "volume": 5872627
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1762819200000,
+    "open": 95,
+    "high": 95,
+    "low": 89.75,
+    "close": 90.38,
+    "volume": 5803127
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1762905600000,
+    "open": 90.82,
+    "high": 92.49,
+    "low": 89.75,
+    "close": 90.14,
+    "volume": 3410337
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1762992000000,
+    "open": 93,
+    "high": 99.15,
+    "low": 93,
+    "close": 99.15,
+    "volume": 22739496
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1763078400000,
+    "open": 104.98,
+    "high": 107.99,
+    "low": 103.3,
+    "close": 105.79,
+    "volume": 27627744
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1763337600000,
+    "open": 105,
+    "high": 105.9,
+    "low": 101.82,
+    "close": 102.59,
+    "volume": 14285409
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1763424000000,
+    "open": 102.99,
+    "high": 105.89,
+    "low": 99.2,
+    "close": 101.14,
+    "volume": 20222751
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1763510400000,
+    "open": 102.88,
+    "high": 108.39,
+    "low": 100.63,
+    "close": 104.46,
+    "volume": 25413606
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1763596800000,
+    "open": 105.48,
+    "high": 107.03,
+    "low": 103.83,
+    "close": 105.72,
+    "volume": 9682620
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1763683200000,
+    "open": 105.1,
+    "high": 106,
+    "low": 102,
+    "close": 102.78,
+    "volume": 4796688
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1763942400000,
+    "open": 102.9,
+    "high": 105.18,
+    "low": 102,
+    "close": 104.67,
+    "volume": 5800345
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1764028800000,
+    "open": 104.67,
+    "high": 105.25,
+    "low": 102.6,
+    "close": 103.06,
+    "volume": 3213506
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1764115200000,
+    "open": 103.1,
+    "high": 103.5,
+    "low": 99.5,
+    "close": 102.49,
+    "volume": 7524515
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1764201600000,
+    "open": 102.5,
+    "high": 105,
+    "low": 102.5,
+    "close": 104.6,
+    "volume": 4707541
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1764288000000,
+    "open": 104.9,
+    "high": 106,
+    "low": 104.11,
+    "close": 105.4,
+    "volume": 7799344
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1764547200000,
+    "open": 105,
+    "high": 106.5,
+    "low": 103.6,
+    "close": 105.3,
+    "volume": 7527384
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1764633600000,
+    "open": 105.9,
+    "high": 107.97,
+    "low": 104.12,
+    "close": 105.39,
+    "volume": 9517359
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1764720000000,
+    "open": 106,
+    "high": 106.25,
+    "low": 103.9,
+    "close": 104.12,
+    "volume": 4056334
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1764806400000,
+    "open": 104.94,
+    "high": 105.9,
+    "low": 103.82,
+    "close": 104.82,
+    "volume": 5761447
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1764892800000,
+    "open": 106,
+    "high": 107.24,
+    "low": 104.61,
+    "close": 105.11,
+    "volume": 8063397
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1765152000000,
+    "open": 105.11,
+    "high": 106.89,
+    "low": 104.8,
+    "close": 105.98,
+    "volume": 5448399
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1765238400000,
+    "open": 106.5,
+    "high": 111.88,
+    "low": 106.26,
+    "close": 110.93,
+    "volume": 26108351
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1765324800000,
+    "open": 111.1,
+    "high": 122.02,
+    "low": 111.1,
+    "close": 122.02,
+    "volume": 22684037
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1765411200000,
+    "open": 123.84,
+    "high": 126.01,
+    "low": 118.61,
+    "close": 119.53,
+    "volume": 22620787
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1765497600000,
+    "open": 119.8,
+    "high": 124.25,
+    "low": 118,
+    "close": 123.34,
+    "volume": 10495201
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1765756800000,
+    "open": 124,
+    "high": 132.99,
+    "low": 123,
+    "close": 130.38,
+    "volume": 21999337
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1765843200000,
+    "open": 132.49,
+    "high": 132.49,
+    "low": 125.5,
+    "close": 126.4,
+    "volume": 12566698
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1765929600000,
+    "open": 126.39,
+    "high": 130.5,
+    "low": 126.07,
+    "close": 127.13,
+    "volume": 8787854
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1766016000000,
+    "open": 128.34,
+    "high": 129.9,
+    "low": 123,
+    "close": 123.93,
+    "volume": 12515192
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1766102400000,
+    "open": 125,
+    "high": 125.47,
+    "low": 117.5,
+    "close": 118.98,
+    "volume": 11759276
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1766361600000,
+    "open": 118.7,
+    "high": 122.54,
+    "low": 117,
+    "close": 119.31,
+    "volume": 12628079
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1766448000000,
+    "open": 119.5,
+    "high": 120.75,
+    "low": 117,
+    "close": 117.91,
+    "volume": 4149040
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1766534400000,
+    "open": 118.2,
+    "high": 119.25,
+    "low": 117,
+    "close": 117.26,
+    "volume": 2644207
+  },
+  {
+    "symbol": "MLCF",
+    "timeframe": "1d",
+    "timestamp": 1766707200000,
+    "open": 117.86,
+    "high": 125,
+    "low": 117,
+    "close": 121.94,
+    "volume": 11104475
+  }
+]

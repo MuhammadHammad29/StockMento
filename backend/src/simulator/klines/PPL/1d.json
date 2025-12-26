@@ -1252,11 +1252,51 @@
   {
     "symbol": "PPL",
     "timeframe": "1d",
+    "timestamp": 1766102400000,
+    "open": 221.5,
+    "high": 224,
+    "low": 218.01,
+    "close": 219.33,
+    "volume": 5938701
+  },
+  {
+    "symbol": "PPL",
+    "timeframe": "1d",
     "timestamp": 1766361600000,
     "open": 219.51,
-    "high": 219.51,
+    "high": 220.8,
     "low": 217.72,
-    "close": 218.31,
-    "volume": 378343
+    "close": 218.46,
+    "volume": 2310915
+  },
+  {
+    "symbol": "PPL",
+    "timeframe": "1d",
+    "timestamp": 1766448000000,
+    "open": 219.05,
+    "high": 219.49,
+    "low": 215.7,
+    "close": 217.17,
+    "volume": 3101795
+  },
+  {
+    "symbol": "PPL",
+    "timeframe": "1d",
+    "timestamp": 1766534400000,
+    "open": 218.65,
+    "high": 222,
+    "low": 217.6,
+    "close": 221.02,
+    "volume": 4269001
+  },
+  {
+    "symbol": "PPL",
+    "timeframe": "1d",
+    "timestamp": 1766707200000,
+    "open": 221.02,
+    "high": 228.4,
+    "low": 220.5,
+    "close": 227.36,
+    "volume": 8981706
   }
 ]

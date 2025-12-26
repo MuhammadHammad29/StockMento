@@ -1325,8 +1325,18 @@
     "timestamp": 1766534400000,
     "open": 650.5,
     "high": 655,
-    "low": 647.01,
-    "close": 648.5,
-    "volume": 130828
+    "low": 645.01,
+    "close": 646.42,
+    "volume": 205903
+  },
+  {
+    "symbol": "ATRL",
+    "timeframe": "1d",
+    "timestamp": 1766707200000,
+    "open": 648,
+    "high": 659.9,
+    "low": 646.35,
+    "close": 657.2,
+    "volume": 385406
   }
 ]

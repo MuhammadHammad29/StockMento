@@ -6,7 +6,7 @@
 
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,7 @@ import { Eye, EyeOff } from "lucide-react"
 import { isPasswordValid } from "@/lib/password-utils"
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
 
-export default function ResetPasswordPage() {
+function ResetPasswordPageInner() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -231,5 +231,19 @@ export default function ResetPasswordPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
+          <div className="text-muted-foreground">Loading…</div>
+        </div>
+      }
+    >
+      <ResetPasswordPageInner />
+    </Suspense>
   )
 }

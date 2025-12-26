@@ -729,3 +729,14 @@ export interface SimKlinePoint {
   close: number
   volume?: number | null
 }
+
+export interface SimIntradayCandle {
+  symbol: string
+  minute: number
+  time: number
+  open: number
+  high: number
+  low: number
+  close: number
+  volume?: number
+}
