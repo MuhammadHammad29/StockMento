@@ -84,8 +84,6 @@ export default function SimulatorPage() {
     quantity: 100,
   })
   const [chartMode, setChartMode] = useState<"area" | "candles">("area")
-  const [message, setMessage] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [accountStatus, setAccountStatus] = useState<SimAccountStatusResponse | null>(null)
   const [accountChecking, setAccountChecking] = useState(true)
@@ -151,13 +149,11 @@ export default function SimulatorPage() {
         const data = await simulatorApi.start(symbol)
         setPortfolio(data.portfolio)
         setTicks((data.ticks ?? []).slice(-MAX_TICKS))
-        setMessage(null)
-        setError(null)
         const wl = await simulatorApi.tickers(DEFAULT_WATCHLIST.join(","))
         setWatchlist(wl)
       } catch (err) {
         console.error(err)
-        setError("Unable to start simulator.")
+        toast.error("Unable to start simulator.", { position: "top-right" })
       }
     }
     void load()
@@ -357,40 +353,28 @@ export default function SimulatorPage() {
 
   const handlePlaceOrder = async () => {
     if (marketDown) {
-      const msg = "Trading is halted. Orders cannot be placed right now."
-      setError(msg)
-      toast.error(msg, { position: "top-right" })
+      toast.error("Trading is halted. Orders cannot be placed right now.", { position: "top-right" })
       return
     }
-    setError(null)
-    setMessage(null)
-
     const quantity = Number(form.quantity)
     if (!Number.isFinite(quantity) || quantity <= 0) {
       const msg = "Enter a valid quantity greater than zero."
-      setError(msg)
       toast.error(msg, { position: "top-right" })
       return
     }
 
     if (form.orderType === "limit" && (!form.limitPrice || form.limitPrice <= 0)) {
-      const msg = "Limit orders need a positive limit price."
-      setError(msg)
-      toast.error(msg, { position: "top-right" })
+      toast.error("Limit orders need a positive limit price.", { position: "top-right" })
       return
     }
 
     if (form.orderType === "stop_limit") {
       if (!form.triggerPrice || form.triggerPrice <= 0) {
-        const msg = "Stop-limit orders need a trigger price."
-        setError(msg)
-        toast.error(msg, { position: "top-right" })
+        toast.error("Stop-limit orders need a trigger price.", { position: "top-right" })
         return
       }
       if (!form.stopLimitPrice || form.stopLimitPrice <= 0) {
-        const msg = "Stop-limit orders need a stop limit price."
-        setError(msg)
-        toast.error(msg, { position: "top-right" })
+        toast.error("Stop-limit orders need a stop limit price.", { position: "top-right" })
         return
       }
     }
@@ -407,17 +391,14 @@ export default function SimulatorPage() {
       const nextPortfolio = (res as any)?.portfolio ?? res
       if (nextPortfolio && typeof nextPortfolio === "object" && "holdings" in nextPortfolio) {
         setPortfolio(nextPortfolio as SimPortfolio)
-        setMessage("Order placed.")
         toast.success("Order placed", { position: "top-right" })
       } else {
         const refreshed = await simulatorApi.start(symbol)
         setPortfolio(refreshed.portfolio)
         setTicks((refreshed.ticks ?? []).slice(-MAX_TICKS))
-        setMessage("Order placed.")
         toast.success("Order placed", { position: "top-right" })
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Order failed")
       toast.error(err instanceof Error ? err.message : "Order failed", { position: "top-right" })
     } finally {
       setPending(false)
@@ -427,15 +408,12 @@ export default function SimulatorPage() {
   const handleCancelOrder = async (orderId: string) => {
     if (!orderId) return
     setCancelPending(orderId)
-    setError(null)
     try {
       const updated = await simulatorApi.cancelOrder(orderId)
       setPortfolio(updated)
-      setMessage("Order cancelled.")
       toast.success("Order cancelled", { position: "top-right" })
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unable to cancel order"
-      setError(msg)
       toast.error(msg, { position: "top-right" })
     } finally {
       setCancelPending(null)
@@ -444,7 +422,6 @@ export default function SimulatorPage() {
 
   const handleActivateSimulator = async () => {
     setActivating(true)
-    setError(null)
     try {
       const data = await simulatorApi.start(symbol)
       setPortfolio(data.portfolio)
@@ -657,9 +634,6 @@ export default function SimulatorPage() {
             </div>
           </div>
         </div>
-
-        {message ? <div className="text-sm text-emerald-400">{message}</div> : null}
-        {error ? <div className="text-sm text-red-400">{error}</div> : null}
 
         <div className={layoutGrid}>
           <Card className="border-border bg-card/90 dark:bg-card/80">
