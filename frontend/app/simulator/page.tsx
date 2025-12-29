@@ -112,6 +112,18 @@ export default function SimulatorPage() {
   }
 
   useEffect(() => {
+    if (typeof window === "undefined") return
+    const updateScreen = () => {
+      if (window.innerWidth < 1024) {
+        setLayoutMode("stack")
+      }
+    }
+    updateScreen()
+    window.addEventListener("resize", updateScreen)
+    return () => window.removeEventListener("resize", updateScreen)
+  }, [])
+
+  useEffect(() => {
     if (!user) {
       setAccountStatus(null)
       setAccountChecking(false)
@@ -617,7 +629,7 @@ export default function SimulatorPage() {
               <Button
                 size="sm"
                 variant="outline"
-                className="border-border bg-card/90 dark:bg-card/80 text-xs text-foreground"
+                className="hidden border-border bg-card/90 text-xs text-foreground dark:bg-card/80 lg:inline-flex"
                 onClick={() => setLayoutMode((m) => (m === "split" ? "stack" : "split"))}
               >
                 View: {layoutMode === "split" ? "Side by Side" : "Stacked (Big Chart)"}
@@ -639,7 +651,7 @@ export default function SimulatorPage() {
           <Card className="border-border bg-card/90 dark:bg-card/80">
             <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-foreground">Price Action</CardTitle>
-              <div className="flex gap-2">
+              <div className="hidden gap-2 lg:flex">
                 <Button
                   size="sm"
                   variant={chartMode === "area" ? "default" : "outline"}
@@ -809,7 +821,35 @@ export default function SimulatorPage() {
                       {formatCurrency(holdingMetrics.totalPnl, true)}
                     </span>
                   </div>
-                  <div className="overflow-x-auto">
+                  <div className="space-y-2 sm:hidden">
+                    {holdingMetrics.rows.map((h) => (
+                      <div key={h.symbol} className="rounded-lg border border-border p-3 space-y-1">
+                        <div className="flex items-center justify-between text-sm font-semibold text-foreground">
+                          <span>{h.symbol}</span>
+                          <span className={`text-xs ${pnlColor(h.pnl)}`}>{formatCurrency(h.pnl, true)}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                          <div>
+                            <p>Qty</p>
+                            <p className="font-semibold text-foreground">{h.quantity}</p>
+                          </div>
+                          <div>
+                            <p>Avg Cost</p>
+                            <p className="font-semibold text-foreground">{formatCurrency(h.avgCostPrice)}</p>
+                          </div>
+                          <div>
+                            <p>Last</p>
+                            <p className="font-semibold text-foreground">{formatCurrency(h.livePrice)}</p>
+                          </div>
+                          <div>
+                            <p>Value</p>
+                            <p className="font-semibold text-foreground">{formatCurrency(h.value)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="hidden overflow-x-auto sm:block">
                     <table className="w-full text-sm">
                       <thead className="text-muted-foreground">
                         <tr>
@@ -942,14 +982,14 @@ function Row({
 }) {
   return (
     <div
-      className={`flex items-center justify-between rounded-lg border p-2 ${
+      className={`flex flex-col gap-1 rounded-lg border p-2 sm:flex-row sm:items-center sm:justify-between ${
         highlight
           ? "border-emerald-400/60 bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-100"
           : "border-border bg-card/90 dark:bg-card/70"
       }`}
     >
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-sm font-semibold text-foreground">
+      <span className="text-base font-semibold text-foreground sm:text-sm">
         {value !== undefined ? (format ? format(value) : value.toFixed(2)) : "--"}
       </span>
     </div>
