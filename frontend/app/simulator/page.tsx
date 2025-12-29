@@ -790,7 +790,7 @@ export default function SimulatorPage() {
           </Card>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <Card className="border-border bg-card/90 dark:bg-card/80">
             <CardHeader>
               <CardTitle className="text-foreground">Holdings</CardTitle>
