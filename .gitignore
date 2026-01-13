@@ -23,3 +23,11 @@ yarn-error.log*
 *.tsbuildinfo
 # backend build output
 /backend/dist/
+/backend/datasets/
+/backend/src/simulator/klines
+package-lock.json
+*/psx_ticks/saved_psx/
+Simulator_Dependencies/psx_ticks/saved_psx/
+old_simulator/
+klines_output/
+myenv/
