@@ -57,10 +57,10 @@ type OrderForm = {
   symbol: string
   side: "buy" | "sell"
   orderType: "market" | "limit" | "stop_limit"
-  quantity: number
-  limitPrice?: number
-  triggerPrice?: number
-  stopLimitPrice?: number
+  quantity: string
+  limitPrice?: string
+  triggerPrice?: string
+  stopLimitPrice?: string
 }
 
 export default function SimulatorPage() {
@@ -81,7 +81,7 @@ export default function SimulatorPage() {
     symbol: "ATRL",
     side: "buy",
     orderType: "market",
-    quantity: 100,
+    quantity: "100",
   })
   const [chartMode, setChartMode] = useState<"area" | "candles">("area")
   const [pending, setPending] = useState(false)
@@ -257,6 +257,9 @@ export default function SimulatorPage() {
   }, [latestTick])
 
   const marketDown = useMemo(() => {
+    const status =
+      typeof latestTick?.st === "string" ? latestTick.st.trim().toUpperCase() : ""
+    if (status) return status !== "OPN"
     const entries = Object.values(watchlist).filter((t): t is SimTick => Boolean(t))
     if (!entries.length) return false
     return entries.every((t) => {
@@ -264,7 +267,7 @@ export default function SimulatorPage() {
       const askv = Number(t.askVol ?? 0)
       return (!Number.isFinite(bidv) || bidv === 0) && (!Number.isFinite(askv) || askv === 0)
     })
-  }, [watchlist])
+  }, [watchlist, latestTick])
 
   const ownedVolume = useMemo(() => {
     if (!portfolio) return 0
@@ -375,17 +378,21 @@ export default function SimulatorPage() {
       return
     }
 
-    if (form.orderType === "limit" && (!form.limitPrice || form.limitPrice <= 0)) {
+    const limitPrice = form.limitPrice ? Number(form.limitPrice) : undefined
+    const triggerPrice = form.triggerPrice ? Number(form.triggerPrice) : undefined
+    const stopLimitPrice = form.stopLimitPrice ? Number(form.stopLimitPrice) : undefined
+
+    if (form.orderType === "limit" && (!limitPrice || limitPrice <= 0)) {
       toast.error("Limit orders need a positive limit price.", { position: "top-right" })
       return
     }
 
      if (form.orderType === "stop_limit") { 
-       if (!form.triggerPrice || form.triggerPrice <= 0) { 
+       if (!triggerPrice || triggerPrice <= 0) { 
         toast.error("Stop-limit orders need a trigger price.", { position: "top-right" }) 
         return 
       }
-      if (!form.stopLimitPrice || form.stopLimitPrice <= 0) { 
+      if (!stopLimitPrice || stopLimitPrice <= 0) { 
         toast.error("Stop-limit orders need a stop limit price.", { position: "top-right" }) 
         return 
       }
@@ -393,7 +400,13 @@ export default function SimulatorPage() {
 
     setPending(true) 
     try {
-      const payload: any = { ...form, quantity } 
+      const payload: any = {
+        ...form,
+        quantity,
+        limitPrice,
+        triggerPrice,
+        stopLimitPrice,
+      }
       if (form.orderType === "market") { 
         payload.currentPrice = latestPrice ?? undefined 
       }
@@ -747,7 +760,8 @@ export default function SimulatorPage() {
                     type="number"
                     min={1}
                     value={form.quantity}
-                    onChange={(e) => setForm((p) => ({ ...p, quantity: Number(e.target.value) }))}
+                    onChange={(e) => setForm((p) => ({ ...p, quantity: e.target.value }))}
+                    onFocus={(e) => e.currentTarget.select()}
                   />
                 </div>
               </div>
@@ -759,7 +773,8 @@ export default function SimulatorPage() {
                     className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
                     type="number"
                     value={form.limitPrice ?? ""}
-                    onChange={(e) => setForm((p) => ({ ...p, limitPrice: Number(e.target.value) }))}
+                    onChange={(e) => setForm((p) => ({ ...p, limitPrice: e.target.value || undefined }))}
+                    onFocus={(e) => e.currentTarget.select()}
                     disabled={form.orderType === "market"}
                     placeholder={latestPrice ? `≈ ${latestPrice}` : "PKR"}
                   />
@@ -770,7 +785,8 @@ export default function SimulatorPage() {
                     className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
                     type="number"
                     value={form.triggerPrice ?? ""}
-                    onChange={(e) => setForm((p) => ({ ...p, triggerPrice: Number(e.target.value) }))}
+                    onChange={(e) => setForm((p) => ({ ...p, triggerPrice: e.target.value || undefined }))}
+                    onFocus={(e) => e.currentTarget.select()}
                     disabled={form.orderType !== "stop_limit"}
                   />
                 </div>
@@ -782,7 +798,8 @@ export default function SimulatorPage() {
                     className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
                     type="number"
                     value={form.stopLimitPrice ?? ""}
-                    onChange={(e) => setForm((p) => ({ ...p, stopLimitPrice: Number(e.target.value) }))}
+                    onChange={(e) => setForm((p) => ({ ...p, stopLimitPrice: e.target.value || undefined }))}
+                    onFocus={(e) => e.currentTarget.select()}
                   />
                 </div>
               ) : null}

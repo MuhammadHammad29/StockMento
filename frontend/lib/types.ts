@@ -675,6 +675,7 @@ export interface SimTick {
   timestamp_ms?: number
   iso_time?: string
   symbol: string
+  st?: string
   price?: number
   change?: number
   changePercent?: number

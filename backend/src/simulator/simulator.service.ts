@@ -407,6 +407,32 @@ export class SimulatorService {
     return this.getPortfolio(user);
   }
 
+  async cancelOpenOrdersForSymbol(symbol: string, reason = 'market_halt') {
+    if (!symbol) return;
+    const stock = await this.prisma.simStock.findFirst({
+      where: { symbol: symbol.toUpperCase() },
+      select: { id: true },
+    });
+    if (!stock) return;
+
+    const now = new Date();
+    await this.prisma.simOrder.updateMany({
+      where: {
+        stockId: stock.id,
+        status: { in: [SimOrderStatus.new, SimOrderStatus.partially_filled] },
+      },
+      data: {
+        status: SimOrderStatus.cancelled,
+        triggerStatus: SimOrderTriggerStatus.cancelled,
+        updatedAt: now,
+        meta: {
+          cancelledAt: now.toISOString(),
+          reason,
+        } as Prisma.InputJsonObject,
+      },
+    });
+  }
+
   async processPendingOrdersForSymbol(
     symbol: string,
     price: number,

@@ -33,6 +33,8 @@ export class TickGateway implements OnModuleInit, OnModuleDestroy {
 
   private subscriber: Redis | null = null;
   private subscriptions: string[] = [];
+  private readonly statusCache = new Map<string, string>();
+  private readonly statusKey = 'sim:market:status';
 
   constructor(
     private readonly redisService: RedisService,
@@ -107,6 +109,27 @@ export class TickGateway implements OnModuleInit, OnModuleDestroy {
       }
 
       if (parsed?.symbol) {
+        const rawStatus =
+          typeof (parsed as { st?: string }).st === 'string'
+            ? (parsed as { st?: string }).st
+            : undefined;
+        const status = rawStatus ? rawStatus.trim().toUpperCase() : undefined;
+        if (status) {
+          const symbolKey = parsed.symbol.toUpperCase();
+          const previous = this.statusCache.get(symbolKey);
+          if (previous !== status) {
+            this.statusCache.set(symbolKey, status);
+            void this.redisService
+              .getClient()
+              .hset(this.statusKey, symbolKey, status);
+          }
+          if (status !== 'OPN' && previous !== status) {
+            void this.simulatorService.cancelOpenOrdersForSymbol(
+              symbolKey,
+              `market_status:${status}`,
+            );
+          }
+        }
         const normalized = this.tickService.normalizeTick(parsed);
         if (Number.isFinite(normalized.price) && normalized.price > 0) {
           void this.simulatorService.processPendingOrdersForSymbol(
