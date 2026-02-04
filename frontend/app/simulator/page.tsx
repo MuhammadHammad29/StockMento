@@ -380,22 +380,22 @@ export default function SimulatorPage() {
       return
     }
 
-    if (form.orderType === "stop_limit") {
-      if (!form.triggerPrice || form.triggerPrice <= 0) {
-        toast.error("Stop-limit orders need a trigger price.", { position: "top-right" })
-        return
+     if (form.orderType === "stop_limit") { 
+       if (!form.triggerPrice || form.triggerPrice <= 0) { 
+        toast.error("Stop-limit orders need a trigger price.", { position: "top-right" }) 
+        return 
       }
-      if (!form.stopLimitPrice || form.stopLimitPrice <= 0) {
-        toast.error("Stop-limit orders need a stop limit price.", { position: "top-right" })
-        return
+      if (!form.stopLimitPrice || form.stopLimitPrice <= 0) { 
+        toast.error("Stop-limit orders need a stop limit price.", { position: "top-right" }) 
+        return 
       }
     }
 
-    setPending(true)
+    setPending(true) 
     try {
-      const payload: any = { ...form, quantity }
-      if (form.orderType === "market") {
-        payload.currentPrice = latestPrice ?? undefined
+      const payload: any = { ...form, quantity } 
+      if (form.orderType === "market") { 
+        payload.currentPrice = latestPrice ?? undefined 
       }
       payload.buyVolume = latestSellVolume ?? undefined
       payload.sellVolume = latestBuyVolume ?? undefined
@@ -518,7 +518,7 @@ export default function SimulatorPage() {
       </div>
     )
   }
-
+// Show error if account check failed and no status
   if (!accountChecking && accountError && !accountStatus) {
     return (
       <div className="min-h-screen bg-background text-foreground">
@@ -587,10 +587,6 @@ export default function SimulatorPage() {
     <div className="min-h-screen bg-background text-foreground">
       <UserNavbar />
       <main className="mx-auto max-w-6xl px-4 py-6 space-y-4">
-        <div className="rounded-md border border-amber-500/50 bg-amber-50 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-100 px-3 py-2">
-          Trading uses live Redis ticks. If halted, order placement will pause automatically.
-        </div>
-
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-3">
             <div>
@@ -845,6 +841,18 @@ export default function SimulatorPage() {
                             <p>Value</p>
                             <p className="font-semibold text-foreground">{formatCurrency(h.value)}</p>
                           </div>
+                          <div>
+                            <p>Unrealized P/L</p>
+                            <p className={`font-semibold ${pnlColor(h.pnl)}`}>
+                              {formatCurrency(h.pnl, true)}
+                            </p>
+                          </div>
+                          <div>
+                            <p>Realized P/L</p>
+                            <p className={`font-semibold ${pnlColor(h.realizedPnl)}`}>
+                              {formatCurrency(h.realizedPnl, true)}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -859,6 +867,7 @@ export default function SimulatorPage() {
                           <th className="text-left p-2">Last</th>
                           <th className="text-left p-2">Est. Value</th>
                           <th className="text-left p-2">Unrealized P/L</th>
+                          <th className="text-left p-2">Realized P/L</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -870,6 +879,9 @@ export default function SimulatorPage() {
                             <td className="p-2">{formatCurrency(h.livePrice)}</td>
                             <td className="p-2">{formatCurrency(h.value)}</td>
                             <td className={`p-2 ${pnlColor(h.pnl)}`}>{formatCurrency(h.pnl, true)}</td>
+                            <td className={`p-2 ${pnlColor(h.realizedPnl)}`}>
+                              {formatCurrency(h.realizedPnl, true)}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

@@ -11,6 +11,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { JwtPayload } from '../auth/auth.types';
+import { TickService } from './tick.service';
 
 type Numeric = number | string | Prisma.Decimal;
 
@@ -27,11 +28,19 @@ export type PortfolioSnapshotResponse = {
   cashAvailable: number;
   cashLocked: number;
   equityLast: number;
+  holdingsValue: number;
+  unrealizedPnlLast: number;
+  realizedPnlTotal: number;
+  totalEquity: number;
   holdings: Array<{
     symbol: string;
     name: string;
     quantity: number;
     avgCostPrice: number;
+    livePrice: number | null;
+    value: number | null;
+    pnl: number | null;
+    realizedPnl: number | null;
   }>;
   openOrders: Array<{
     id: string;
@@ -51,7 +60,10 @@ export type PortfolioSnapshotResponse = {
 export class SimulatorService {
   private readonly logger = new Logger(SimulatorService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tickService: TickService,
+  ) {}
 
   async getAccountStatus(user: JwtPayload) {
     const account = await this.prisma.simAccount.findFirst({
@@ -129,17 +141,59 @@ export class SimulatorService {
       }),
     ]);
 
-    return {
-      accountId: account.id,
-      cashAvailable: toNumber(account.cashAvailable),
-      cashLocked: toNumber(account.cashLocked),
-      equityLast: toNumber(account.equityLast),
-      holdings: holdings.map((h) => ({
+    const symbols = holdings.map((h) => h.stock.symbol);
+    const latestTicks = symbols.length > 0
+      ? await this.tickService.getLatestTicks(symbols)
+      : {};
+
+    const holdingsResponse = holdings.map((h) => {
+      const livePrice = latestTicks[h.stock.symbol]?.price ?? null;
+      const value =
+        livePrice != null ? livePrice * toNumber(h.quantity) : null;
+      const pnl =
+        value != null ? value - toNumber(h.quantity) * toNumber(h.avgCostPrice) : null;
+      return {
         symbol: h.stock.symbol,
         name: h.stock.name,
         quantity: toNumber(h.quantity),
         avgCostPrice: toNumber(h.avgCostPrice),
-      })),
+        livePrice,
+        value,
+        pnl,
+        realizedPnl: h.realizedPnl ? toNumber(h.realizedPnl) : null,
+      };
+    });
+
+    const holdingsValue = holdingsResponse.reduce(
+      (sum, h) => sum + (h.value ?? 0),
+      0,
+    );
+    const unrealizedPnlLast = holdingsResponse.reduce(
+      (sum, h) => sum + (h.pnl ?? 0),
+      0,
+    );
+    const realizedPnlTotal = toNumber(account.realizedPnlTotal);
+    const totalEquity = toNumber(account.cashAvailable) + holdingsValue;
+
+    await this.prisma.simAccount.update({
+      where: { id: account.id },
+      data: {
+        equityLast: dec(totalEquity),
+        unrealizedPnlLast: dec(unrealizedPnlLast),
+        updatedAt: new Date(),
+      },
+    });
+
+    return {
+      accountId: account.id,
+      cashAvailable: toNumber(account.cashAvailable),
+      cashLocked: toNumber(account.cashLocked),
+      equityLast: totalEquity,
+      holdingsValue,
+      unrealizedPnlLast,
+      realizedPnlTotal,
+      totalEquity,
+      holdings: holdingsResponse,
       openOrders: orders.map((o) => ({
         id: o.id,
         symbol: o.stock.symbol,
@@ -484,11 +538,16 @@ export class SimulatorService {
         if (!holding || heldQty < quantity - 1e-6) {
           throw new BadRequestException('Insufficient holdings to sell.');
         }
+        const avgCost = toNumber(holding.avgCostPrice);
+        const realizedDelta = (price - avgCost) * quantity;
+        const nextRealized = toNumber(holding.realizedPnl) + realizedDelta;
         const remaining = heldQty - quantity;
         await tx.simHolding.update({
           where: { id: holding.id },
           data: {
             quantity: dec(remaining),
+            avgCostPrice: dec(remaining > 0 ? avgCost : 0),
+            realizedPnl: dec(nextRealized),
             updatedAt: new Date(),
           },
         });
@@ -497,6 +556,7 @@ export class SimulatorService {
           data: {
             cashAvailable: dec(toNumber(account.cashAvailable) + cost),
             equityLast: dec(toNumber(account.equityLast) + cost),
+            realizedPnlTotal: dec(toNumber(account.realizedPnlTotal) + realizedDelta),
             updatedAt: new Date(),
           },
         });

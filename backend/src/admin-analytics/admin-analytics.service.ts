@@ -51,8 +51,8 @@ export class AdminAnalyticsService {
       this.prisma.lesson.count(),
       this.prisma.courseSection.count(),
       this.prisma.courseEnrollment.aggregate({
-        _avg: { progressPercent: true },
-        _count: { _all: true },
+        _avg: { progressPercent: true }, // Average progress percentage across all enrollments
+        _count: { _all: true }, // Total number of enrollments
       }),
       this.prisma.courseEnrollment.count({
         where: { status: 'active' },
@@ -69,24 +69,24 @@ export class AdminAnalyticsService {
         },
       }),
     ]);
-
-    const totalEnrollments = enrollmentAggregate._count._all;
+// Calculate additional metrics
+    const totalEnrollments = enrollmentAggregate._count._all; // Total number of enrollments
     const avgCompletionRate = this.resolveAverageCompletion(
-      enrollmentAggregate._avg.progressPercent,
+      enrollmentAggregate._avg.progressPercent, 
     );
     const completionRate = this.resolveCompletionRate(
       completedEnrollments,
       activeEnrollments,
     );
-
+// Fetch recent users
     const recentUsersRaw = await this.prisma.identity.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 5,
+      take: 5, // get the last 5 registered users
       include: {
         profile: true,
       },
     });
-
+// Map recent users to include avatar URL and formatted name
     const recentUsers = recentUsersRaw.map((user) => ({
       id: user.id,
       name:
@@ -101,7 +101,7 @@ export class AdminAnalyticsService {
 
     const enrollmentFeed = await this.prisma.courseEnrollment.findMany({
       orderBy: [{ completedAt: 'desc' }, { startedAt: 'desc' }],
-      take: 6,
+      take: 6, // get the latest 6 enrollment records
       include: {
         course: {
           select: {

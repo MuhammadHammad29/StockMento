@@ -36,7 +36,7 @@ type CourseWithMetadata = PublicCourseSummary & {
 }
 
 export default function CoursesPage() {
-  const { user } = useAuth()
+  const { user } = useAuth() // Get current user context
   // Filter and search state management
   const [searchQuery, setSearchQuery] = useState("")
   const [levelFilter, setLevelFilter] = useState("All")
@@ -426,11 +426,6 @@ export default function CoursesPage() {
         {filteredCourses.length > 0 && filteredCourses.length === coursesWithProgress.length && !isLoading && (
           <div className="text-center mt-12">
             <p className="text-muted-foreground mb-4">You&apos;ve seen all available courses!</p>
-            <Link href="/dashboard">
-              <Button variant="outline" size="lg" className="cursor-pointer">
-                Back to Dashboard
-              </Button>
-            </Link>
           </div>
         )}
       </div>

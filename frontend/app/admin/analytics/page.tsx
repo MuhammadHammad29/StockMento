@@ -17,6 +17,7 @@ import { AdminNavbar } from "@/components/navigation"
 import { analyticsApi } from "@/lib/api"
 import type { AdminDashboardSummary } from "@/lib/types"
 
+// Default empty stats to avoid undefined checks throughout the component
 const EMPTY_STATS: AdminDashboardSummary["stats"] = {
   totalUsers: 0,
   activeUsers: 0,
@@ -32,46 +33,48 @@ const EMPTY_STATS: AdminDashboardSummary["stats"] = {
 }
 
 export default function AdminAnalyticsPage() {
-  const { adminUser } = useAdminAuth()
-  void adminUser
+  const { adminUser } = useAdminAuth() // Ensure only admins can access this page
+  if (!adminUser) return null // Or a redirect could be implemented here to the login page
+  void adminUser // to avoid unused variable warning
 
-  const [summary, setSummary] = useState<AdminDashboardSummary | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [summary, setSummary] = useState<AdminDashboardSummary | null>(null) // Holds the fetched analytics summary data null initially
+  const [isLoading, setIsLoading] = useState(false) // Loading state for data fetch false initially
+  const [error, setError] = useState<string | null>(null) // Error state for fetch issues null initially
 
   useEffect(() => {
-    let mounted = true
-
+    let mounted = true // if the user is still on the page
+    // Function to load analytics data
     const load = async () => {
-      setIsLoading(true)
+      setIsLoading(true) 
       try {
-        const data = await analyticsApi.getDashboardStats()
-        if (mounted) {
-          setSummary(data)
-          setError(null)
+        const data = await analyticsApi.getDashboardStats() // Fetch analytics summary data
+        if (mounted) { // only update the state if the component is still mounted
+          setSummary(data) // Update summary state with fetched data
+          setError(null) // Clear any previous errors
         }
-      } catch (err) {
-        console.error("Failed to load analytics", err)
+      } catch (err) { 
+        console.error("Failed to load analytics", err) // Log the error for debugging
         if (mounted) {
-          setError("Unable to load analytics right now.")
+          setError("Unable to load analytics right now.") // Set a user-friendly error message
         }
       } finally {
         if (mounted) {
-          setIsLoading(false)
+          setIsLoading(false) 
         }
       }
     }
-
-    void load()
+    //
+    void load() // Trigger the data load on component mount and void for async
     return () => {
-      mounted = false
+      mounted = false // Cleanup function to set mounted to false on unmount
     }
-  }, [])
+  }, []) // Empty dependency array ensures this runs once on mount
 
+  //Safely extract data with default values to prevent app crashes 
   const stats = summary?.stats ?? EMPTY_STATS
   const recentActivity = useMemo(() => summary?.recentActivity ?? [], [summary])
   const recentEnrollments = useMemo(() => summary?.recentEnrollments ?? [], [summary])
-
+// Memoized metrics object for easy access to key statistics
   const metrics = useMemo(() => {
     return {
       totalEnrollments: stats.totalEnrollments,
@@ -86,9 +89,12 @@ export default function AdminAnalyticsPage() {
       totalLessons: stats.totalLessons,
       totalSections: stats.totalSections,
     }
-  }, [stats])
+  }, [stats]) // Memoize to avoid recalculating unless stats change
+
+  // Compute top courses based on recent enrollments
 
   const topCourses = useMemo(() => {
+    // Map to aggregate course data by title
     const map = new Map<
       string,
       {
@@ -98,33 +104,35 @@ export default function AdminAnalyticsPage() {
         level: string | null
       }
     >()
-
-    recentEnrollments.forEach((enrollment) => {
-      const entry = map.get(enrollment.courseTitle) ?? {
+    // Aggregate enrollment data by course title
+    recentEnrollments.forEach((enrollment) => {//
+      const entry = map.get(enrollment.courseTitle) ?? { // Initialize if not present
         name: enrollment.courseTitle,
         students: 0,
         completed: 0,
         level: enrollment.level ?? null,
       }
-
+      // Update counts
       entry.students += 1
       if (enrollment.status === "completed") {
         entry.completed += 1
       }
-
+    // Save back to map
       map.set(enrollment.courseTitle, entry)
     })
-
-    return Array.from(map.values())
-      .map((course) => ({
+    // Convert map to sorted array and take top 4 courses
+    return Array.from(map.values()) // Convert map values to array
+      .map((course) => ({ 
         name: course.name,
         students: course.students,
         level: course.level,
         completion: course.students > 0 ? Math.round((course.completed / course.students) * 100) : 0,
       }))
-      .sort((a, b) => b.students - a.students)
-      .slice(0, 4)
-  }, [recentEnrollments])
+      .sort((a, b) => b.students - a.students) // Sort by number of students descending
+      .slice(0, 4) // Take top 4 courses
+  }, [recentEnrollments]) // Memoize to avoid recalculating unless recentEnrollments change
+
+  // Compute learner segments based on experience levels
 
   const levelSegments = useMemo(() => {
     const totals = { beginner: 0, intermediate: 0, advanced: 0 }
@@ -132,15 +140,15 @@ export default function AdminAnalyticsPage() {
       if (!enrollment.level) return
       const key = enrollment.level.toLowerCase()
       if (key in totals) {
-        totals[key as keyof typeof totals] += 1
+        totals[key as keyof typeof totals] += 1 // Increment the count for the corresponding level and keyof tells TS that key is one of the keys of totals
       }
     })
-    const total = Object.values(totals).reduce((sum, value) => sum + value, 0) || 1
+    const total = Object.values(totals).reduce((sum, value) => sum + value, 0) || 1 // Calculate total count or default to 1 to avoid division by zero
     return [
       { label: "Beginner", value: Math.round((totals.beginner / total) * 100) },
       { label: "Intermediate", value: Math.round((totals.intermediate / total) * 100) },
       { label: "Advanced", value: Math.round((totals.advanced / total) * 100) },
-    ]
+    ] // Return percentage distribution of learner levels
   }, [recentEnrollments])
 
   const churnIndicators = useMemo(() => {
@@ -178,7 +186,7 @@ export default function AdminAnalyticsPage() {
             Key metrics and insights about learner engagement across the StockMento platform.
           </p>
         </div>
-
+        {/* Display error message if any */}
         {error && (
           <Card className="mb-4 border border-destructive/30 bg-destructive/10 text-destructive">
             <CardContent className="py-3 text-sm">{error}</CardContent>

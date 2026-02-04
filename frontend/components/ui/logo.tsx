@@ -12,7 +12,7 @@ export default function Logo({ size = 'md', className = '' }: LogoProps) {
     lg: { width: 180, height: 45 }    // Original large size
   }
   
-  const logoSrc = '/logo/StockMento logo-transparent_copy.png'
+  const logoSrc = '/logo/testlogo.png'
   
   return (
     <Image 

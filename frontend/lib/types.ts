@@ -695,6 +695,7 @@ export interface SimHolding {
   livePrice?: number | null
   value?: number | null
   pnl?: number | null
+  realizedPnl?: number | null
 }
 
 export interface SimOrder {
@@ -715,6 +716,10 @@ export interface SimPortfolio {
   cashAvailable: number
   cashLocked: number
   equityLast: number
+  holdingsValue?: number
+  unrealizedPnlLast?: number
+  realizedPnlTotal?: number
+  totalEquity?: number
   holdings: SimHolding[]
   openOrders: SimOrder[]
 }

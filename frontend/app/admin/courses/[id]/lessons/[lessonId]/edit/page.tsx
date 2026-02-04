@@ -285,7 +285,7 @@ export default function EditLessonPage({ params }: { params: { id: string; lesso
             {formData.contentType === "video" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="videoUrl">Video URL</Label>
+                  <Label htmlFor="videoUrl">Video URL *</Label>
                   <Input
                     id="videoUrl"
                     value={formData.videoUrl}
@@ -293,7 +293,7 @@ export default function EditLessonPage({ params }: { params: { id: string; lesso
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="thumbnailUrl">Thumbnail URL</Label>
+                  <Label htmlFor="thumbnailUrl">Thumbnail URL (optional)</Label>
                   <Input
                     id="thumbnailUrl"
                     value={formData.thumbnailUrl}

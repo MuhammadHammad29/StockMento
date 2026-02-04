@@ -122,6 +122,10 @@
   body {
     @apply bg-background text-foreground;
   }
+  html,
+  body {
+    overflow-x: hidden;
+  }
   .prose table {
     @apply w-full border-collapse text-sm my-4;
   }

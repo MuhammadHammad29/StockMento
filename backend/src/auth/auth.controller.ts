@@ -32,12 +32,12 @@ import type { JwtPayload } from './auth.types';
 @Controller('auth')
 export class AuthController {
   constructor(
-    private readonly authService: AuthService,
-    private readonly configService: ConfigService,
+    private readonly authService: AuthService, // Auth service for handling authentication logic
+    private readonly configService: ConfigService, // Configuration service for accessing environment variables
   ) {}
 
   private setRefreshTokenCookie(res: Response, refreshToken: string) {
-    const isProduction = this.configService.get('NODE_ENV') === 'production';
+    const isProduction = this.configService.get('NODE_ENV') === 'production'; // Check if the environment is production
 
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true, // Cannot be accessed by JavaScript
@@ -50,10 +50,10 @@ export class AuthController {
 
   private clearRefreshTokenCookie(res: Response) {
     res.clearCookie('refresh_token', {
-      httpOnly: true,
-      secure: this.configService.get('NODE_ENV') === 'production',
-      sameSite: 'strict',
-      path: '/',
+      httpOnly: true, // Cannot be accessed by JavaScript
+      secure: this.configService.get('NODE_ENV') === 'production', // Only sent over HTTPS in production
+      sameSite: 'strict', // CSRF protection
+      path: '/', // Cookie available for entire domain
     });
   }
 
@@ -87,12 +87,12 @@ export class AuthController {
   }
 
   @Post('login')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.OK) // Return 200 OK instead of 201 Created
   async login(
-    @Body() dto: LoginDto,
-    @Res({ passthrough: true }) res: Response,
+    @Body() dto: LoginDto, // Login data transfer object
+    @Res({ passthrough: true }) res: Response, // Response object to set cookies
   ) {
-    const result = await this.authService.login(dto);
+    const result = await this.authService.login(dto);// Login user and get tokens
 
     // Set refresh token as HttpOnly cookie
     this.setRefreshTokenCookie(res, result.tokens.refreshToken);
@@ -107,14 +107,14 @@ export class AuthController {
   }
 
   @Post('admin/login')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.OK) // Return 200 OK instead of 201 Created
   async adminLogin(
-    @Body() dto: AdminLoginDto,
-    @Res({ passthrough: true }) res: Response,
+    @Body() dto: AdminLoginDto, // Admin login data transfer object
+    @Res({ passthrough: true }) res: Response, // Response object to set cookies
   ) {
-    const result = await this.authService.loginAdmin(dto);
+    const result = await this.authService.loginAdmin(dto); // Login admin and get tokens
 
-    this.setRefreshTokenCookie(res, result.tokens.refreshToken);
+    this.setRefreshTokenCookie(res, result.tokens.refreshToken); // Set refresh token as HttpOnly cookie
 
     return {
       user: result.user,
@@ -127,9 +127,9 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
-    @Body() dto: RefreshTokenDto,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
+    @Body() dto: RefreshTokenDto, // Refresh token data transfer object
+    @Req() req: Request, // Request object to access cookies
+    @Res({ passthrough: true }) res: Response, // Response object to set cookies
   ) {
     // Try to get refresh token from cookie first, then fall back to body
     const refreshToken =
@@ -144,7 +144,7 @@ export class AuthController {
     const result = await this.authService.refreshTokens({ refreshToken });
 
     // Set new refresh token as HttpOnly cookie
-    this.setRefreshTokenCookie(res, result.tokens.refreshToken);
+    this.setRefreshTokenCookie(res, result.tokens.refreshToken); 
 
     // Return user and new access token (refresh token is in cookie)
     return {
@@ -155,11 +155,11 @@ export class AuthController {
     };
   }
 
-  @Post('logout')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('student', 'admin')
-  @HttpCode(HttpStatus.OK)
-  logout(@Res({ passthrough: true }) res: Response) {
+  @Post('logout') // Logout endpoint
+  @UseGuards(JwtAuthGuard, RolesGuard) // Protect route with JWT and roles guards
+  @Roles('student', 'admin') // Allow only students and admins to access
+  @HttpCode(HttpStatus.OK) // Return 200 OK instead of 201 Created
+  logout(@Res({ passthrough: true }) res: Response) { // Logout user and clear cookies
     // Clear the refresh token cookie
     this.clearRefreshTokenCookie(res);
     return this.authService.logout();

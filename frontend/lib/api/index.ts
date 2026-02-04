@@ -1,6 +1,3 @@
-// API service functions ready for NestJS backend integration
-// These functions will replace the mock data calls when backend is implemented
-
 import {
   User,
   UserProgress,
@@ -80,11 +77,13 @@ type SimulatorStartResponse = {
 
 type SimulatorTickerResponse = Record<string, SimTick | null>
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-const isBrowser = typeof window !== 'undefined'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001' //default backend Address 
+const isBrowser = typeof window !== 'undefined'// Check if running in browser environment by checking for window object
 
-const buildQueryString = (params: Record<string, string | number | undefined | null>) => {
-  const query = new URLSearchParams()
+// Utility to build query strings from parameters (convert object to URL query string) and avoiding undefined/null values
+
+const buildQueryString = (params: Record<string, string | number | undefined | null>) => { 
+  const query = new URLSearchParams() // Create URLSearchParams(built in node helper) object to build query string 
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== null && value !== '') {
       query.append(key, String(value))
@@ -125,7 +124,7 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 }
 
 async function refreshAccessToken(): Promise<string> {
-  // Refresh token is now in HttpOnly cookie, no need to send it in body
+  // Refresh token is in HttpOnly cookie so no need to send it in body
   const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
     method: 'POST',
     headers: {
@@ -172,34 +171,34 @@ function isAuthenticationEndpoint(endpoint: string): boolean {
   
   return authEndpoints.some(authEndpoint => endpoint === authEndpoint)
 }
-
+// Generic API call wrapper with automatic token refresh handling
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   // Base fetch wrapper used across the app to ensure consistent headers + error parsing.
   const url = `${API_BASE_URL}${endpoint}`
   const { headers, body, ...rest } = options
   const requestHeaders = new Headers(headers as HeadersInit | undefined)
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
-
+  // Set Content-Type header for JSON requests if not already set
   if (!isFormData && !requestHeaders.has('Content-Type')) {
     requestHeaders.set('Content-Type', 'application/json')
   }
-
+  // Attach Authorization header with access token if available
   if (isBrowser) {
     let token = getStoredAccessToken()
-
+  // If no token found, try to get from localStorage based on role
     if (!token) {
       token =
         localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ??
         localStorage.getItem(STORAGE_KEYS.ADMIN_ACCESS_TOKEN)
     }
-
+  // Set Authorization header if token is available
     if (token) {
       requestHeaders.set('Authorization', `Bearer ${token}`)
     }
   }
-
+  // Initial API request
   let response = await fetch(url, {
-    ...rest,
+    ...rest, // Spread other fetch options (method, etc.)
     headers: requestHeaders,
     body,
     credentials: 'include', // Always include cookies (for refresh token)
@@ -240,7 +239,7 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
         })
       }) as Promise<T>
     }
-
+    // Not already refreshing, proceed to refresh token
     isRefreshing = true
 
     try {
@@ -567,11 +566,11 @@ export const simulatorApi = {
 }
 
 
-// Analytics APIs
-export const analyticsApi = {
+// Analytics APIs 
+export const analyticsApi = { //object containing functions to call various analytics endpoints
   // Get dashboard stats
   getDashboardStats: async (): Promise<AdminDashboardSummary> => {
-    return apiCall<AdminDashboardSummary>('/admin/analytics/dashboard')
+    return apiCall<AdminDashboardSummary>('/admin/analytics/dashboard') //call apiCall with dashboard endpoint and return the result
   },
 
   // Get course analytics
@@ -640,11 +639,11 @@ export const authApi = {
     })
   },
 
-  // User login
+  // User login 
   userLogin: async (credentials: { email: string; password: string }): Promise<AuthSuccessResponse> => {
-    return apiCall<AuthSuccessResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
+    return apiCall<AuthSuccessResponse>('/auth/login', { //login endpoint
+      method: 'POST', 
+      body: JSON.stringify(credentials), //send credentials as JSON body
     })
   },
 

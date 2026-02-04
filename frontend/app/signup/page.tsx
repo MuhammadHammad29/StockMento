@@ -111,8 +111,8 @@ export default function SignUpPage() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) {
+    e.preventDefault() // Prevent default form submission
+    if (!validateForm()) { // Validate all fields
       toast.error('Please fix the highlighted fields before continuing.')
       return
     }

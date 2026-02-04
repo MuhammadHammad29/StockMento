@@ -953,7 +953,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                   }
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  {previousLesson ? `Previous: ${previousLesson.title}` : "Back to course"}
+                  {previousLesson ? `Previous` : "Back to course"}
                 </Link>
               </Button>
               <Button
@@ -968,7 +968,7 @@ export default function LessonPage({ params }: { params: { id: string; lessonId:
                       : `/courses/${courseId}`
                   }
                 >
-                  {nextLesson ? `Next: ${nextLesson.title}` : "Back to course"}
+                  {nextLesson ? `Next` : "Back to course"}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
