@@ -708,8 +708,16 @@ export interface SimOrder {
   filledQty: number
   limitPrice?: number | null
   triggerPrice?: number | null
+  stopLimitPrice?: number | null
   status: string
   createdAt: string
+}
+
+export interface SimOrderExecution {
+  orderId: string
+  tradeId: string
+  price: number
+  time: string
 }
 
 export interface SimPortfolio {
@@ -723,6 +731,11 @@ export interface SimPortfolio {
   totalEquity?: number
   holdings: SimHolding[]
   openOrders: SimOrder[]
+}
+
+export interface SimOrderPlacement {
+  portfolio: SimPortfolio
+  execution?: SimOrderExecution | null
 }
 
 export interface SimKlinePoint {

@@ -561,7 +561,7 @@ model SimOrder {
   triggerPrice    Decimal?           @map("trigger_price")
   stopLimitPrice  Decimal?           @map("stop_limit_price")
   triggeredAt     DateTime?          @map("triggered_at")
-  triggerStatus   SimOrderTriggerStatus @map("trigger_status")
+  triggerStatus   SimOrderTriggerStatus? @map("trigger_status")
   quantity        Decimal
   filledQty       Decimal            @map("filled_qty") @default(0)
   status          SimOrderStatus

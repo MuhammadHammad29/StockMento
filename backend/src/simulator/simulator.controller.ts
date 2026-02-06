@@ -61,16 +61,6 @@ class PlaceOrderDto {
   @Type(() => Number)
   @IsNumber()
   currentPrice?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  buyVolume?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  sellVolume?: number;
 }
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -85,6 +75,11 @@ export class SimulatorController {
   @Get('account')
   accountStatus(@CurrentUser() user: JwtPayload) {
     return this.simulatorService.getAccountStatus(user);
+  }
+
+  @Get('portfolio')
+  portfolio(@CurrentUser() user: JwtPayload) {
+    return this.simulatorService.getPortfolio(user);
   }
 
   @Get()

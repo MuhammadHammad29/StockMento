@@ -56,6 +56,26 @@ export type PortfolioSnapshotResponse = {
   }>;
 };
 
+export type OrderExecutionResponse = {
+  orderId: string;
+  tradeId: string;
+  price: number;
+  time: string;
+  symbol: string;
+};
+
+type UserOrderFillEvent = OrderExecutionResponse & {
+  userId: string;
+};
+
+export type OrderCancelledEvent = {
+  orderId: string;
+  symbol: string;
+  userId: string;
+  reason: string;
+  time: string;
+};
+
 @Injectable()
 export class SimulatorService {
   private readonly logger = new Logger(SimulatorService.name);
@@ -231,8 +251,6 @@ export class SimulatorService {
       triggerPrice?: number;
       stopLimitPrice?: number;
       currentPrice?: number;
-      buyVolume?: number;
-      sellVolume?: number;
     },
   ) {
     if (!params.symbol) throw new BadRequestException('Symbol is required');
@@ -291,10 +309,6 @@ export class SimulatorService {
       throw new BadRequestException('Insufficient holdings to sell that quantity.');
     }
 
-    if (params.side === 'sell' && params.sellVolume && orderQty > params.sellVolume + 1e-6) {
-      throw new BadRequestException('Order size exceeds available ask volume.');
-    }
-
     const cashCheckPrice =
       params.orderType === SimOrderType.market
         ? params.currentPrice
@@ -308,22 +322,21 @@ export class SimulatorService {
       ) {
         throw new BadRequestException('Insufficient cash to place this order.');
       }
-      if (params.buyVolume && orderQty > params.buyVolume + 1e-6) {
-        throw new BadRequestException('Order size exceeds available buy volume.');
-      }
     }
 
     const now = new Date();
     const { orderType } = params;
 
-    const executionPrice =
+    let executionPrice =
       orderType === SimOrderType.market
         ? params.currentPrice ?? null
         : params.limitPrice ?? null;
 
     if (orderType === SimOrderType.market) {
+      const latestTick = await this.tickService.getLatestTick(params.symbol);
+      executionPrice = latestTick?.price ?? null;
       if (!executionPrice || executionPrice <= 0) {
-        throw new BadRequestException('Current price required for market order');
+        throw new BadRequestException('Unable to fetch live price for market order');
       }
     }
 
@@ -341,24 +354,37 @@ export class SimulatorService {
         stopLimitPrice: params.stopLimitPrice
           ? dec(params.stopLimitPrice)
           : undefined,
-        triggerStatus: SimOrderTriggerStatus.pending,
+        triggerStatus:
+          orderType === SimOrderType.stop_limit
+            ? SimOrderTriggerStatus.pending
+            : undefined,
         createdAt: now,
         updatedAt: now,
       },
       include: { stock: true },
     });
 
+    let execution: UserOrderFillEvent | null = null;
+
     if (orderType === SimOrderType.market) {
-      await this.executeOrder(order, executionPrice!, now);
+      execution = await this.executeOrder(order, executionPrice!, now);
     } else if (
       orderType === SimOrderType.stop_limit &&
       params.currentPrice &&
       this.shouldTrigger(params.side, params.currentPrice, params.triggerPrice)
     ) {
-      await this.executeOrder(order, params.stopLimitPrice ?? params.currentPrice, now);
+      execution = await this.executeOrder(
+        order,
+        params.stopLimitPrice ?? params.currentPrice,
+        now,
+      );
     }
 
-    return this.getPortfolio(user);
+    const portfolio = await this.getPortfolio(user);
+    return {
+      portfolio,
+      execution: execution ? this.toExecutionResponse(execution) : null,
+    };
   }
 
   async cancelOrder(user: JwtPayload, orderId: string) {
@@ -407,19 +433,37 @@ export class SimulatorService {
     return this.getPortfolio(user);
   }
 
-  async cancelOpenOrdersForSymbol(symbol: string, reason = 'market_halt') {
-    if (!symbol) return;
+  async cancelOpenOrdersForSymbol(
+    symbol: string,
+    reason = 'market_halt',
+  ): Promise<OrderCancelledEvent[]> {
+    if (!symbol) return [];
     const stock = await this.prisma.simStock.findFirst({
       where: { symbol: symbol.toUpperCase() },
       select: { id: true },
     });
-    if (!stock) return;
+    if (!stock) return [];
 
     const now = new Date();
-    await this.prisma.simOrder.updateMany({
+    const openOrders = await this.prisma.simOrder.findMany({
       where: {
         stockId: stock.id,
         status: { in: [SimOrderStatus.new, SimOrderStatus.partially_filled] },
+      },
+      select: {
+        id: true,
+        account: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+    if (!openOrders.length) return [];
+
+    await this.prisma.simOrder.updateMany({
+      where: {
+        id: { in: openOrders.map((order) => order.id) },
       },
       data: {
         status: SimOrderStatus.cancelled,
@@ -431,19 +475,28 @@ export class SimulatorService {
         } as Prisma.InputJsonObject,
       },
     });
+
+    return openOrders.map((order) => ({
+      orderId: order.id,
+      symbol: symbol.toUpperCase(),
+      userId: order.account.userId,
+      reason,
+      time: now.toISOString(),
+    }));
   }
 
   async processPendingOrdersForSymbol(
     symbol: string,
     price: number,
     executionTime: Date,
-  ) {
-    if (!Number.isFinite(price) || price <= 0) return;
+  ): Promise<UserOrderFillEvent[]> {
+    const fillEvents: UserOrderFillEvent[] = [];
+    if (!Number.isFinite(price) || price <= 0) return fillEvents;
     const stock = await this.prisma.simStock.findFirst({
       where: { symbol },
       select: { id: true },
     });
-    if (!stock) return;
+    if (!stock) return fillEvents;
 
     const orders = await this.prisma.simOrder.findMany({
       where: { stockId: stock.id, status: { in: ['new', 'partially_filled'] } },
@@ -481,22 +534,26 @@ export class SimulatorService {
         if (order.side === 'buy' && price > limit + 1e-6) continue;
         if (order.side === 'sell' && price < limit - 1e-6) continue;
       }
-      await this.executeOrder(order, price, executionTime);
+      const fill = await this.executeOrder(order, price, executionTime);
+      if (fill) {
+        fillEvents.push(fill);
+      }
     }
+    return fillEvents;
   }
 
   private async executeOrder(
     order: Prisma.SimOrderGetPayload<true>,
     price: number,
     executionTime: Date,
-  ) {
+  ): Promise<UserOrderFillEvent | null> {
     const account = await this.prisma.simAccount.findUnique({
       where: { id: order.simAccountId },
     });
     const stock = await this.prisma.simStock.findUnique({
       where: { id: order.stockId },
     });
-    if (!account || !stock) return;
+    if (!account || !stock) return null;
 
     const quantity = toNumber(order.quantity);
     const cost = price * quantity;
@@ -506,9 +563,10 @@ export class SimulatorService {
         where: { id: order.id },
         data: { status: 'rejected', updatedAt: new Date() },
       });
-      return;
+      return null;
     }
 
+    let tradeId = '';
     await this.prisma.$transaction(async (tx) => {
       const trade = await tx.simTrade.create({
         data: {
@@ -597,6 +655,28 @@ export class SimulatorService {
           meta: { lastTradeId: trade.id },
         },
       });
+      tradeId = trade.id;
     });
+
+    return {
+      orderId: order.id,
+      tradeId,
+      price,
+      time: executionTime.toISOString(),
+      symbol: stock.symbol,
+      userId: account.userId,
+    };
+  }
+
+  private toExecutionResponse(
+    fillEvent: UserOrderFillEvent,
+  ): OrderExecutionResponse {
+    return {
+      orderId: fillEvent.orderId,
+      tradeId: fillEvent.tradeId,
+      price: fillEvent.price,
+      time: fillEvent.time,
+      symbol: fillEvent.symbol,
+    };
   }
 }

@@ -4,14 +4,21 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import type { Server } from 'socket.io';
+import {
+  OnGatewayConnection,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets';
+import { ConfigService } from '@nestjs/config';
+import { verify } from 'jsonwebtoken';
+import type { Server, Socket } from 'socket.io';
 import type Redis from 'ioredis';
 import { RedisService } from './redis.service';
 import type { Tick } from './tick.service';
 import { TickService } from './tick.service';
 import { SimulatorService } from './simulator.service';
 import { IntradayCandleService } from './intraday-candle.service';
+import type { JwtPayload } from '../auth/auth.types';
 
 @WebSocketGateway({
   cors: {
@@ -21,7 +28,9 @@ import { IntradayCandleService } from './intraday-candle.service';
   },
 })
 @Injectable()
-export class TickGateway implements OnModuleInit, OnModuleDestroy {
+export class TickGateway
+  implements OnModuleInit, OnModuleDestroy, OnGatewayConnection
+{
   @WebSocketServer()
   server!: Server;
 
@@ -37,11 +46,38 @@ export class TickGateway implements OnModuleInit, OnModuleDestroy {
   private readonly statusKey = 'sim:market:status';
 
   constructor(
+    private readonly configService: ConfigService,
     private readonly redisService: RedisService,
     private readonly simulatorService: SimulatorService,
     private readonly tickService: TickService,
     private readonly intradayCandleService: IntradayCandleService,
   ) {}
+
+  handleConnection(client: Socket) {
+    const token = this.extractSocketToken(client);
+    if (!token) {
+      client.disconnect(true);
+      return;
+    }
+
+    const accessSecret = this.configService.get<string>('JWT_ACCESS_SECRET');
+    if (!accessSecret) {
+      this.logger.error('JWT_ACCESS_SECRET is not configured for gateway auth');
+      client.disconnect(true);
+      return;
+    }
+
+    try {
+      const payload = verify(token, accessSecret) as JwtPayload;
+      if (!payload?.sub || payload.role !== 'student') {
+        client.disconnect(true);
+        return;
+      }
+      client.join(`user:${payload.sub}`);
+    } catch {
+      client.disconnect(true);
+    }
+  }
 
   async onModuleInit() {
     this.subscriber = this.redisService.getSubscriber();
@@ -124,19 +160,50 @@ export class TickGateway implements OnModuleInit, OnModuleDestroy {
               .hset(this.statusKey, symbolKey, status);
           }
           if (status !== 'OPN' && previous !== status) {
-            void this.simulatorService.cancelOpenOrdersForSymbol(
-              symbolKey,
-              `market_status:${status}`,
-            );
+            void this.simulatorService
+              .cancelOpenOrdersForSymbol(symbolKey, `market_status:${status}`)
+              .then((events) => {
+                for (const event of events) {
+                  this.server
+                    ?.to(`user:${event.userId}`)
+                    .emit('orderCancelled', event);
+                }
+              })
+              .catch((error) =>
+                this.logger.debug(
+                  `Failed to cancel open orders for ${symbolKey}: ${
+                    (error as Error).message
+                  }`,
+                ),
+              );
           }
         }
         const normalized = this.tickService.normalizeTick(parsed);
         if (Number.isFinite(normalized.price) && normalized.price > 0) {
-          void this.simulatorService.processPendingOrdersForSymbol(
-            normalized.symbol,
-            normalized.price,
-            new Date(normalized.timestamp_ms),
-          );
+          void this.simulatorService
+            .processPendingOrdersForSymbol(
+              normalized.symbol,
+              normalized.price,
+              new Date(normalized.timestamp_ms),
+            )
+            .then((fills) => {
+              for (const fill of fills) {
+                this.server?.to(`user:${fill.userId}`).emit('orderFilled', {
+                  orderId: fill.orderId,
+                  tradeId: fill.tradeId,
+                  symbol: fill.symbol,
+                  price: fill.price,
+                  time: fill.time,
+                });
+              }
+            })
+            .catch((error) =>
+              this.logger.debug(
+                `Failed processing pending orders for ${normalized.symbol}: ${
+                  (error as Error).message
+                }`,
+              ),
+            );
           void this.intradayCandleService
             .recordTick(normalized)
             .then((candle) => {
@@ -160,5 +227,25 @@ export class TickGateway implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       this.logger.warn(`Failed to parse Redis message from ${channel}: ${(error as Error).message}`);
     }
+  }
+
+  private extractSocketToken(client: Socket): string | null {
+    const authToken =
+      typeof client.handshake.auth?.token === 'string'
+        ? client.handshake.auth.token
+        : null;
+    if (authToken) {
+      return authToken.replace(/^Bearer\s+/i, '').trim();
+    }
+
+    const headerAuth =
+      typeof client.handshake.headers.authorization === 'string'
+        ? client.handshake.headers.authorization
+        : null;
+    if (headerAuth) {
+      return headerAuth.replace(/^Bearer\s+/i, '').trim();
+    }
+
+    return null;
   }
 }

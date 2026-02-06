@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import io, { Socket } from "socket.io-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,11 +14,13 @@ import { Info, Lock } from "lucide-react"
 import UserNavbar from "@/components/navigation/UserNavbar"
 import { useAuth } from "@/lib/auth-context"
 import { simulatorApi } from "@/lib/api"
+import { STORAGE_KEYS } from "@/lib/data-utils"
 import type { SimAccountStatusResponse, SimIntradayCandle, SimPortfolio, SimTick } from "@/lib/types"
 import { PriceChart } from "@/components/simulator/PriceChart"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 const MAX_TICKS = 15000
+const PORTFOLIO_POLL_INTERVAL_MS = 25000
 
 const DEFAULT_WATCHLIST = [
   "ATRL",
@@ -63,6 +65,21 @@ type OrderForm = {
   stopLimitPrice?: string
 }
 
+type OrderFilledEvent = {
+  orderId: string
+  tradeId: string
+  symbol: string
+  price: number
+  time: string
+}
+
+type OrderCancelledEvent = {
+  orderId: string
+  symbol: string
+  reason: string
+  time: string
+}
+
 export default function SimulatorPage() {
   const router = useRouter()
   const { user, loading } = useAuth()
@@ -91,6 +108,9 @@ export default function SimulatorPage() {
   const [activating, setActivating] = useState(false)
   const [accountCheckNonce, setAccountCheckNonce] = useState(0)
   const [cancelPending, setCancelPending] = useState<string | null>(null)
+  const watchedOpenOrderIdsRef = useRef<Set<string>>(new Set())
+  const cancelRequestedOrderIdsRef = useRef<Set<string>>(new Set())
+  const marketDownRef = useRef(false)
 
   const formatCurrency = (value?: number | null, withSign = false) => {
     if (value === null || value === undefined || Number.isNaN(value)) return "--"
@@ -102,6 +122,43 @@ export default function SimulatorPage() {
   const formatVolume = (value?: number | null) => {
     if (value === null || value === undefined || Number.isNaN(value)) return "--"
     return value.toLocaleString("en-US")
+  }
+
+  const formatFillTime = (value?: string | null) => {
+    if (!value) return null
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) return null
+    return parsed.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    })
+  }
+
+  const showOrderFilledToast = ({
+    symbol: filledSymbol,
+    price,
+    time,
+    side,
+    quantity,
+  }: {
+    symbol?: string
+    price?: number | null
+    time?: string | null
+    side?: "buy" | "sell"
+    quantity?: number
+  }) => {
+    const symbolLabel = (filledSymbol ?? symbol).toUpperCase()
+    const sideLabel = side ? side.toUpperCase() : null
+    const qtyLabel = Number.isFinite(quantity) ? String(quantity) : null
+    const title = [sideLabel, qtyLabel, symbolLabel].filter(Boolean).join(" ")
+    const detail = [formatCurrency(price ?? null), formatFillTime(time)]
+      .filter(Boolean)
+      .join(" at ")
+    toast.success(title ? `${title} filled` : "Order filled", {
+      description: detail || undefined,
+      position: "top-right",
+    })
   }
 
   const pnlColor = (value?: number | null) => {
@@ -156,12 +213,15 @@ export default function SimulatorPage() {
   useEffect(() => {
     if (!user || !accountStatus?.hasAccount) return
     let socket: Socket | null = null
+    let active = true
     const load = async () => {
       try {
         const data = await simulatorApi.start(symbol)
+        if (!active) return
         setPortfolio(data.portfolio)
         setTicks((data.ticks ?? []).slice(-MAX_TICKS))
         const wl = await simulatorApi.tickers(DEFAULT_WATCHLIST.join(","))
+        if (!active) return
         setWatchlist(wl)
       } catch (err) {
         console.error(err)
@@ -170,7 +230,25 @@ export default function SimulatorPage() {
     }
     void load()
 
-    socket = io(API_BASE_URL, { transports: ["websocket"] })
+    const socketToken =
+      typeof window !== "undefined"
+        ? localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
+        : null
+    socket = io(API_BASE_URL, {
+      transports: ["websocket"],
+      auth: socketToken ? { token: socketToken } : undefined,
+    })
+
+    const refreshPortfolio = async () => {
+      try {
+        const nextPortfolio = await simulatorApi.portfolio()
+        if (!active) return
+        setPortfolio(nextPortfolio)
+      } catch (error) {
+        console.error(error)
+      }
+    }
+
     socket.on("tick", (tick: SimTick) => {
       if (!tick?.symbol) return
       if (tick.symbol === symbol) {
@@ -183,6 +261,28 @@ export default function SimulatorPage() {
         if (!(tick.symbol in prev)) return prev
         return { ...prev, [tick.symbol]: tick }
       })
+    })
+    socket.on("orderFilled", (event: OrderFilledEvent) => {
+      if (!event?.orderId) return
+      watchedOpenOrderIdsRef.current.delete(event.orderId)
+      cancelRequestedOrderIdsRef.current.delete(event.orderId)
+      showOrderFilledToast({
+        symbol: event.symbol,
+        price: event.price,
+        time: event.time,
+      })
+      void refreshPortfolio()
+    })
+    socket.on("orderCancelled", (event: OrderCancelledEvent) => {
+      if (!event?.orderId) return
+      watchedOpenOrderIdsRef.current.delete(event.orderId)
+      cancelRequestedOrderIdsRef.current.delete(event.orderId)
+      if (typeof event.reason === "string" && event.reason.startsWith("market_status:")) {
+        toast.error(`Order cancelled (${event.reason.replace("market_status:", "")})`, {
+          position: "top-right",
+        })
+      }
+      void refreshPortfolio()
     })
     socket.on("intradayCandle", (candle: SimIntradayCandle) => {
       if (!candle?.symbol) return
@@ -199,6 +299,7 @@ export default function SimulatorPage() {
       })
     })
     return () => {
+      active = false
       socket?.disconnect()
     }
   }, [symbol, user, accountStatus?.hasAccount])
@@ -268,6 +369,60 @@ export default function SimulatorPage() {
       return (!Number.isFinite(bidv) || bidv === 0) && (!Number.isFinite(askv) || askv === 0)
     })
   }, [watchlist, latestTick])
+
+  useEffect(() => {
+    marketDownRef.current = marketDown
+  }, [marketDown])
+
+  useEffect(() => {
+    if (!user || !accountStatus?.hasAccount) return
+    let active = true
+
+    // Poll portfolio to catch fills that happen asynchronously on tick processing.
+    const syncPortfolio = async () => {
+      try {
+        const nextPortfolio = await simulatorApi.portfolio()
+        if (!active) return
+        setPortfolio((prev) => {
+          const prevOpenIds = new Set(prev?.openOrders.map((order) => order.id) ?? [])
+          const nextOpenIds = new Set(nextPortfolio.openOrders.map((order) => order.id))
+          const resolvedOrderIds: string[] = []
+
+          for (const watchedId of watchedOpenOrderIdsRef.current) {
+            if (!prevOpenIds.has(watchedId) || nextOpenIds.has(watchedId)) continue
+            const isManualCancel = cancelRequestedOrderIdsRef.current.has(watchedId)
+            if (!isManualCancel && !marketDownRef.current) {
+              toast.success("Order filled", {
+                description: "Pending order executed. Portfolio updated.",
+                position: "top-right",
+              })
+            }
+            resolvedOrderIds.push(watchedId)
+          }
+
+          for (const orderId of resolvedOrderIds) {
+            watchedOpenOrderIdsRef.current.delete(orderId)
+            cancelRequestedOrderIdsRef.current.delete(orderId)
+          }
+
+          return nextPortfolio
+        })
+      } catch (error) {
+        console.error(error)
+      }
+    }
+
+    void syncPortfolio()
+
+    const intervalId = window.setInterval(() => {
+      void syncPortfolio()
+    }, PORTFOLIO_POLL_INTERVAL_MS)
+
+    return () => {
+      active = false
+      window.clearInterval(intervalId)
+    }
+  }, [user, accountStatus?.hasAccount])
 
   const ownedVolume = useMemo(() => {
     if (!portfolio) return 0
@@ -410,13 +565,31 @@ export default function SimulatorPage() {
       if (form.orderType === "market") { 
         payload.currentPrice = latestPrice ?? undefined 
       }
-      payload.buyVolume = latestSellVolume ?? undefined
-      payload.sellVolume = latestBuyVolume ?? undefined
       const res = await simulatorApi.placeOrder(payload)
       const nextPortfolio = (res as any)?.portfolio ?? res
+      const execution = (res as any)?.execution
       if (nextPortfolio && typeof nextPortfolio === "object" && "holdings" in nextPortfolio) {
+        const previousOpenIds = new Set(portfolio?.openOrders.map((order) => order.id) ?? [])
+        const nextOpenOrders = (nextPortfolio as SimPortfolio).openOrders ?? []
+        if (!execution && form.orderType !== "market") {
+          for (const order of nextOpenOrders) {
+            if (!previousOpenIds.has(order.id)) {
+              watchedOpenOrderIdsRef.current.add(order.id)
+            }
+          }
+        }
         setPortfolio(nextPortfolio as SimPortfolio)
-        toast.success("Order placed", { position: "top-right" })
+        if (execution?.price) {
+          showOrderFilledToast({
+            symbol: execution.symbol ?? form.symbol,
+            price: execution.price,
+            time: execution.time ?? null,
+            side: form.side,
+            quantity,
+          })
+        } else {
+          toast.success("Order placed", { position: "top-right" })
+        }
       } else {
         const refreshed = await simulatorApi.start(symbol)
         setPortfolio(refreshed.portfolio)
@@ -432,14 +605,18 @@ export default function SimulatorPage() {
 
   const handleCancelOrder = async (orderId: string) => {
     if (!orderId) return
+    cancelRequestedOrderIdsRef.current.add(orderId)
     setCancelPending(orderId)
     try {
       const updated = await simulatorApi.cancelOrder(orderId)
       setPortfolio(updated)
+      watchedOpenOrderIdsRef.current.delete(orderId)
+      cancelRequestedOrderIdsRef.current.delete(orderId)
       toast.success("Order cancelled", { position: "top-right" })
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unable to cancel order"
       toast.error(msg, { position: "top-right" })
+      cancelRequestedOrderIdsRef.current.delete(orderId)
     } finally {
       setCancelPending(null)
     }
@@ -741,7 +918,32 @@ export default function SimulatorPage() {
                   <Label className="text-muted-foreground">Order Type</Label>
                   <Select
                     value={form.orderType}
-                    onValueChange={(value: OrderForm["orderType"]) => setForm((p) => ({ ...p, orderType: value }))}
+                    onValueChange={(value: OrderForm["orderType"]) =>
+                      setForm((p) => {
+                        if (value === "market") {
+                          return {
+                            ...p,
+                            orderType: value,
+                            limitPrice: undefined,
+                            triggerPrice: undefined,
+                            stopLimitPrice: undefined,
+                          }
+                        }
+                        if (value === "limit") {
+                          return {
+                            ...p,
+                            orderType: value,
+                            triggerPrice: undefined,
+                            stopLimitPrice: undefined,
+                          }
+                        }
+                        return {
+                          ...p,
+                          orderType: value,
+                          limitPrice: undefined,
+                        }
+                      })
+                    }
                   >
                     <SelectTrigger className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground">
                       <SelectValue placeholder="Type" />
@@ -766,43 +968,47 @@ export default function SimulatorPage() {
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              {form.orderType === "stop_limit" ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground">Trigger Price</Label>
+                    <Input
+                      className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
+                      type="number"
+                      value={form.triggerPrice ?? ""}
+                      onChange={(e) => setForm((p) => ({ ...p, triggerPrice: e.target.value || undefined }))}
+                      onFocus={(e) => e.currentTarget.select()}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground">Stop Limit Price</Label>
+                    <Input
+                      className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
+                      type="number"
+                      value={form.stopLimitPrice ?? ""}
+                      onChange={(e) => setForm((p) => ({ ...p, stopLimitPrice: e.target.value || undefined }))}
+                      onFocus={(e) => e.currentTarget.select()}
+                    />
+                  </div>
+                </div>
+              ) : (
                 <div className="space-y-1">
                   <Label className="text-muted-foreground">Limit Price</Label>
                   <Input
                     className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
                     type="number"
-                    value={form.limitPrice ?? ""}
+                    value={
+                      form.orderType === "market"
+                        ? (latestPrice !== null && latestPrice !== undefined ? String(latestPrice) : "")
+                        : (form.limitPrice ?? "")
+                    }
                     onChange={(e) => setForm((p) => ({ ...p, limitPrice: e.target.value || undefined }))}
                     onFocus={(e) => e.currentTarget.select()}
                     disabled={form.orderType === "market"}
-                    placeholder={latestPrice ? `≈ ${latestPrice}` : "PKR"}
+                    placeholder={form.orderType === "market" ? "PKR" : latestPrice ? `≈ ${latestPrice}` : "PKR"}
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">Trigger Price</Label>
-                  <Input
-                    className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
-                    type="number"
-                    value={form.triggerPrice ?? ""}
-                    onChange={(e) => setForm((p) => ({ ...p, triggerPrice: e.target.value || undefined }))}
-                    onFocus={(e) => e.currentTarget.select()}
-                    disabled={form.orderType !== "stop_limit"}
-                  />
-                </div>
-              </div>
-              {form.orderType === "stop_limit" ? (
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">Stop Limit Price</Label>
-                  <Input
-                    className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
-                    type="number"
-                    value={form.stopLimitPrice ?? ""}
-                    onChange={(e) => setForm((p) => ({ ...p, stopLimitPrice: e.target.value || undefined }))}
-                    onFocus={(e) => e.currentTarget.select()}
-                  />
-                </div>
-              ) : null}
+              )}
 
               <Button
                 className="w-full bg-sky-600 hover:bg-sky-500"
@@ -935,7 +1141,9 @@ export default function SimulatorPage() {
                         <span>{o.orderType.replace("_", " ")}</span>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        Limit: {o.limitPrice ?? "-"} | Trigger: {o.triggerPrice ?? "-"}
+                        {o.orderType === "stop_limit"
+                          ? `Stop Limit: ${o.stopLimitPrice ?? "-"} | Trigger: ${o.triggerPrice ?? "-"}`
+                          : `Limit: ${o.limitPrice ?? "-"} | Trigger: ${o.triggerPrice ?? "-"}`}
                       </div>
                       {["new", "partially_filled"].includes(o.status) ? (
                         <Button

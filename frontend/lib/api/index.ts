@@ -30,6 +30,7 @@ import {
   SimKlinePoint,
   SimIntradayCandle,
   SimAccountStatusResponse,
+  SimOrderPlacement,
 } from '../types'
 import { STORAGE_KEYS } from '../data-utils'
 
@@ -65,8 +66,6 @@ type SimulatorOrderPayload = {
   triggerPrice?: number
   stopLimitPrice?: number
   currentPrice?: number
-  buyVolume?: number
-  sellVolume?: number
 }
 
 type SimulatorStartResponse = {
@@ -536,6 +535,9 @@ export const simulatorApi = {
   account: async (): Promise<SimAccountStatusResponse> => {
     return apiCall<SimAccountStatusResponse>('/simulator/account')
   },
+  portfolio: async (): Promise<SimPortfolio> => {
+    return apiCall<SimPortfolio>('/simulator/portfolio')
+  },
   start: async (symbol = 'ATRL'): Promise<SimulatorStartResponse> => {
     const query = buildQueryString({ symbol })
     return apiCall<SimulatorStartResponse>(`/simulator/start_simulator${query}`)
@@ -552,8 +554,8 @@ export const simulatorApi = {
     const query = buildQueryString({ symbol })
     return apiCall<SimIntradayCandle[]>(`/simulator/candles/intraday${query}`)
   },
-  placeOrder: async (payload: SimulatorOrderPayload): Promise<SimPortfolio> => {
-    return apiCall<SimPortfolio>(`/simulator/orders`, {
+  placeOrder: async (payload: SimulatorOrderPayload): Promise<SimOrderPlacement> => {
+    return apiCall<SimOrderPlacement>(`/simulator/orders`, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
