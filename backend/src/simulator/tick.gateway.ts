@@ -23,8 +23,9 @@ import type { JwtPayload } from '../auth/auth.types';
 @WebSocketGateway({
   cors: {
     origin:
-      process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean) ||
-      '*',
+      process.env.CORS_ORIGINS?.split(',')
+        .map((o) => o.trim())
+        .filter(Boolean) || '*',
   },
 })
 @Injectable()
@@ -73,7 +74,7 @@ export class TickGateway
         client.disconnect(true);
         return;
       }
-      client.join(`user:${payload.sub}`);
+      void client.join(`user:${payload.sub}`);
     } catch {
       client.disconnect(true);
     }
@@ -97,8 +98,15 @@ export class TickGateway
   async onModuleDestroy() {
     if (!this.subscriber) return;
     const status = this.subscriber.status;
-    if (status === 'close' || status === 'end' || status === 'wait' || status === 'reconnecting') {
-      this.logger.debug('Redis subscriber already closed, skipping unsubscribe');
+    if (
+      status === 'close' ||
+      status === 'end' ||
+      status === 'wait' ||
+      status === 'reconnecting'
+    ) {
+      this.logger.debug(
+        'Redis subscriber already closed, skipping unsubscribe',
+      );
       return;
     }
     for (const channel of this.subscriptions) {
@@ -116,10 +124,7 @@ export class TickGateway
           );
           break;
         }
-        this.logger.error(
-          `Failed unsubscribing Redis channel ${channel}`,
-          err,
-        );
+        this.logger.error(`Failed unsubscribing Redis channel ${channel}`, err);
       }
     }
   }
@@ -225,7 +230,9 @@ export class TickGateway
 
       this.server?.emit('tick', parsed);
     } catch (error) {
-      this.logger.warn(`Failed to parse Redis message from ${channel}: ${(error as Error).message}`);
+      this.logger.warn(
+        `Failed to parse Redis message from ${channel}: ${(error as Error).message}`,
+      );
     }
   }
 

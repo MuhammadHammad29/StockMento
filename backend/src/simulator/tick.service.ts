@@ -55,7 +55,9 @@ export class TickService {
   }
 
   normalizeTick(tick: Tick): Tick {
-    const rawTs = Number(tick.timestamp_ms ?? (tick as { timestamp?: number }).timestamp ?? 0);
+    const rawTs = Number(
+      tick.timestamp_ms ?? (tick as { timestamp?: number }).timestamp ?? 0,
+    );
     const timestampMs =
       Number.isFinite(rawTs) && rawTs < 10_000_000_000
         ? rawTs * 1000
@@ -78,10 +80,16 @@ export class TickService {
       volume: toNumber(tick.volume) ?? 0,
       trades: toNumber(tick.trades) ?? 0,
       value: toNumber(tick.value) ?? 0,
-      bid: tick.bid != null ? toNumber(tick.bid) ?? tick.bid : undefined,
-      ask: tick.ask != null ? toNumber(tick.ask) ?? tick.ask : undefined,
-      bidVol: tick.bidVol != null ? toNumber(tick.bidVol) ?? tick.bidVol : undefined,
-      askVol: tick.askVol != null ? toNumber(tick.askVol) ?? tick.askVol : undefined,
+      bid: tick.bid != null ? (toNumber(tick.bid) ?? tick.bid) : undefined,
+      ask: tick.ask != null ? (toNumber(tick.ask) ?? tick.ask) : undefined,
+      bidVol:
+        tick.bidVol != null
+          ? (toNumber(tick.bidVol) ?? tick.bidVol)
+          : undefined,
+      askVol:
+        tick.askVol != null
+          ? (toNumber(tick.askVol) ?? tick.askVol)
+          : undefined,
       timestamp_ms: timestampMs,
       iso_time: new Date(timestampMs).toISOString(),
     };
@@ -134,7 +142,9 @@ export class TickService {
     }
   }
 
-  async getLatestTicks(symbols: string[]): Promise<Record<string, Tick | null>> {
+  async getLatestTicks(
+    symbols: string[],
+  ): Promise<Record<string, Tick | null>> {
     const results: Record<string, Tick | null> = {};
     for (const symbol of symbols) {
       results[symbol] = await this.getLatestTick(symbol);

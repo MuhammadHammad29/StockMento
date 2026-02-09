@@ -18,6 +18,7 @@ import {
   IsPositive,
   IsString,
 } from 'class-validator';
+import { SimOrderType } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -123,13 +124,15 @@ export class SimulatorController {
   }
 
   @Post('orders')
-  placeOrder(
-    @CurrentUser() user: JwtPayload,
-    @Body() dto: PlaceOrderDto,
-  ) {
+  placeOrder(@CurrentUser() user: JwtPayload, @Body() dto: PlaceOrderDto) {
+    const orderTypeMap: Record<PlaceOrderDto['orderType'], SimOrderType> = {
+      market: SimOrderType.market,
+      limit: SimOrderType.limit,
+      stop_limit: SimOrderType.stop_limit,
+    };
     return this.simulatorService.placeOrder(user, {
       ...dto,
-      orderType: dto.orderType as any,
+      orderType: orderTypeMap[dto.orderType],
     });
   }
 

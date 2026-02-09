@@ -69,16 +69,16 @@ export class AdminAnalyticsService {
         },
       }),
     ]);
-// Calculate additional metrics
+    // Calculate additional metrics
     const totalEnrollments = enrollmentAggregate._count._all; // Total number of enrollments
     const avgCompletionRate = this.resolveAverageCompletion(
-      enrollmentAggregate._avg.progressPercent, 
+      enrollmentAggregate._avg.progressPercent,
     );
     const completionRate = this.resolveCompletionRate(
       completedEnrollments,
       activeEnrollments,
     );
-// Fetch recent users
+    // Fetch recent users
     const recentUsersRaw = await this.prisma.identity.findMany({
       orderBy: { createdAt: 'desc' },
       take: 5, // get the last 5 registered users
@@ -86,7 +86,7 @@ export class AdminAnalyticsService {
         profile: true,
       },
     });
-// Map recent users to include avatar URL and formatted name
+    // Map recent users to include avatar URL and formatted name
     const recentUsers = recentUsersRaw.map((user) => ({
       id: user.id,
       name:

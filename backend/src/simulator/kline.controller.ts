@@ -11,7 +11,10 @@ export class KlineController {
   constructor(private readonly klineService: KlineService) {}
 
   @Get()
-  async list(@Query('symbol') symbol = 'ATRL', @Query('timeframe') timeframe = '1d') {
+  async list(
+    @Query('symbol') symbol = 'ATRL',
+    @Query('timeframe') timeframe = '1d',
+  ) {
     if (timeframe !== '1d') {
       throw new Error('Only 1d timeframe is supported for klines.');
     }

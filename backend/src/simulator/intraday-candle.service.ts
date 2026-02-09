@@ -47,7 +47,9 @@ export class IntradayCandleService {
     if (!price) return null;
 
     const timestampMs = Number(
-      tick.timestamp_ms ?? (tick as { timestamp?: number }).timestamp ?? Date.now(),
+      tick.timestamp_ms ??
+        (tick as { timestamp?: number }).timestamp ??
+        Date.now(),
     );
     if (!Number.isFinite(timestampMs)) return null;
 

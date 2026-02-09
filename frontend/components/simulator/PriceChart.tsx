@@ -10,6 +10,7 @@ import {
   type ISeriesApi,
   type LineData,
   type MouseEventParams,
+  type Time,
 } from "lightweight-charts"
 
 type Props = {
@@ -39,6 +40,23 @@ const formatTime = (ts?: number) => {
     timeZone: "Asia/Karachi",
     hour12: false,
   }).format(new Date(ts * 1000))
+}
+
+const toUnixSeconds = (time: Time): number | null => {
+  if (typeof time === "number" && Number.isFinite(time)) {
+    return time
+  }
+
+  if (typeof time === "string") {
+    const parsed = Date.parse(time)
+    return Number.isNaN(parsed) ? null : Math.floor(parsed / 1000)
+  }
+
+  if (time && typeof time === "object" && "year" in time && "month" in time && "day" in time) {
+    return Math.floor(Date.UTC(time.year, time.month - 1, time.day) / 1000)
+  }
+
+  return null
 }
 
 const CHART_PALETTES = {
@@ -92,7 +110,7 @@ export function PriceChart({
     const observer = new MutationObserver(update)
     observer.observe(root, { attributes: true, attributeFilter: ["class"] })
     return () => observer.disconnect()
-  }, [])
+  }, [height, timeMode])
 
   useEffect(() => {
     if (!containerRef.current || chartRef.current) return
@@ -140,13 +158,16 @@ export function PriceChart({
         rightOffset: 2,
         timeVisible: true,
         secondsVisible: timeMode !== "date",
-        tickMarkFormatter: (unixTs) =>
-          timeMode === "date"
+        tickMarkFormatter: (time: Time) => {
+          const unixTs = toUnixSeconds(time)
+          if (unixTs === null) return "--"
+          return timeMode === "date"
             ? new Intl.DateTimeFormat("en-PK", {
                 month: "short",
                 day: "2-digit",
-              }).format(new Date((unixTs as number) * 1000))
-            : formatTime(unixTs as number),
+              }).format(new Date(unixTs * 1000))
+            : formatTime(unixTs)
+        },
       },
       watermark: {
         visible: false,
@@ -166,15 +187,17 @@ export function PriceChart({
         },
       },
       localization: {
-        timeFormatter:
-          timeMode === "date"
-            ? (ts) =>
-                new Intl.DateTimeFormat("en-PK", {
-                  year: "numeric",
-                  month: "short",
-                  day: "2-digit",
-                }).format(new Date(ts * 1000))
-            : formatTime,
+        timeFormatter: (time: Time) => {
+          const unixTs = toUnixSeconds(time)
+          if (unixTs === null) return "--"
+          return timeMode === "date"
+            ? new Intl.DateTimeFormat("en-PK", {
+                year: "numeric",
+                month: "short",
+                day: "2-digit",
+              }).format(new Date(unixTs * 1000))
+            : formatTime(unixTs)
+        },
       },
       height,
     })
@@ -182,7 +205,7 @@ export function PriceChart({
       lineColor: "#38bdf8",
       topColor: "rgba(56,189,248,0.25)",
       bottomColor: "rgba(56,189,248,0.04)",
-      lineWidth: 2.4,
+      lineWidth: 2,
       priceLineVisible: false,
       lastValueVisible: false,
     })
@@ -252,7 +275,7 @@ export function PriceChart({
       isAutoFittingRef.current = false
       didInitialFitRef.current = false
     }
-  }, [])
+  }, [height, timeMode])
 
   useEffect(() => {
     if (!chartRef.current) return
@@ -287,24 +310,29 @@ export function PriceChart({
     chartRef.current.applyOptions({
       timeScale: {
         secondsVisible: timeMode !== "date",
-        tickMarkFormatter: (unixTs) =>
-          timeMode === "date"
+        tickMarkFormatter: (time: Time) => {
+          const unixTs = toUnixSeconds(time)
+          if (unixTs === null) return "--"
+          return timeMode === "date"
             ? new Intl.DateTimeFormat("en-PK", {
                 month: "short",
                 day: "2-digit",
-              }).format(new Date((unixTs as number) * 1000))
-            : formatTime(unixTs as number),
+              }).format(new Date(unixTs * 1000))
+            : formatTime(unixTs)
+        },
       },
       localization: {
-        timeFormatter:
-          timeMode === "date"
-            ? (ts) =>
-                new Intl.DateTimeFormat("en-PK", {
-                  year: "numeric",
-                  month: "short",
-                  day: "2-digit",
-                }).format(new Date(ts * 1000))
-            : formatTime,
+        timeFormatter: (time: Time) => {
+          const unixTs = toUnixSeconds(time)
+          if (unixTs === null) return "--"
+          return timeMode === "date"
+            ? new Intl.DateTimeFormat("en-PK", {
+                year: "numeric",
+                month: "short",
+                day: "2-digit",
+              }).format(new Date(unixTs * 1000))
+            : formatTime(unixTs)
+        },
       },
     })
   }, [timeMode])
@@ -369,7 +397,12 @@ export function PriceChart({
   useEffect(() => {
     if (!areaSeriesRef.current) return
     if (viewMode === "area") {
-      areaSeriesRef.current.setData(data)
+      areaSeriesRef.current.setData(
+        data.map((point) => ({
+          ...point,
+          time: point.time as Time,
+        })),
+      )
       if (data.length > 0 && !hasUserZoomedRef.current && !didInitialFitRef.current) {
         autoFit()
         didInitialFitRef.current = true
@@ -382,7 +415,12 @@ export function PriceChart({
   useEffect(() => {
     if (!candleSeriesRef.current) return
     if (viewMode === "candles") {
-      candleSeriesRef.current.setData(candles)
+      candleSeriesRef.current.setData(
+        candles.map((point) => ({
+          ...point,
+          time: point.time as Time,
+        })),
+      )
       if (candles.length > 0 && !hasUserZoomedRef.current && !didInitialFitRef.current) {
         autoFit()
         didInitialFitRef.current = true
@@ -402,41 +440,43 @@ export function PriceChart({
   }, [viewMode])
 
   useEffect(() => {
-    const removeLine = (
-      series: ISeriesApi<"Area"> | ISeriesApi<"Candlestick"> | null,
-      lineRef: { current: ReturnType<ISeriesApi<"Area">["createPriceLine"]> | ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]> | null },
-    ) => {
-      if (series && lineRef.current) {
-        series.removePriceLine(lineRef.current as any)
-        lineRef.current = null
-      }
+    if (areaSeriesRef.current && areaPriceLineRef.current) {
+      areaSeriesRef.current.removePriceLine(areaPriceLineRef.current)
+      areaPriceLineRef.current = null
     }
 
-    removeLine(areaSeriesRef.current, areaPriceLineRef)
-    removeLine(candleSeriesRef.current, candlePriceLineRef)
+    if (candleSeriesRef.current && candlePriceLineRef.current) {
+      candleSeriesRef.current.removePriceLine(candlePriceLineRef.current)
+      candlePriceLineRef.current = null
+    }
 
     if (!lastPrice) return
-    const targetSeries =
-      viewMode === "candles" ? candleSeriesRef.current : areaSeriesRef.current
-    if (!targetSeries) return
 
-    const line = targetSeries.createPriceLine({
+    if (viewMode === "candles") {
+      if (!candleSeriesRef.current) return
+      candlePriceLineRef.current = candleSeriesRef.current.createPriceLine({
+        price: lastPrice,
+        color: "#f97316",
+        lineWidth: 2,
+        lineStyle: LineStyle.Solid,
+        axisLabelVisible: true,
+        title: "Live",
+      })
+      return
+    }
+
+    if (!areaSeriesRef.current) return
+    areaPriceLineRef.current = areaSeriesRef.current.createPriceLine({
       price: lastPrice,
-      color: viewMode === "candles" ? "#f97316" : "#38bdf8",
+      color: "#38bdf8",
       lineWidth: 2,
       lineStyle: LineStyle.Solid,
       axisLabelVisible: true,
       title: "Live",
     })
-
-    if (viewMode === "candles") {
-      candlePriceLineRef.current = line as any
-    } else {
-      areaPriceLineRef.current = line as any
-    }
   }, [lastPrice, viewMode])
 
-  const displayState = useMemo(() => {
+  const displayState = useMemo<HoverState | null>(() => {
     const lookupVol = (time: number) => {
       const keyMs = String(Math.round(time * 1000))
       if (volumeByTime[keyMs] !== undefined) return volumeByTime[keyMs]
@@ -446,11 +486,11 @@ export function PriceChart({
     if (hoverState) return hoverState
     if (viewMode === "candles" && candles.length > 0) {
       const last = candles[candles.length - 1]
-      return { mode: "candles", ...last, volume: lookupVol(last.time) }
+      return { mode: "candles" as const, ...last, volume: lookupVol(last.time) }
     }
     if (data.length > 0) {
       const last = data[data.length - 1]
-      return { mode: "area", ...last, volume: lookupVol(last.time) }
+      return { mode: "area" as const, ...last, volume: lookupVol(last.time) }
     }
     return null
   }, [hoverState, viewMode, candles, data, volumeByTime])

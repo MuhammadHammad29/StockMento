@@ -11,10 +11,7 @@ export class IntradayCandleController {
   constructor(private readonly candleService: IntradayCandleService) {}
 
   @Get('intraday')
-  async list(
-    @Query('symbol') symbol = 'ATRL',
-    @Query('date') date?: string,
-  ) {
+  async list(@Query('symbol') symbol = 'ATRL', @Query('date') date?: string) {
     return this.candleService.getCandles(symbol, date);
   }
 }

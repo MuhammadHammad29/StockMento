@@ -75,6 +75,7 @@ type SimulatorStartResponse = {
 }
 
 type SimulatorTickerResponse = Record<string, SimTick | null>
+type SimulatorPlaceOrderResponse = SimOrderPlacement | SimPortfolio
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001' //default backend Address 
 const isBrowser = typeof window !== 'undefined'// Check if running in browser environment by checking for window object
@@ -554,8 +555,8 @@ export const simulatorApi = {
     const query = buildQueryString({ symbol })
     return apiCall<SimIntradayCandle[]>(`/simulator/candles/intraday${query}`)
   },
-  placeOrder: async (payload: SimulatorOrderPayload): Promise<SimOrderPlacement> => {
-    return apiCall<SimOrderPlacement>(`/simulator/orders`, {
+  placeOrder: async (payload: SimulatorOrderPayload): Promise<SimulatorPlaceOrderResponse> => {
+    return apiCall<SimulatorPlaceOrderResponse>(`/simulator/orders`, {
       method: 'POST',
       body: JSON.stringify(payload),
     })

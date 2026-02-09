@@ -11,7 +11,9 @@ export class RedisService implements OnModuleDestroy {
   constructor(private readonly configService: ConfigService) {}
 
   private get redisUrl() {
-    return this.configService.get<string>('REDIS_URL') ?? 'redis://localhost:6379/0';
+    return (
+      this.configService.get<string>('REDIS_URL') ?? 'redis://localhost:6379/0'
+    );
   }
 
   getClient(): Redis {
@@ -42,7 +44,9 @@ export class RedisService implements OnModuleDestroy {
     } catch (error) {
       const err = error as Error;
       if (err.message?.toLowerCase().includes('connection is closed')) {
-        this.logger.debug(`Redis ${label} connection closed before quit, ignoring`);
+        this.logger.debug(
+          `Redis ${label} connection closed before quit, ignoring`,
+        );
       } else {
         this.logger.error(`Failed to close Redis ${label}`, err);
       }

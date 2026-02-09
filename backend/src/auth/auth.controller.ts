@@ -92,7 +92,7 @@ export class AuthController {
     @Body() dto: LoginDto, // Login data transfer object
     @Res({ passthrough: true }) res: Response, // Response object to set cookies
   ) {
-    const result = await this.authService.login(dto);// Login user and get tokens
+    const result = await this.authService.login(dto); // Login user and get tokens
 
     // Set refresh token as HttpOnly cookie
     this.setRefreshTokenCookie(res, result.tokens.refreshToken);
@@ -144,7 +144,7 @@ export class AuthController {
     const result = await this.authService.refreshTokens({ refreshToken });
 
     // Set new refresh token as HttpOnly cookie
-    this.setRefreshTokenCookie(res, result.tokens.refreshToken); 
+    this.setRefreshTokenCookie(res, result.tokens.refreshToken);
 
     // Return user and new access token (refresh token is in cookie)
     return {
@@ -159,7 +159,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard, RolesGuard) // Protect route with JWT and roles guards
   @Roles('student', 'admin') // Allow only students and admins to access
   @HttpCode(HttpStatus.OK) // Return 200 OK instead of 201 Created
-  logout(@Res({ passthrough: true }) res: Response) { // Logout user and clear cookies
+  logout(@Res({ passthrough: true }) res: Response) {
+    // Logout user and clear cookies
     // Clear the refresh token cookie
     this.clearRefreshTokenCookie(res);
     return this.authService.logout();

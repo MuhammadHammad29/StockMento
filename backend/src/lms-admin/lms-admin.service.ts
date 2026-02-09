@@ -215,10 +215,12 @@ export class LmsAdminService {
 
       const nextPosition =
         dto.position ??
-        (((await tx.courseLesson.aggregate({
-          where: { sectionId },
-          _max: { position: true },
-        }))._max.position ?? 0) + 1);
+        ((
+          await tx.courseLesson.aggregate({
+            where: { sectionId },
+            _max: { position: true },
+          })
+        )._max.position ?? 0) + 1;
 
       await tx.courseLesson.create({
         data: {

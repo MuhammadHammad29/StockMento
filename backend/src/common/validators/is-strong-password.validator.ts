@@ -25,9 +25,7 @@ const COMMON_PASSWORDS = [
 ];
 
 @ValidatorConstraint({ async: false })
-export class IsStrongPasswordConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsStrongPasswordConstraint implements ValidatorConstraintInterface {
   validate(password: string): boolean {
     if (typeof password !== 'string') {
       return false;

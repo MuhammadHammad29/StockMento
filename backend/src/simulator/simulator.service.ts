@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import {
   Prisma,
   SimOrderStatus,
@@ -13,9 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { JwtPayload } from '../auth/auth.types';
 import { TickService } from './tick.service';
 
-type Numeric = number | string | Prisma.Decimal;
-
-const dec = (value: Numeric) => new Prisma.Decimal(value as any);
+const dec = (value: Prisma.Decimal.Value) => new Prisma.Decimal(value);
 
 const toNumber = (value: Prisma.Decimal | number | null | undefined) =>
   value ? Number(value) : 0;
@@ -129,7 +123,9 @@ export class SimulatorService {
   }
 
   private async ensureStock(symbol: string) {
-    const existing = await this.prisma.simStock.findFirst({ where: { symbol } });
+    const existing = await this.prisma.simStock.findFirst({
+      where: { symbol },
+    });
     if (existing) return existing;
     return this.prisma.simStock.create({
       data: { symbol, name: symbol, isActive: true },
@@ -167,16 +163,16 @@ export class SimulatorService {
     ]);
 
     const symbols = holdings.map((h) => h.stock.symbol);
-    const latestTicks = symbols.length > 0
-      ? await this.tickService.getLatestTicks(symbols)
-      : {};
+    const latestTicks =
+      symbols.length > 0 ? await this.tickService.getLatestTicks(symbols) : {};
 
     const holdingsResponse = holdings.map((h) => {
       const livePrice = latestTicks[h.stock.symbol]?.price ?? null;
-      const value =
-        livePrice != null ? livePrice * toNumber(h.quantity) : null;
+      const value = livePrice != null ? livePrice * toNumber(h.quantity) : null;
       const pnl =
-        value != null ? value - toNumber(h.quantity) * toNumber(h.avgCostPrice) : null;
+        value != null
+          ? value - toNumber(h.quantity) * toNumber(h.avgCostPrice)
+          : null;
       return {
         symbol: h.stock.symbol,
         name: h.stock.name,
@@ -236,11 +232,12 @@ export class SimulatorService {
   }
 
   private shouldTrigger(
-    side: 'buy' | 'sell',
+    side: string,
     currentPrice: number,
     triggerPrice?: number | null,
   ) {
     if (!triggerPrice || triggerPrice <= 0) return false;
+    if (side !== 'buy' && side !== 'sell') return false;
     return side === 'buy'
       ? currentPrice >= triggerPrice - 1e-6
       : currentPrice <= triggerPrice + 1e-6;
@@ -287,15 +284,21 @@ export class SimulatorService {
       params.orderType === SimOrderType.limit &&
       (!normalizedLimit || normalizedLimit <= 0)
     ) {
-      throw new BadRequestException('Limit price is required for limit orders.');
+      throw new BadRequestException(
+        'Limit price is required for limit orders.',
+      );
     }
 
     if (params.orderType === SimOrderType.stop_limit) {
       if (!normalizedTrigger || normalizedTrigger <= 0) {
-        throw new BadRequestException('Trigger price is required for stop-limit orders.');
+        throw new BadRequestException(
+          'Trigger price is required for stop-limit orders.',
+        );
       }
       if (!normalizedStopLimit || normalizedStopLimit <= 0) {
-        throw new BadRequestException('Stop limit price is required for stop-limit orders.');
+        throw new BadRequestException(
+          'Stop limit price is required for stop-limit orders.',
+        );
       }
     }
 
@@ -304,7 +307,9 @@ export class SimulatorService {
     const stock = await this.ensureStock(params.symbol);
 
     const holding = await this.prisma.simHolding.findUnique({
-      where: { simAccountId_stockId: { simAccountId: account.id, stockId: stock.id } },
+      where: {
+        simAccountId_stockId: { simAccountId: account.id, stockId: stock.id },
+      },
     });
 
     const orderQty = params.quantity;
@@ -312,13 +317,15 @@ export class SimulatorService {
     const cashAvailable = toNumber(account.cashAvailable);
 
     if (params.side === 'sell' && heldQty < orderQty - 1e-6) {
-      throw new BadRequestException('Insufficient holdings to sell that quantity.');
+      throw new BadRequestException(
+        'Insufficient holdings to sell that quantity.',
+      );
     }
 
     const cashCheckPrice =
       params.orderType === SimOrderType.market
         ? params.currentPrice
-        : params.stopLimitPrice ?? params.limitPrice ?? params.currentPrice;
+        : (params.stopLimitPrice ?? params.limitPrice ?? params.currentPrice);
 
     if (params.side === 'buy') {
       if (
@@ -335,14 +342,16 @@ export class SimulatorService {
 
     let executionPrice =
       orderType === SimOrderType.market
-        ? params.currentPrice ?? null
-        : params.limitPrice ?? null;
+        ? (params.currentPrice ?? null)
+        : (params.limitPrice ?? null);
 
     if (orderType === SimOrderType.market) {
       const latestTick = await this.tickService.getLatestTick(params.symbol);
       executionPrice = latestTick?.price ?? null;
       if (!executionPrice || executionPrice <= 0) {
-        throw new BadRequestException('Unable to fetch live price for market order');
+        throw new BadRequestException(
+          'Unable to fetch live price for market order',
+        );
       }
     }
 
@@ -356,7 +365,9 @@ export class SimulatorService {
         filledQty: dec(0),
         status: SimOrderStatus.new,
         limitPrice: params.limitPrice ? dec(params.limitPrice) : undefined,
-        triggerPrice: params.triggerPrice ? dec(params.triggerPrice) : undefined,
+        triggerPrice: params.triggerPrice
+          ? dec(params.triggerPrice)
+          : undefined,
         stopLimitPrice: params.stopLimitPrice
           ? dec(params.stopLimitPrice)
           : undefined,
@@ -513,8 +524,10 @@ export class SimulatorService {
         order.orderType === SimOrderType.stop_limit &&
         order.triggerStatus === SimOrderTriggerStatus.pending
       ) {
-        const trigger = order.triggerPrice ? toNumber(order.triggerPrice) : null;
-        if (!this.shouldTrigger(order.side as any, price, trigger)) {
+        const trigger = order.triggerPrice
+          ? toNumber(order.triggerPrice)
+          : null;
+        if (!this.shouldTrigger(order.side, price, trigger)) {
           continue;
         }
         await this.prisma.simOrder.update({
@@ -588,7 +601,12 @@ export class SimulatorService {
 
       if (order.side === 'buy') {
         const holding = await tx.simHolding.upsert({
-          where: { simAccountId_stockId: { simAccountId: account.id, stockId: stock.id } },
+          where: {
+            simAccountId_stockId: {
+              simAccountId: account.id,
+              stockId: stock.id,
+            },
+          },
           update: {},
           create: {
             simAccountId: account.id,
@@ -601,8 +619,7 @@ export class SimulatorService {
 
         const oldQty = toNumber(holding.quantity);
         const newQty = oldQty + quantity;
-        const newCostBasis =
-          oldQty * toNumber(holding.avgCostPrice) + cost;
+        const newCostBasis = oldQty * toNumber(holding.avgCostPrice) + cost;
         await tx.simHolding.update({
           where: { id: holding.id },
           data: {
@@ -622,7 +639,12 @@ export class SimulatorService {
         });
       } else {
         const holding = await tx.simHolding.findUnique({
-          where: { simAccountId_stockId: { simAccountId: account.id, stockId: stock.id } },
+          where: {
+            simAccountId_stockId: {
+              simAccountId: account.id,
+              stockId: stock.id,
+            },
+          },
         });
         const heldQty = toNumber(holding?.quantity);
         if (!holding || heldQty < quantity - 1e-6) {
@@ -646,7 +668,9 @@ export class SimulatorService {
           data: {
             cashAvailable: dec(toNumber(account.cashAvailable) + cost),
             equityLast: dec(toNumber(account.equityLast) + cost),
-            realizedPnlTotal: dec(toNumber(account.realizedPnlTotal) + realizedDelta),
+            realizedPnlTotal: dec(
+              toNumber(account.realizedPnlTotal) + realizedDelta,
+            ),
             updatedAt: new Date(),
           },
         });

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import io, { Socket } from "socket.io-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,7 +16,7 @@ import UserNavbar from "@/components/navigation/UserNavbar"
 import { useAuth } from "@/lib/auth-context"
 import { simulatorApi } from "@/lib/api"
 import { STORAGE_KEYS } from "@/lib/data-utils"
-import type { SimAccountStatusResponse, SimIntradayCandle, SimPortfolio, SimTick } from "@/lib/types"
+import type { SimAccountStatusResponse, SimIntradayCandle, SimKlinePoint, SimPortfolio, SimTick } from "@/lib/types"
 import { PriceChart } from "@/components/simulator/PriceChart"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
@@ -160,7 +160,7 @@ export default function SimulatorPage() {
     })
   }
 
-  const showOrderFilledToast = ({
+  const showOrderFilledToast = useCallback(({
     symbol: filledSymbol,
     price,
     time,
@@ -184,7 +184,7 @@ export default function SimulatorPage() {
       description: detail || undefined,
       position: "top-right",
     })
-  }
+  }, [symbol])
 
   const pnlColor = (value?: number | null) => {
     if (value === null || value === undefined || Number.isNaN(value)) return "text-muted-foreground"
@@ -339,7 +339,7 @@ export default function SimulatorPage() {
       active = false
       socket?.disconnect()
     }
-  }, [symbol, user, accountStatus?.hasAccount])
+  }, [symbol, user, accountStatus?.hasAccount, showOrderFilledToast])
 
   useEffect(() => {
     if (!user || !accountStatus?.hasAccount) {
@@ -617,7 +617,7 @@ export default function SimulatorPage() {
 
     setPending(true) 
     try {
-      const payload: any = {
+      const payload: Parameters<typeof simulatorApi.placeOrder>[0] = {
         ...form,
         quantity,
         limitPrice,
@@ -628,8 +628,8 @@ export default function SimulatorPage() {
         payload.currentPrice = latestPrice ?? undefined 
       }
       const res = await simulatorApi.placeOrder(payload)
-      const nextPortfolio = (res as any)?.portfolio ?? res
-      const execution = (res as any)?.execution
+      const nextPortfolio = "portfolio" in res ? res.portfolio : res
+      const execution = "execution" in res ? res.execution : undefined
       if (nextPortfolio && typeof nextPortfolio === "object" && "holdings" in nextPortfolio) {
         const previousOpenIds = new Set(portfolio?.openOrders.map((order) => order.id) ?? [])
         const nextOpenOrders = (nextPortfolio as SimPortfolio).openOrders ?? []
@@ -643,7 +643,7 @@ export default function SimulatorPage() {
         setPortfolio(nextPortfolio as SimPortfolio)
         if (execution?.price) {
           showOrderFilledToast({
-            symbol: execution.symbol ?? form.symbol,
+            symbol: form.symbol,
             price: execution.price,
             time: execution.time ?? null,
             side: form.side,
@@ -727,12 +727,12 @@ export default function SimulatorPage() {
           Array.isArray(data) && data.length
             ? data
                 .map((d) => ({
-                  timestamp: Number((d as any).timestamp ?? 0),
-                  open: Number((d as any).open),
-                  high: Number((d as any).high),
-                  low: Number((d as any).low),
-                  close: Number((d as any).close),
-                  volume: Number((d as any).volume ?? 0),
+                  timestamp: Number((d as SimKlinePoint).timestamp ?? 0),
+                  open: Number((d as SimKlinePoint).open),
+                  high: Number((d as SimKlinePoint).high),
+                  low: Number((d as SimKlinePoint).low),
+                  close: Number((d as SimKlinePoint).close),
+                  volume: Number((d as SimKlinePoint).volume ?? 0),
                 }))
                 .filter((d) => Number.isFinite(d.timestamp) && Number.isFinite(d.close))
             : []
@@ -1375,75 +1375,81 @@ export default function SimulatorPage() {
                       {formatCurrency(holdingMetrics.totalPnl, true)}
                     </span>
                   </div>
-                  <div className="space-y-2 sm:hidden">
-                    {holdingMetrics.rows.map((h) => (
-                      <div key={h.symbol} className="rounded-lg border border-border p-3 space-y-1">
-                        <div className="flex items-center justify-between text-sm font-semibold text-foreground">
-                          <span>{h.symbol}</span>
-                          <span className={`text-xs ${pnlColor(h.pnl)}`}>{formatCurrency(h.pnl, true)}</span>
+                  <div className="relative">
+                    <div className="max-h-[360px] overflow-y-auto pr-1 sm:max-h-[420px] lg:max-h-[520px]">
+                    <div className="space-y-2 sm:hidden">
+                      {holdingMetrics.rows.map((h) => (
+                        <div key={h.symbol} className="rounded-lg border border-border p-3 space-y-1">
+                          <div className="flex items-center justify-between text-sm font-semibold text-foreground">
+                            <span>{h.symbol}</span>
+                            <span className={`text-xs ${pnlColor(h.pnl)}`}>{formatCurrency(h.pnl, true)}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                            <div>
+                              <p>Qty</p>
+                              <p className="font-semibold text-foreground">{h.quantity}</p>
+                            </div>
+                            <div>
+                              <p>Avg Cost</p>
+                              <p className="font-semibold text-foreground">{formatCurrency(h.avgCostPrice)}</p>
+                            </div>
+                            <div>
+                              <p>Last</p>
+                              <p className="font-semibold text-foreground">{formatCurrency(h.livePrice)}</p>
+                            </div>
+                            <div>
+                              <p>Value</p>
+                              <p className="font-semibold text-foreground">{formatCurrency(h.value)}</p>
+                            </div>
+                            <div>
+                              <p>Unrealized P/L</p>
+                              <p className={`font-semibold ${pnlColor(h.pnl)}`}>
+                                {formatCurrency(h.pnl, true)}
+                              </p>
+                            </div>
+                            <div>
+                              <p>Realized P/L</p>
+                              <p className={`font-semibold ${pnlColor(h.realizedPnl)}`}>
+                                {formatCurrency(h.realizedPnl, true)}
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                          <div>
-                            <p>Qty</p>
-                            <p className="font-semibold text-foreground">{h.quantity}</p>
-                          </div>
-                          <div>
-                            <p>Avg Cost</p>
-                            <p className="font-semibold text-foreground">{formatCurrency(h.avgCostPrice)}</p>
-                          </div>
-                          <div>
-                            <p>Last</p>
-                            <p className="font-semibold text-foreground">{formatCurrency(h.livePrice)}</p>
-                          </div>
-                          <div>
-                            <p>Value</p>
-                            <p className="font-semibold text-foreground">{formatCurrency(h.value)}</p>
-                          </div>
-                          <div>
-                            <p>Unrealized P/L</p>
-                            <p className={`font-semibold ${pnlColor(h.pnl)}`}>
-                              {formatCurrency(h.pnl, true)}
-                            </p>
-                          </div>
-                          <div>
-                            <p>Realized P/L</p>
-                            <p className={`font-semibold ${pnlColor(h.realizedPnl)}`}>
-                              {formatCurrency(h.realizedPnl, true)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="hidden overflow-x-auto sm:block">
-                    <table className="w-full text-sm">
-                      <thead className="text-muted-foreground">
-                        <tr>
-                          <th className="text-left p-2">Symbol</th>
-                          <th className="text-left p-2">Qty</th>
-                          <th className="text-left p-2">Avg Cost</th>
-                          <th className="text-left p-2">Last</th>
-                          <th className="text-left p-2">Est. Value</th>
-                          <th className="text-left p-2">Unrealized P/L</th>
-                          <th className="text-left p-2">Realized P/L</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {holdingMetrics.rows.map((h) => (
-                          <tr key={h.symbol} className="border-b border-border">
-                            <td className="p-2">{h.symbol}</td>
-                            <td className="p-2">{h.quantity}</td>
-                            <td className="p-2">{formatCurrency(h.avgCostPrice)}</td>
-                            <td className="p-2">{formatCurrency(h.livePrice)}</td>
-                            <td className="p-2">{formatCurrency(h.value)}</td>
-                            <td className={`p-2 ${pnlColor(h.pnl)}`}>{formatCurrency(h.pnl, true)}</td>
-                            <td className={`p-2 ${pnlColor(h.realizedPnl)}`}>
-                              {formatCurrency(h.realizedPnl, true)}
-                            </td>
+                      ))}
+                    </div>
+                    <div className="hidden overflow-x-auto sm:block">
+                      <table className="w-full text-sm">
+                        <thead className="sticky top-0 z-10 bg-card/95 text-muted-foreground backdrop-blur">
+                          <tr>
+                            <th className="text-left p-2">Symbol</th>
+                            <th className="text-left p-2">Qty</th>
+                            <th className="text-left p-2">Avg Cost</th>
+                            <th className="text-left p-2">Last</th>
+                            <th className="text-left p-2">Est. Value</th>
+                            <th className="text-left p-2">Unrealized P/L</th>
+                            <th className="text-left p-2">Realized P/L</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {holdingMetrics.rows.map((h) => (
+                            <tr key={h.symbol} className="border-b border-border">
+                              <td className="p-2">{h.symbol}</td>
+                              <td className="p-2">{h.quantity}</td>
+                              <td className="p-2">{formatCurrency(h.avgCostPrice)}</td>
+                              <td className="p-2">{formatCurrency(h.livePrice)}</td>
+                              <td className="p-2">{formatCurrency(h.value)}</td>
+                              <td className={`p-2 ${pnlColor(h.pnl)}`}>{formatCurrency(h.pnl, true)}</td>
+                              <td className={`p-2 ${pnlColor(h.realizedPnl)}`}>
+                                {formatCurrency(h.realizedPnl, true)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    </div>
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-card/95 to-transparent" />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-card/95 to-transparent" />
                   </div>
                 </>
               ) : (
@@ -1459,7 +1465,8 @@ export default function SimulatorPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               {portfolio?.openOrders?.length ? (
-                <div className="space-y-2">
+                <div className="relative">
+                  <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1 sm:max-h-[420px] lg:max-h-[520px]">
                   {portfolio.openOrders.map((o) => (
                     <div key={o.id} className="rounded-lg border border-border p-2 space-y-1">
                       <div className="flex items-center justify-between gap-2">
@@ -1493,6 +1500,9 @@ export default function SimulatorPage() {
                       ) : null}
                     </div>
                   ))}
+                  </div>
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-card/95 to-transparent" />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-card/95 to-transparent" />
                 </div>
               ) : (
                 <div className="text-muted-foreground text-sm">No open orders.</div>
