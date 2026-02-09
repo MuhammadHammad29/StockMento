@@ -152,6 +152,7 @@ model Identity {
 
   profile             UserProfile?
   memberships         AppMembership[]
+  emailOtpTokens      EmailOtpToken[]
   passwordResetTokens PasswordResetToken[]
   lessonProgress      LessonProgress[]
   quizResults         QuizResult[]
@@ -194,12 +195,14 @@ model AppMembership {
 
 model EmailOtpToken {
   id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
   codeHash  String   @map("code_hash")
   used      Boolean  @default(false)
   email     String   @unique @db.Citext
-  payload   Json?
   createdAt DateTime @default(now()) @map("created_at")
   expiresAt DateTime @map("expires_at")
+
+  user Identity @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("email_otp_tokens")
   @@schema("core")

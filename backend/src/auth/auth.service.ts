@@ -198,11 +198,28 @@ export class AuthService {
     dto: VerifyEmailDto,
   ): Promise<{ user: AuthUser; tokens: AuthTokens }> {
     try {
-      const tokenRecord = await this.prisma.emailOtpToken.findUnique({
+      const identity = await this.prisma.identity.findUnique({
         where: { email: dto.email },
+        include: { profile: true },
       });
 
-      if (!tokenRecord || tokenRecord.used) {
+      if (!identity) {
+        throw new BadRequestException(
+          'Account not found. Please register first.',
+        );
+      }
+
+      const tokenRecord = await this.prisma.emailOtpToken.findFirst({
+        where: {
+          userId: identity.id,
+          used: false,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      if (!tokenRecord) {
         throw new BadRequestException(
           'Invalid or expired verification code. Please request a new code.',
         );
@@ -221,17 +238,6 @@ export class AuthService {
         );
       }
 
-      const identity = await this.prisma.identity.findUnique({
-        where: { email: dto.email },
-        include: { profile: true },
-      });
-
-      if (!identity) {
-        throw new BadRequestException(
-          'Account not found. Please register first.',
-        );
-      }
-
       const updatedIdentity = await this.prisma.identity.update({
         where: { id: identity.id },
         data: {
@@ -242,7 +248,7 @@ export class AuthService {
       });
 
       await this.prisma.emailOtpToken.update({
-        where: { email: dto.email },
+        where: { id: tokenRecord.id },
         data: {
           used: true,
         },
@@ -627,18 +633,18 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MINUTES * 60 * 1000);
 
     await this.prisma.emailOtpToken.upsert({
-      where: { email },
+      where: { userId },
       create: {
+        userId,
         email,
         codeHash,
         expiresAt,
-        payload: { userId },
       },
       update: {
+        userId,
         codeHash,
         used: false,
         expiresAt,
-        payload: { userId },
       },
     });
 
