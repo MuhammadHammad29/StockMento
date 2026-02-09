@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Save } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -44,13 +44,14 @@ const emptyState: LessonFormState = {
   thumbnailUrl: "",
 }
 
-export default function EditLessonPage({ params }: { params: { id: string; lessonId: string } }) {
+export default function EditLessonPage() {
   const { adminUser } = useAdminAuth()
   void adminUser
 
   const router = useRouter()
-  const courseId = params.id
-  const lessonId = params.lessonId
+  const routeParams = useParams<{ id: string; lessonId: string }>()
+  const courseId = Array.isArray(routeParams.id) ? (routeParams.id[0] ?? "") : routeParams.id
+  const lessonId = Array.isArray(routeParams.lessonId) ? (routeParams.lessonId[0] ?? "") : routeParams.lessonId
 
   const [course, setCourse] = useState<AdminCourse | null>(null)
   const [section, setSection] = useState<AdminCourseSection | null>(null)

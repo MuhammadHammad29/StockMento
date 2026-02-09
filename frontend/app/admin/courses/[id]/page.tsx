@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 import {
   ArrowDown,
   ArrowUp,
@@ -75,11 +76,12 @@ const lessonIcon = (type: string) => {
   }
 }
 
-export default function AdminCourseDetailPage({ params }: { params: { id: string } }) {
+export default function AdminCourseDetailPage() {
   const { adminUser } = useAdminAuth()
   void adminUser
 
-  const courseId = params.id
+  const routeParams = useParams<{ id: string }>()
+  const courseId = Array.isArray(routeParams.id) ? (routeParams.id[0] ?? "") : routeParams.id
 
   const [course, setCourse] = useState<AdminCourse | null>(null)
   const [isLoading, setIsLoading] = useState(true)

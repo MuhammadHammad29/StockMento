@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { 
+import {
   BookOpen, 
   Clock, 
   Users, 
@@ -19,6 +19,7 @@ import {
   CheckCircle,
 } from "lucide-react"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { formatDuration } from "@/lib/data-utils"
 import { UserNavbar } from "@/components/navigation"
@@ -28,9 +29,10 @@ import { publicCoursesApi, studentCoursesApi } from "@/lib/api"
 import { AdminLessonContentType, CourseEnrollmentSummary, CourseProgressSummary, PublicCourseDetail } from "@/lib/types"
 import { toast } from "sonner"
 
-export default function CourseSectionsPage({ params }: { params: { id: string } }) {
+export default function CourseSectionsPage() {
   const { user } = useAuth()
-  const courseId = params.id
+  const routeParams = useParams<{ id: string }>()
+  const courseId = Array.isArray(routeParams.id) ? (routeParams.id[0] ?? "") : routeParams.id
   const [expandedSections, setExpandedSections] = useState<string[]>([])
   const [course, setCourse] = useState<PublicCourseDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)

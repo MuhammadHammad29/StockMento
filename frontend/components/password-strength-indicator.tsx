@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useMemo } from "react"
 import { 
   calculatePasswordStrength, 
   getStrengthBarWidth, 
@@ -33,20 +33,13 @@ export function PasswordStrengthIndicator({
     label: "Start typing...",
   })
 
-  const [validation, setValidation] = useState<PasswordValidationResult>(() => getInitialValidation())
-  const [isIndicatorVisible, setIndicatorVisible] = useState(true)
-
-  useEffect(() => {
+  const validation = useMemo<PasswordValidationResult>(() => {
     if (!password) {
-      setValidation(getInitialValidation())
-      setIndicatorVisible(true)
-      return
+      return getInitialValidation()
     }
-
-    const result = calculatePasswordStrength(password)
-    setValidation(result)
-    setIndicatorVisible(!result.isValid)
+    return calculatePasswordStrength(password)
   }, [password])
+  const isIndicatorVisible = !password || !validation.isValid
 
   const hasUppercase = /[A-Z]/.test(password)
   const hasLowercase = /[a-z]/.test(password)

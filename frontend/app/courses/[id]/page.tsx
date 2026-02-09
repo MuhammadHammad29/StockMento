@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { BookOpen, Clock, Lock, FileText, Video, Play, Loader2, CheckCircle, GraduationCap, FlaskConical } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { formatDuration } from "@/lib/data-utils"
 import { toast } from "sonner"
@@ -17,7 +18,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { publicCoursesApi, studentCoursesApi } from "@/lib/api"
 import { AdminLessonContentType, CourseEnrollmentSummary, CourseProgressSummary, PublicCourseDetail, PublicCourseSummary } from "@/lib/types"
 
-export default function CourseDetailPage({ params }: { params: { id: string } }) {
+export default function CourseDetailPage() {
   const { user } = useAuth()
   const [showCompletionDialog, setShowCompletionDialog] = useState(false)
   const [hasShownCompletionDialog, setHasShownCompletionDialog] = useState(false)
@@ -30,7 +31,8 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [isEnrollmentActionPending, setIsEnrollmentActionPending] = useState(false)
   const [progressSummary, setProgressSummary] = useState<CourseProgressSummary | null>(null)
   const [isProgressLoading, setIsProgressLoading] = useState(false)
-  const courseId = params.id
+  const routeParams = useParams<{ id: string }>()
+  const courseId = Array.isArray(routeParams.id) ? (routeParams.id[0] ?? "") : routeParams.id
 
   const loadCourse = useCallback(async () => {
     setFetchError(null)

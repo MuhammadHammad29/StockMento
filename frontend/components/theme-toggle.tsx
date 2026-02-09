@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { useTheme } from 'next-themes'
 import { Moon, Sun } from 'lucide-react'
 
@@ -16,12 +16,11 @@ import { Button } from '@/components/ui/button'
 
 export function ThemeToggle() {
   const { setTheme, theme, systemTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  // Prevent hydration mismatch by ensuring component is mounted
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  )
 
   // Determine current theme considering system preference
   const currentTheme = theme === 'system' ? systemTheme : theme

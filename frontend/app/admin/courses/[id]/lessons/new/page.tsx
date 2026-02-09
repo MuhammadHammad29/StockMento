@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { Save } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -45,13 +45,14 @@ const initialForm: LessonFormState = {
   thumbnailUrl: "",
 }
 
-export default function AdminNewLessonPage({ params }: { params: { id: string } }) {
+export default function AdminNewLessonPage() {
   const { adminUser } = useAdminAuth()
   void adminUser
 
   const router = useRouter()
   const searchParams = useSearchParams()
-  const courseId = params.id
+  const routeParams = useParams<{ id: string }>()
+  const courseId = Array.isArray(routeParams.id) ? (routeParams.id[0] ?? "") : routeParams.id
 
   const [sections, setSections] = useState<AdminCourseSection[]>([])
   const [formData, setFormData] = useState<LessonFormState>(initialForm)

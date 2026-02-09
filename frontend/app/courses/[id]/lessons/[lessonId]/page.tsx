@@ -20,6 +20,7 @@ import {
   FlaskConical,
 } from "lucide-react"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { formatDuration } from "@/lib/data-utils"
 import { UserNavbar } from "@/components/navigation"
@@ -77,10 +78,11 @@ const normalizeLessonBody = (value?: string | null) => {
   return value.includes("<") ? value : value.replace(/\n/g, "<br />")
 }
 
-export default function LessonPage({ params }: { params: { id: string; lessonId: string } }) {
+export default function LessonPage() {
   const { user } = useAuth()
-  const courseId = params.id
-  const lessonId = params.lessonId
+  const routeParams = useParams<{ id: string; lessonId: string }>()
+  const courseId = Array.isArray(routeParams.id) ? (routeParams.id[0] ?? "") : routeParams.id
+  const lessonId = Array.isArray(routeParams.lessonId) ? (routeParams.lessonId[0] ?? "") : routeParams.lessonId
 
   const [course, setCourse] = useState<PublicCourseDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)

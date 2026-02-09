@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Save, AlertCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -39,12 +39,13 @@ const emptyState: CourseFormState = {
   isPublished: false,
 }
 
-export default function AdminCourseEditPage({ params }: { params: { id: string } }) {
+export default function AdminCourseEditPage() {
   const { adminUser } = useAdminAuth()
   void adminUser
 
   const router = useRouter()
-  const courseId = params.id
+  const routeParams = useParams<{ id: string }>()
+  const courseId = Array.isArray(routeParams.id) ? (routeParams.id[0] ?? "") : routeParams.id
 
   const [formData, setFormData] = useState<CourseFormState>(emptyState)
   const [isLoading, setIsLoading] = useState(true)
