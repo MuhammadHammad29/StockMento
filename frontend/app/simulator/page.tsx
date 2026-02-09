@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "sonner"
-import { Info, Lock } from "lucide-react"
+import { BarChart3, BriefcaseBusiness, ChevronDown, Info, Lock, Wallet } from "lucide-react"
 import UserNavbar from "@/components/navigation/UserNavbar"
 import { useAuth } from "@/lib/auth-context"
 import { simulatorApi } from "@/lib/api"
@@ -55,6 +56,13 @@ const DEFAULT_WATCHLIST = [
   "TOMCL",
 ]
 
+const INDEX_SYMBOLS = ["KSE100", "KMI30"] as const
+type IndexSymbol = (typeof INDEX_SYMBOLS)[number]
+const INDEX_LABELS: Record<IndexSymbol, string> = {
+  KSE100: "KSE-100",
+  KMI30: "KMI-30",
+}
+
 type OrderForm = {
   symbol: string
   side: "buy" | "sell"
@@ -87,6 +95,13 @@ export default function SimulatorPage() {
   const [portfolio, setPortfolio] = useState<SimPortfolio | null>(null)
   const [symbol, setSymbol] = useState("ATRL")
   const [watchlist, setWatchlist] = useState<Record<string, SimTick | null>>({})
+  const [selectedIndexSymbol, setSelectedIndexSymbol] = useState<IndexSymbol>("KSE100")
+  const [indexTicks, setIndexTicks] = useState<Record<IndexSymbol, SimTick | null>>({
+    KSE100: null,
+    KMI30: null,
+  })
+  const [indexMenuOpen, setIndexMenuOpen] = useState(false)
+  const [orderTypeMenuOpen, setOrderTypeMenuOpen] = useState(false)
   const [layoutMode, setLayoutMode] = useState<"split" | "stack">("split")
   const [dateRange, setDateRange] = useState<"1m" | "1d">("1m")
   const [intradayCandles, setIntradayCandles] = useState<SimIntradayCandle[]>([])
@@ -108,15 +123,25 @@ export default function SimulatorPage() {
   const [activating, setActivating] = useState(false)
   const [accountCheckNonce, setAccountCheckNonce] = useState(0)
   const [cancelPending, setCancelPending] = useState<string | null>(null)
+  const [chartHeight, setChartHeight] = useState(380)
   const watchedOpenOrderIdsRef = useRef<Set<string>>(new Set())
   const cancelRequestedOrderIdsRef = useRef<Set<string>>(new Set())
   const marketDownRef = useRef(false)
+  const priceActionCardRef = useRef<HTMLDivElement | null>(null)
+  const orderTicketCardRef = useRef<HTMLDivElement | null>(null)
 
   const formatCurrency = (value?: number | null, withSign = false) => {
     if (value === null || value === undefined || Number.isNaN(value)) return "--"
     const fixed = value.toFixed(2)
     const sign = withSign && value > 0 ? "+" : ""
     return `PKR ${sign}${fixed}`
+  }
+
+  const formatPercent = (value?: number | null, withSign = false) => {
+    if (value === null || value === undefined || Number.isNaN(value)) return "--"
+    const fixed = value.toFixed(2)
+    const sign = withSign && value > 0 ? "+" : ""
+    return `${sign}${fixed}%`
   }
 
   const formatVolume = (value?: number | null) => {
@@ -220,9 +245,17 @@ export default function SimulatorPage() {
         if (!active) return
         setPortfolio(data.portfolio)
         setTicks((data.ticks ?? []).slice(-MAX_TICKS))
-        const wl = await simulatorApi.tickers(DEFAULT_WATCHLIST.join(","))
+        const wl = await simulatorApi.tickers([...DEFAULT_WATCHLIST, ...INDEX_SYMBOLS].join(","))
         if (!active) return
-        setWatchlist(wl)
+        const nextWatchlist: Record<string, SimTick | null> = {}
+        for (const item of DEFAULT_WATCHLIST) {
+          nextWatchlist[item] = wl[item] ?? null
+        }
+        setWatchlist(nextWatchlist)
+        setIndexTicks({
+          KSE100: wl.KSE100 ?? null,
+          KMI30: wl.KMI30 ?? null,
+        })
       } catch (err) {
         console.error(err)
         toast.error("Unable to start simulator.", { position: "top-right" })
@@ -251,6 +284,10 @@ export default function SimulatorPage() {
 
     socket.on("tick", (tick: SimTick) => {
       if (!tick?.symbol) return
+      const tickSymbol = tick.symbol.toUpperCase() as IndexSymbol
+      if (INDEX_SYMBOLS.includes(tickSymbol)) {
+        setIndexTicks((prev) => ({ ...prev, [tickSymbol]: tick }))
+      }
       if (tick.symbol === symbol) {
         setTicks((prev) => {
           const next = [...prev, tick].slice(-MAX_TICKS)
@@ -356,6 +393,31 @@ export default function SimulatorPage() {
     const vol = latestTick?.askVol
     return Number.isFinite(vol) ? Number(vol) : null
   }, [latestTick])
+
+  const selectedIndexTick = useMemo(() => {
+    return indexTicks[selectedIndexSymbol] ?? null
+  }, [indexTicks, selectedIndexSymbol])
+
+  const selectedIndexStatus = useMemo(() => {
+    if (typeof selectedIndexTick?.st !== "string") return "--"
+    const normalized = selectedIndexTick.st.trim().toUpperCase()
+    return normalized || "--"
+  }, [selectedIndexTick])
+
+  const selectedIndexPrice = useMemo(() => {
+    const price = selectedIndexTick?.price
+    return Number.isFinite(price) ? Number(price) : null
+  }, [selectedIndexTick])
+
+  const selectedIndexChange = useMemo(() => {
+    const change = selectedIndexTick?.change
+    return Number.isFinite(change) ? Number(change) : null
+  }, [selectedIndexTick])
+
+  const selectedIndexChangePercent = useMemo(() => {
+    const changePct = selectedIndexTick?.changePercent
+    return Number.isFinite(changePct) ? Number(changePct) : null
+  }, [selectedIndexTick])
 
   const marketDown = useMemo(() => {
     const status =
@@ -688,6 +750,50 @@ export default function SimulatorPage() {
     }
   }, [dateRange, symbol])
 
+  useEffect(() => {
+    const fallbackHeight = layoutMode === "stack" ? 460 : 380
+
+    const updateChartHeight = () => {
+      if (typeof window === "undefined") return
+      const isDesktopSplit = layoutMode === "split" && window.matchMedia("(min-width: 1024px)").matches
+      if (!isDesktopSplit) {
+        setChartHeight(fallbackHeight)
+        return
+      }
+
+      const priceCard = priceActionCardRef.current?.firstElementChild as HTMLElement | null
+      const orderCard = orderTicketCardRef.current?.firstElementChild as HTMLElement | null
+      const priceHeader = priceCard?.querySelector('[data-slot="card-header"]') as HTMLElement | null
+      const orderHeader = orderCard?.querySelector('[data-slot="card-header"]') as HTMLElement | null
+      const orderContent = orderCard?.querySelector('[data-slot="card-content"]') as HTMLElement | null
+      if (!priceHeader || !orderHeader || !orderContent) {
+        setChartHeight(fallbackHeight)
+        return
+      }
+
+      const nextHeight = Math.round(
+        orderHeader.getBoundingClientRect().height +
+          orderContent.getBoundingClientRect().height -
+          priceHeader.getBoundingClientRect().height,
+      )
+      const safeHeight = Math.min(620, Math.max(360, nextHeight))
+      setChartHeight((prev) => (Math.abs(prev - safeHeight) > 1 ? safeHeight : prev))
+    }
+
+    updateChartHeight()
+
+    if (typeof window === "undefined") return
+    const observer = new ResizeObserver(updateChartHeight)
+    if (priceActionCardRef.current) observer.observe(priceActionCardRef.current)
+    if (orderTicketCardRef.current) observer.observe(orderTicketCardRef.current)
+    window.addEventListener("resize", updateChartHeight)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", updateChartHeight)
+    }
+  }, [layoutMode, accountStatus?.hasAccount])
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
@@ -711,10 +817,10 @@ export default function SimulatorPage() {
 // Show error if account check failed and no status
   if (!accountChecking && accountError && !accountStatus) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 text-foreground">
         <UserNavbar />
         <main className="mx-auto max-w-3xl px-4 py-10">
-          <Card className="border-border bg-card/90 dark:bg-card/80">
+          <Card className="border border-border/60 bg-card/90">
             <CardHeader>
               <CardTitle className="text-foreground">Simulator temporarily unavailable</CardTitle>
               <CardDescription className="text-muted-foreground">{accountError}</CardDescription>
@@ -732,10 +838,10 @@ export default function SimulatorPage() {
 
   if (accountStatus && !accountStatus.hasAccount) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 text-foreground">
         <UserNavbar />
         <main className="mx-auto max-w-3xl px-4 py-10 space-y-6">
-          <Card className="border-border bg-card/90 dark:bg-card/80">
+          <Card className="border border-border/60 bg-card/90">
             <CardHeader className="space-y-2">
               <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-300 text-sm font-medium">
                 <Info className="h-5 w-5" />
@@ -771,55 +877,87 @@ export default function SimulatorPage() {
   }
 
   const layoutGrid = layoutMode === "split" ? "grid gap-4 lg:grid-cols-[1.6fr_1fr]" : "grid gap-4"
-  const chartHeight = layoutMode === "stack" ? 420 : 320
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 text-foreground">
       <UserNavbar />
       <main className="mx-auto max-w-6xl px-4 py-6 space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">PSX Day Trading Simulator</h1>
-              <p className="text-sm text-muted-foreground">Live market data streamed from Redis</p>
-            </div>
-              <div className="flex items-center gap-1 rounded border border-border bg-card/90 dark:bg-card/80 px-2 py-1 text-xs">
-                <button
-                  className={`rounded px-2 py-1 font-medium transition ${
-                    dateRange === "1m"
-                      ? "border border-primary/40 bg-primary/10 text-primary dark:bg-primary/20"
-                      : "text-muted-foreground hover:text-foreground"
+              <h1 className="text-3xl font-bold text-foreground mb-2">PSX Simulator</h1>
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 rounded-full border border-border/60 bg-card/90 px-2 py-1">
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Index</span>
+                  <Popover open={indexMenuOpen} onOpenChange={setIndexMenuOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Select index"
+                        className="flex h-6 w-[108px] items-center justify-between rounded-md border-0 bg-transparent px-0 text-xs font-semibold text-foreground focus:outline-none"
+                      >
+                        <span>{INDEX_LABELS[selectedIndexSymbol]}</span>
+                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-32 border-border bg-popover p-1">
+                      {INDEX_SYMBOLS.map((indexSymbol) => (
+                        <button
+                          key={indexSymbol}
+                          type="button"
+                          className={`flex w-full items-center rounded px-2 py-1.5 text-left text-sm ${
+                            indexSymbol === selectedIndexSymbol
+                              ? "bg-accent text-accent-foreground"
+                              : "text-foreground hover:bg-accent/80"
+                          }`}
+                          onClick={() => {
+                            setSelectedIndexSymbol(indexSymbol)
+                            setIndexMenuOpen(false)
+                          }}
+                        >
+                          {INDEX_LABELS[indexSymbol]}
+                        </button>
+                      ))}
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <span
+                  className={`rounded-full border px-2 py-1 font-medium ${
+                    selectedIndexStatus === "OPN"
+                      ? "border-emerald-400/60 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
+                      : selectedIndexStatus === "PRE" || selectedIndexStatus === "PCL"
+                        ? "border-amber-400/60 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                        : "border-border/60 bg-card/90 text-muted-foreground"
                   }`}
-                  onClick={() => setDateRange("1m")}
                 >
-                  1m
-                </button>
-                <button
-                  className={`rounded px-2 py-1 font-medium transition ${
-                    dateRange === "1d"
-                      ? "border border-primary/40 bg-primary/10 text-primary dark:bg-primary/20"
-                      : "text-muted-foreground hover:text-foreground"
+                  Market {selectedIndexStatus}
+                </span>
+                <span className="rounded-full border border-border/60 bg-card/90 px-2 py-1 text-muted-foreground">
+                  {INDEX_LABELS[selectedIndexSymbol]}{" "}
+                  <span className="font-semibold text-foreground">
+                    {selectedIndexPrice != null ? selectedIndexPrice.toFixed(2) : "--"}
+                  </span>
+                </span>
+                <span
+                  className={`rounded-full border px-2 py-1 font-medium ${
+                    selectedIndexChange == null
+                      ? "border-border/60 bg-card/90 text-muted-foreground"
+                      : selectedIndexChange >= 0
+                        ? "border-emerald-400/60 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
+                        : "border-red-400/60 bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200"
                   }`}
-                  onClick={() => setDateRange("1d")}
                 >
-                  1d
-                </button>
+                  {selectedIndexChange == null
+                    ? "--"
+                    : `${selectedIndexChange >= 0 ? "+" : ""}${selectedIndexChange.toFixed(2)} (${formatPercent(
+                        selectedIndexChangePercent,
+                        true,
+                      )})`}
+                </span>
               </div>
+            </div>
           </div>
           <div className="flex flex-col items-end gap-2 text-sm">
-            <div className="text-right">
-              <div className="text-muted-foreground">Selected Symbol</div>
-              <div className="text-lg font-semibold text-foreground">{symbol}</div>
-            </div>
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="hidden border-border bg-card/90 text-xs text-foreground dark:bg-card/80 lg:inline-flex"
-                onClick={() => setLayoutMode((m) => (m === "split" ? "stack" : "split"))}
-              >
-                View: {layoutMode === "split" ? "Side by Side" : "Stacked (Big Chart)"}
-              </Button>
               {klinesPending ? (
                 <div className="text-[11px] text-muted-foreground">Loading {dateRange.toUpperCase()}…</div>
               ) : null}
@@ -833,26 +971,190 @@ export default function SimulatorPage() {
           </div>
         </div>
 
+        <Card className="border border-border/60 bg-card/90">
+          <CardContent className="p-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="rounded-md border border-border bg-background/30 px-3 py-2">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Total Equity</div>
+                <div className="text-sm font-semibold text-foreground">{formatCurrency(portfolio?.totalEquity)}</div>
+              </div>
+              <div className="rounded-md border border-border bg-background/30 px-3 py-2">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Unrealized P/L</div>
+                <div className={`text-sm font-semibold ${pnlColor(portfolio?.unrealizedPnlLast)}`}>
+                  {formatCurrency(portfolio?.unrealizedPnlLast, true)}
+                </div>
+              </div>
+            </div>
+
+            <Accordion type="single" collapsible className="mt-2 rounded-md border border-border bg-background/20 px-3">
+              <AccordionItem value="wallet-details" className="border-b-0">
+                <AccordionTrigger className="py-2 hover:no-underline">
+                  <div className="flex w-full items-center justify-between gap-3 pr-2">
+                    <div className="min-w-0 text-left">
+                      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Info size={14} className="text-muted-foreground" />
+                        <span>Account details</span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">Cash, holdings, and realized P/L</p>
+                    </div>
+                    <div className="hidden items-center gap-2 sm:flex">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/50 px-2 py-1 text-[11px] text-muted-foreground">
+                        <Wallet size={12} />
+                        {formatCurrency(portfolio?.cashAvailable)}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/50 px-2 py-1 text-[11px]">
+                        <BarChart3 size={12} className={pnlColor(portfolio?.realizedPnlTotal)} />
+                        <span className={pnlColor(portfolio?.realizedPnlTotal)}>
+                          {formatCurrency(portfolio?.realizedPnlTotal, true)}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-2">
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <div className="rounded-md border border-border bg-background/30 px-3 py-2">
+                      <div className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                        <Wallet size={12} />
+                        <span>Cash</span>
+                      </div>
+                      <div className="text-sm font-semibold text-foreground">{formatCurrency(portfolio?.cashAvailable)}</div>
+                    </div>
+                    <div className="rounded-md border border-border bg-background/30 px-3 py-2">
+                      <div className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                        <BriefcaseBusiness size={12} />
+                        <span>Holdings</span>
+                      </div>
+                      <div className="text-sm font-semibold text-foreground">{formatCurrency(portfolio?.holdingsValue)}</div>
+                    </div>
+                    <div className="rounded-md border border-border bg-background/30 px-3 py-2">
+                      <div className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                        <BarChart3 size={12} />
+                        <span>Realized P/L</span>
+                      </div>
+                      <div className={`text-sm font-semibold ${pnlColor(portfolio?.realizedPnlTotal)}`}>
+                        {formatCurrency(portfolio?.realizedPnlTotal, true)}
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+        </Card>
+
         <div className={layoutGrid}>
-          <Card className="border-border bg-card/90 dark:bg-card/80">
-            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="text-foreground">Price Action</CardTitle>
-              <div className="hidden gap-2 lg:flex">
+          <div ref={priceActionCardRef}>
+            <Card className="border border-border/60 bg-card/90">
+            <CardHeader className="flex min-w-0 flex-col gap-3">
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <CardTitle className="text-foreground">Price Action</CardTitle>
+                <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-3 py-1 sm:hidden">
+                  <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Symbol</span>
+                  <span className="max-w-[8rem] truncate text-sm font-semibold text-foreground">{symbol}</span>
+                </div>
+              </div>
+
+              <div className="grid gap-2 sm:hidden">
+                <div className="grid grid-cols-2 gap-1 rounded-lg border border-border/60 bg-card/90 p-1">
+                  <button
+                    className={`h-8 w-full rounded-md text-sm font-medium transition ${
+                      dateRange === "1m"
+                        ? "border border-primary/40 bg-primary/10 text-primary dark:bg-primary/20"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setDateRange("1m")}
+                  >
+                    1m
+                  </button>
+                  <button
+                    className={`h-8 w-full rounded-md text-sm font-medium transition ${
+                      dateRange === "1d"
+                        ? "border border-primary/40 bg-primary/10 text-primary dark:bg-primary/20"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setDateRange("1d")}
+                  >
+                    1d
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1 rounded-lg border border-border/60 bg-card/90 p-1">
+                  <button
+                    className={`h-8 w-full rounded-md text-sm font-medium transition ${
+                      chartMode === "area"
+                        ? "border border-primary/40 bg-primary/10 text-primary dark:bg-primary/20"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setChartMode("area")}
+                  >
+                    Line
+                  </button>
+                  <button
+                    className={`h-8 w-full rounded-md text-sm font-medium transition ${
+                      chartMode === "candles"
+                        ? "border border-primary/40 bg-primary/10 text-primary dark:bg-primary/20"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setChartMode("candles")}
+                  >
+                    Candles
+                  </button>
+                </div>
+              </div>
+
+              <div className="hidden min-w-0 flex-wrap items-center justify-end gap-2 sm:flex">
+                <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-border bg-background/40 px-3 py-1">
+                  <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Symbol</span>
+                  <span className="max-w-[8rem] truncate text-sm font-semibold text-foreground">{symbol}</span>
+                </div>
+                <div className="flex items-center gap-1 rounded border border-border/60 bg-card/90 px-2 py-1 text-xs">
+                  <button
+                    className={`rounded px-2 py-1 font-medium transition ${
+                      dateRange === "1m"
+                        ? "border border-primary/40 bg-primary/10 text-primary dark:bg-primary/20"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setDateRange("1m")}
+                  >
+                    1m
+                  </button>
+                  <button
+                    className={`rounded px-2 py-1 font-medium transition ${
+                      dateRange === "1d"
+                        ? "border border-primary/40 bg-primary/10 text-primary dark:bg-primary/20"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setDateRange("1d")}
+                  >
+                    1d
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={chartMode === "area" ? "default" : "outline"}
+                    onClick={() => setChartMode("area")}
+                    className="px-3"
+                  >
+                    Line
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={chartMode === "candles" ? "default" : "outline"}
+                    onClick={() => setChartMode("candles")}
+                    className="px-3"
+                  >
+                    Candles
+                  </Button>
+                </div>
                 <Button
                   size="sm"
-                  variant={chartMode === "area" ? "default" : "outline"}
-                  onClick={() => setChartMode("area")}
-                  className="px-3"
+                  variant="outline"
+                  className="hidden border-border bg-card/90 text-xs text-foreground dark:bg-card/80 lg:inline-flex"
+                  onClick={() => setLayoutMode((m) => (m === "split" ? "stack" : "split"))}
                 >
-                  Line
-                </Button>
-                <Button
-                  size="sm"
-                  variant={chartMode === "candles" ? "default" : "outline"}
-                  onClick={() => setChartMode("candles")}
-                  className="px-3"
-                >
-                  Candles
+                  View: {layoutMode === "split" ? "Side by Side" : "Stacked (Big Chart)"}
                 </Button>
               </div>
             </CardHeader>
@@ -868,12 +1170,22 @@ export default function SimulatorPage() {
                 timeMode={dateRange === "1d" ? "date" : "time"}
               />
             </CardContent>
-          </Card>
+            </Card>
+          </div>
 
-          <Card className="border-border bg-card/90 dark:bg-card/80">
-            <CardHeader>
-              <CardTitle className="text-foreground">Order Ticket</CardTitle>
-              <CardDescription className="text-muted-foreground">Simulate trades instantly with the latest quote.</CardDescription>
+          <div ref={orderTicketCardRef}>
+            <Card className="border border-border/60 bg-card/90">
+            <CardHeader className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle className="text-foreground">Order Ticket</CardTitle>
+                <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-3 py-1">
+                  <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Symbol</span>
+                  <span className="text-sm font-semibold text-foreground">{symbol}</span>
+                </div>
+              </div>
+              <CardDescription className="text-muted-foreground">
+                Simulate trades instantly with the latest quote.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <Row label="Last Price" value={latestPrice ?? undefined} highlight />
@@ -890,22 +1202,22 @@ export default function SimulatorPage() {
 
               <div className="grid grid-cols-2 gap-2">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   className={`w-full ${
                     form.side === "buy"
-                      ? "border-0 bg-emerald-600 text-white hover:bg-emerald-500"
-                      : "border-0 bg-muted text-foreground/70 hover:text-foreground dark:bg-slate-900/60 dark:text-muted-foreground"
+                      ? "bg-emerald-600 text-white hover:bg-emerald-500"
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                   }`}
                   onClick={() => setForm((p) => ({ ...p, side: "buy" }))}
                 >
                   Buy
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   className={`w-full ${
                     form.side === "sell"
-                      ? "border-0 bg-red-600 text-white hover:bg-red-500"
-                      : "border-0 bg-muted text-foreground/70 hover:text-foreground dark:bg-slate-900/60 dark:text-muted-foreground"
+                      ? "bg-red-600 text-white hover:bg-red-500"
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                   }`}
                   onClick={() => setForm((p) => ({ ...p, side: "sell" }))}
                 >
@@ -916,49 +1228,71 @@ export default function SimulatorPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
                   <Label className="text-muted-foreground">Order Type</Label>
-                  <Select
-                    value={form.orderType}
-                    onValueChange={(value: OrderForm["orderType"]) =>
-                      setForm((p) => {
-                        if (value === "market") {
-                          return {
-                            ...p,
-                            orderType: value,
-                            limitPrice: undefined,
-                            triggerPrice: undefined,
-                            stopLimitPrice: undefined,
-                          }
-                        }
-                        if (value === "limit") {
-                          return {
-                            ...p,
-                            orderType: value,
-                            triggerPrice: undefined,
-                            stopLimitPrice: undefined,
-                          }
-                        }
-                        return {
-                          ...p,
-                          orderType: value,
-                          limitPrice: undefined,
-                        }
-                      })
-                    }
-                  >
-                    <SelectTrigger className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground">
-                      <SelectValue placeholder="Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="market">Market</SelectItem>
-                      <SelectItem value="limit">Limit</SelectItem>
-                      <SelectItem value="stop_limit">Stop Limit</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Popover open={orderTypeMenuOpen} onOpenChange={setOrderTypeMenuOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Order type"
+                        className="flex h-9 w-full items-center justify-between rounded-md border border-border bg-background/70 px-3 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                      >
+                        <span>
+                          {form.orderType === "market"
+                            ? "Market"
+                            : form.orderType === "limit"
+                              ? "Limit"
+                              : "Stop Limit"}
+                        </span>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-40 border-border bg-popover p-1">
+                      {(["market", "limit", "stop_limit"] as const).map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          className={`flex w-full items-center rounded px-2 py-1.5 text-left text-sm ${
+                            value === form.orderType
+                              ? "bg-accent text-accent-foreground"
+                              : "text-foreground hover:bg-accent/80"
+                          }`}
+                          onClick={() => {
+                            setForm((p) => {
+                              if (value === "market") {
+                                return {
+                                  ...p,
+                                  orderType: value,
+                                  limitPrice: undefined,
+                                  triggerPrice: undefined,
+                                  stopLimitPrice: undefined,
+                                }
+                              }
+                              if (value === "limit") {
+                                return {
+                                  ...p,
+                                  orderType: value,
+                                  triggerPrice: undefined,
+                                  stopLimitPrice: undefined,
+                                }
+                              }
+                              return {
+                                ...p,
+                                orderType: value,
+                                limitPrice: undefined,
+                              }
+                            })
+                            setOrderTypeMenuOpen(false)
+                          }}
+                        >
+                          {value === "market" ? "Market" : value === "limit" ? "Limit" : "Stop Limit"}
+                        </button>
+                      ))}
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-muted-foreground">Quantity</Label>
                   <Input
-                    className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
+                    className="bg-background/70 border-border text-foreground"
                     type="number"
                     min={1}
                     value={form.quantity}
@@ -973,7 +1307,7 @@ export default function SimulatorPage() {
                   <div className="space-y-1">
                     <Label className="text-muted-foreground">Trigger Price</Label>
                     <Input
-                      className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
+                      className="bg-background/70 border-border text-foreground"
                       type="number"
                       value={form.triggerPrice ?? ""}
                       onChange={(e) => setForm((p) => ({ ...p, triggerPrice: e.target.value || undefined }))}
@@ -983,7 +1317,7 @@ export default function SimulatorPage() {
                   <div className="space-y-1">
                     <Label className="text-muted-foreground">Stop Limit Price</Label>
                     <Input
-                      className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
+                      className="bg-background/70 border-border text-foreground"
                       type="number"
                       value={form.stopLimitPrice ?? ""}
                       onChange={(e) => setForm((p) => ({ ...p, stopLimitPrice: e.target.value || undefined }))}
@@ -995,7 +1329,7 @@ export default function SimulatorPage() {
                 <div className="space-y-1">
                   <Label className="text-muted-foreground">Limit Price</Label>
                   <Input
-                    className="bg-muted/40 dark:bg-slate-900/60 border-border text-foreground"
+                    className="bg-background/70 border-border text-foreground"
                     type="number"
                     value={
                       form.orderType === "market"
@@ -1018,11 +1352,12 @@ export default function SimulatorPage() {
                 Place Order
               </Button>
             </CardContent>
-          </Card>
+            </Card>
+          </div>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-          <Card className="border-border bg-card/90 dark:bg-card/80">
+          <Card className="border border-border/60 bg-card/90">
             <CardHeader>
               <CardTitle className="text-foreground">Holdings</CardTitle>
               <CardDescription className="text-muted-foreground">Current positions</CardDescription>
@@ -1032,7 +1367,7 @@ export default function SimulatorPage() {
                 <>
                   <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                     <span>Est. proceeds if sold now:</span>
-                    <span className="rounded bg-muted/40 dark:bg-slate-900/60 px-2 py-0.5 text-foreground">
+                    <span className="rounded bg-background/70 px-2 py-0.5 text-foreground">
                       {formatCurrency(holdingMetrics.totalValue)}
                     </span>
                     <span>Unrealized P/L:</span>
@@ -1117,7 +1452,7 @@ export default function SimulatorPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/90 dark:bg-card/80">
+          <Card className="border border-border/60 bg-card/90">
             <CardHeader>
               <CardTitle className="text-foreground">Open Orders</CardTitle>
               <CardDescription className="text-muted-foreground">Working and partially filled orders</CardDescription>
@@ -1176,7 +1511,7 @@ export default function SimulatorPage() {
             return (
               <button
                 key={item}
-                className={`rounded-lg border border-border bg-card/90 dark:bg-card/80 p-3 text-left transition hover:border-emerald-500/70 ${
+                className={`rounded-lg border border-border/60 bg-card/90 p-3 text-left transition hover:border-emerald-500/70 ${
                   item === symbol ? "border-emerald-500/70 shadow-[0_0_0_1px_rgba(16,185,129,0.3)]" : ""
                 }`}
                 onClick={() => {
@@ -1232,3 +1567,4 @@ function Row({
     </div>
   )
 }
+

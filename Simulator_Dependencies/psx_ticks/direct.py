@@ -5,7 +5,7 @@ PSX Terminal WebSocket tick collector (NO PROXIES) — Windows + Linux compatibl
 - Saves to PSX_SAVE_DIR (default: ./saved_psx next to this script)
   CSV: YYYY-MM-DD_SYMBOL.csv  (Asia/Karachi date)
 - Uses <=20 subs/connection (we use 15)
-- Shards symbols into groups of 15
+- Shards symbols into groups of 15 (supports multiple markets)
 - Writes ticks to Redis (ZSET per symbol) + optional Pub/Sub stream
 - Handles Ctrl+C cleanly on Windows (no loop.add_signal_handler on Win)
 """
@@ -36,11 +36,13 @@ SAVE_DIR = Path(os.getenv("PSX_SAVE_DIR", str(SCRIPT_DIR / "saved_psx")))
 MAX_SUBS_PER_CONN = 15
 
 DEFAULT_MARKET = "REG"
+DEFAULT_INDEX_MARKET = "IDX"
 DEFAULT_SYMBOLS = [
     "ATRL","AVN","DGKC","EFERT","ENGROH","FABL","FCCL","FFL","GAL","GHNI",
     "HCAR","HUBC","LUCK","MARI","MEBL","MLCF","MTL","NETSOL","OCTOPUS","OGDC",
     "PAEL","PIOC","PPL","PRL","SAZEW","SEARL","SNGP","SYS","TOMCL","PSO"
 ]
+DEFAULT_INDEX_SYMBOLS = ["KSE100", "KMI30"]
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0").strip()
 REDIS_KEY_TEMPLATE = os.getenv("REDIS_KEY_TEMPLATE", "psx:ticks:{symbol}")
@@ -163,6 +165,14 @@ def clamp(v, default=0):
     if isinstance(v, str) and v.strip() == "":
         return default
     return v
+
+def normalize_symbols(symbols: List[str]) -> List[str]:
+    seen, clean = set(), []
+    for s in (x.strip().upper() for x in symbols):
+        if s and s not in seen:
+            seen.add(s)
+            clean.append(s)
+    return clean
 
 def write_tick(symbol: str, market: str, tick: Dict):
     # tick["t"] is expected to be milliseconds
@@ -295,26 +305,39 @@ def parse_args():
     ap = ArgumentParser()
     ap.add_argument("--symbols", type=str, default=os.getenv("SYMBOLS", ""))
     ap.add_argument("--market", type=str, default=os.getenv("MARKET", DEFAULT_MARKET))
+    ap.add_argument("--idx-symbols", type=str, default=os.getenv("IDX_SYMBOLS", ""))
+    ap.add_argument("--idx-market", type=str, default=os.getenv("IDX_MARKET", DEFAULT_INDEX_MARKET))
     args = ap.parse_args()
 
     symbols = [s.strip() for s in args.symbols.split(",")] if args.symbols else DEFAULT_SYMBOLS
+    idx_symbols = [s.strip() for s in args.idx_symbols.split(",")] if args.idx_symbols else DEFAULT_INDEX_SYMBOLS
     market = args.market.strip().upper()
-    return symbols, market
+    idx_market = args.idx_market.strip().upper()
+    return normalize_symbols(symbols), market, normalize_symbols(idx_symbols), idx_market
 
 class Supervisor:
-    def __init__(self, symbols: List[str], market: str):
-        # normalize & shard
-        seen, clean = set(), []
-        for s in (x.strip().upper() for x in symbols):
-            if s and s not in seen:
-                seen.add(s)
-                clean.append(s)
+    def __init__(self, symbols: List[str], market: str, idx_symbols: List[str], idx_market: str):
+        self.shards: List[WSShard] = []
+        next_shard_id = 1
 
-        if not clean:
+        def add_market_shards(market_symbols: List[str], market_name: str):
+            nonlocal next_shard_id
+            if not market_symbols:
+                return
+            groups = [
+                market_symbols[i:i + MAX_SUBS_PER_CONN]
+                for i in range(0, len(market_symbols), MAX_SUBS_PER_CONN)
+            ]
+            for grp in groups:
+                self.shards.append(WSShard(next_shard_id, grp, market_name))
+                next_shard_id += 1
+
+        add_market_shards(symbols, market)
+        add_market_shards(idx_symbols, idx_market)
+
+        if not self.shards:
             raise SystemExit("No symbols provided.")
 
-        groups = [clean[i:i + MAX_SUBS_PER_CONN] for i in range(0, len(clean), MAX_SUBS_PER_CONN)]
-        self.shards = [WSShard(i + 1, grp, market) for i, grp in enumerate(groups)]
         self._stop_event = asyncio.Event()
 
     async def run(self):
@@ -349,10 +372,10 @@ class Supervisor:
                 t.cancel()
 
 def main():
-    symbols, market = parse_args()
+    symbols, market, idx_symbols, idx_market = parse_args()
 
     try:
-        sup = Supervisor(symbols, market)
+        sup = Supervisor(symbols, market, idx_symbols, idx_market)
     except SystemExit as e:
         print(e, file=sys.stderr)
         sys.exit(1)

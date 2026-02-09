@@ -51,6 +51,7 @@ export type PortfolioSnapshotResponse = {
     filledQty: number;
     limitPrice?: number | null;
     triggerPrice?: number | null;
+    stopLimitPrice?: number | null;
     status: string;
     createdAt: string;
   }>;
@@ -147,7 +148,11 @@ export class SimulatorService {
 
     const [holdings, orders] = await Promise.all([
       this.prisma.simHolding.findMany({
-        where: { simAccountId: account.id },
+        // Holdings view should show only active/open positions.
+        where: {
+          simAccountId: account.id,
+          quantity: { gt: 0 },
+        },
         include: { stock: true },
         orderBy: { updatedAt: 'desc' },
       }),
@@ -223,6 +228,7 @@ export class SimulatorService {
         filledQty: toNumber(o.filledQty),
         limitPrice: o.limitPrice ? toNumber(o.limitPrice) : null,
         triggerPrice: o.triggerPrice ? toNumber(o.triggerPrice) : null,
+        stopLimitPrice: o.stopLimitPrice ? toNumber(o.stopLimitPrice) : null,
         status: o.status,
         createdAt: o.createdAt.toISOString(),
       })),
