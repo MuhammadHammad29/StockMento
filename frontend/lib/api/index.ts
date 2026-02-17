@@ -31,6 +31,7 @@ import {
   SimIntradayCandle,
   SimAccountStatusResponse,
   SimOrderPlacement,
+  SimLeaderboardResponse,
 } from '../types'
 import { STORAGE_KEYS } from '../data-utils'
 
@@ -76,6 +77,11 @@ type SimulatorStartResponse = {
 
 type SimulatorTickerResponse = Record<string, SimTick | null>
 type SimulatorPlaceOrderResponse = SimOrderPlacement | SimPortfolio
+type SimulatorLeaderboardQuery = {
+  date?: string
+  limit?: number
+  offset?: number
+}
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001' //default backend Address 
 const isBrowser = typeof window !== 'undefined'// Check if running in browser environment by checking for window object
@@ -565,6 +571,14 @@ export const simulatorApi = {
     return apiCall<SimPortfolio>(`/simulator/orders/${orderId}`, {
       method: 'DELETE',
     })
+  },
+  leaderboard: async (query?: SimulatorLeaderboardQuery): Promise<SimLeaderboardResponse> => {
+    const qs = buildQueryString({
+      date: query?.date,
+      limit: query?.limit,
+      offset: query?.offset,
+    })
+    return apiCall<SimLeaderboardResponse>(`/simulator/leaderboard${qs}`)
   },
 }
 

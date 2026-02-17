@@ -10,6 +10,7 @@ import { LmsAdminModule } from './lms-admin/lms-admin.module';
 import { CoursesModule } from './courses/courses.module';
 import { AdminAnalyticsModule } from './admin-analytics/admin-analytics.module';
 import { SimulatorModule } from './simulator/simulator.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { SimulatorModule } from './simulator/simulator.module';
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     MailModule,
     AuthModule,

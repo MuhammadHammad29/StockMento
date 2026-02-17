@@ -11,10 +11,14 @@ import {
 import { Type } from 'class-transformer';
 import {
   IsEnum,
+  IsInt,
   IsIn,
+  IsOptional,
   IsNotEmpty,
   IsNumber,
-  IsOptional,
+  Matches,
+  Max,
+  Min,
   IsPositive,
   IsString,
 } from 'class-validator';
@@ -64,6 +68,25 @@ class PlaceOrderDto {
   currentPrice?: number;
 }
 
+class LeaderboardQueryDto {
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  date?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  limit?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  offset?: number;
+}
+
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('student')
 @Controller('simulator')
@@ -81,6 +104,14 @@ export class SimulatorController {
   @Get('portfolio')
   portfolio(@CurrentUser() user: JwtPayload) {
     return this.simulatorService.getPortfolio(user);
+  }
+
+  @Get('leaderboard')
+  leaderboard(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: LeaderboardQueryDto,
+  ) {
+    return this.simulatorService.getDailyLeaderboard(user, query);
   }
 
   @Get()

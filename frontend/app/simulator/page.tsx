@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import io, { Socket } from "socket.io-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,7 +17,13 @@ import UserNavbar from "@/components/navigation/UserNavbar"
 import { useAuth } from "@/lib/auth-context"
 import { simulatorApi } from "@/lib/api"
 import { STORAGE_KEYS } from "@/lib/data-utils"
-import type { SimAccountStatusResponse, SimIntradayCandle, SimKlinePoint, SimPortfolio, SimTick } from "@/lib/types"
+import type {
+  SimAccountStatusResponse,
+  SimIntradayCandle,
+  SimKlinePoint,
+  SimPortfolio,
+  SimTick,
+} from "@/lib/types"
 import { PriceChart } from "@/components/simulator/PriceChart"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
@@ -876,7 +883,10 @@ export default function SimulatorPage() {
     )
   }
 
-  const layoutGrid = layoutMode === "split" ? "grid gap-4 lg:grid-cols-[1.6fr_1fr]" : "grid gap-4"
+  const layoutGrid =
+    layoutMode === "split"
+      ? "grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]"
+      : "grid gap-4"
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 text-foreground">
       <UserNavbar />
@@ -885,6 +895,14 @@ export default function SimulatorPage() {
           <div className="flex items-center gap-3">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">PSX Simulator</h1>
+              <div className="mb-2 inline-flex items-center gap-1 rounded-lg border border-border/60 bg-card/90 p-1">
+                <Button size="sm" className="h-8 px-3">
+                  Trading
+                </Button>
+                <Button asChild size="sm" variant="ghost" className="h-8 px-3 text-muted-foreground hover:text-foreground">
+                  <Link href="/simulator/leaderboard">Leaderboard</Link>
+                </Button>
+              </div>
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <div className="flex items-center gap-2 rounded-full border border-border/60 bg-card/90 px-2 py-1">
                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Index</span>
@@ -1044,8 +1062,8 @@ export default function SimulatorPage() {
         </Card>
 
         <div className={layoutGrid}>
-          <div ref={priceActionCardRef}>
-            <Card className="border border-border/60 bg-card/90">
+          <div ref={priceActionCardRef} className="min-w-0">
+            <Card className="min-w-0 border border-border/60 bg-card/90">
             <CardHeader className="flex min-w-0 flex-col gap-3">
               <div className="flex min-w-0 items-center justify-between gap-2">
                 <CardTitle className="text-foreground">Price Action</CardTitle>
@@ -1158,9 +1176,8 @@ export default function SimulatorPage() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent style={{ height: chartHeight }}>
+            <CardContent className="min-w-0 overflow-hidden" style={{ height: chartHeight }}>
               <PriceChart
-                key={`${layoutMode}-${dateRange}-${chartMode}`}
                 data={chartData}
                 candles={candleData}
                 volumeByTime={volumeByTime}
@@ -1173,8 +1190,8 @@ export default function SimulatorPage() {
             </Card>
           </div>
 
-          <div ref={orderTicketCardRef}>
-            <Card className="border border-border/60 bg-card/90">
+          <div ref={orderTicketCardRef} className="min-w-0">
+            <Card className="min-w-0 border border-border/60 bg-card/90">
             <CardHeader className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle className="text-foreground">Order Ticket</CardTitle>

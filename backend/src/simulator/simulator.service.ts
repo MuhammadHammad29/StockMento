@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import {
   Prisma,
   SimOrderStatus,
@@ -16,6 +17,11 @@ const toNumber = (value: Prisma.Decimal | number | null | undefined) =>
 
 const DEFAULT_INITIAL_CASH =
   Number.parseFloat(process.env.SIM_INITIAL_CASH ?? '100000') || 100000;
+const LEADERBOARD_DEFAULT_LIMIT = 50;
+const LEADERBOARD_MAX_LIMIT = 200;
+const LEADERBOARD_CRON = process.env.SIM_LEADERBOARD_CRON ?? '35 15 * * 1-5';
+const LEADERBOARD_TIMEZONE =
+  process.env.SIM_LEADERBOARD_TIMEZONE ?? 'Asia/Karachi';
 
 export type PortfolioSnapshotResponse = {
   accountId: string;
@@ -69,6 +75,23 @@ export type OrderCancelledEvent = {
   userId: string;
   reason: string;
   time: string;
+};
+
+export type DailyLeaderboardResponse = {
+  asOfDate: string;
+  totalParticipants: number;
+  rows: Array<{
+    rank: number;
+    totalEquity: number;
+    simAccountId: string;
+    userId: string;
+    displayName: string;
+  }>;
+  me: {
+    rank: number;
+    totalEquity: number;
+    simAccountId: string;
+  } | null;
 };
 
 @Injectable()
@@ -228,6 +251,287 @@ export class SimulatorService {
         status: o.status,
         createdAt: o.createdAt.toISOString(),
       })),
+    };
+  }
+
+  private toLeaderboardDateString(date: Date): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: LEADERBOARD_TIMEZONE,
+    }).format(date);
+  }
+
+  private parseLeaderboardDate(date?: string): string {
+    const fallback = this.toLeaderboardDateString(new Date());
+    if (!date) return fallback;
+    const trimmed = date.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      throw new BadRequestException('date must be in YYYY-MM-DD format');
+    }
+    return trimmed;
+  }
+
+  private toDateOnlyUtc(dateString: string): Date {
+    return new Date(`${dateString}T00:00:00.000Z`);
+  }
+
+  private normalizeLeaderboardLimit(limit?: number): number {
+    if (!Number.isFinite(limit ?? NaN)) return LEADERBOARD_DEFAULT_LIMIT;
+    return Math.max(1, Math.min(LEADERBOARD_MAX_LIMIT, Number(limit)));
+  }
+
+  private normalizeLeaderboardOffset(offset?: number): number {
+    if (!Number.isFinite(offset ?? NaN)) return 0;
+    return Math.max(0, Math.floor(Number(offset)));
+  }
+
+  private buildDisplayName(account: {
+    user: {
+      email: string;
+      profile: { firstName: string; lastName: string } | null;
+    };
+  }): string {
+    const firstName = account.user.profile?.firstName?.trim() ?? '';
+    const lastName = account.user.profile?.lastName?.trim() ?? '';
+    const full = `${firstName} ${lastName}`.trim();
+    return full || account.user.email;
+  }
+
+  private async computeDailyLeaderboardRows() {
+    const accounts = await this.prisma.simAccount.findMany({
+      where: { status: 'active' },
+      select: {
+        id: true,
+        userId: true,
+        cashAvailable: true,
+        user: {
+          select: {
+            email: true,
+            profile: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!accounts.length) return [];
+
+    const accountIds = accounts.map((account) => account.id);
+    const holdings = await this.prisma.simHolding.findMany({
+      where: {
+        simAccountId: { in: accountIds },
+        quantity: { gt: dec(0) },
+      },
+      select: {
+        simAccountId: true,
+        quantity: true,
+        avgCostPrice: true,
+        stock: {
+          select: {
+            symbol: true,
+          },
+        },
+      },
+    });
+
+    const symbols = Array.from(
+      new Set(holdings.map((holding) => holding.stock.symbol)),
+    );
+    const latestTicks =
+      symbols.length > 0 ? await this.tickService.getLatestTicks(symbols) : {};
+
+    const holdingsByAccount = new Map<string, number>();
+    for (const holding of holdings) {
+      const tickPrice = latestTicks[holding.stock.symbol]?.price;
+      const markPrice =
+        Number.isFinite(tickPrice) && tickPrice && tickPrice > 0
+          ? tickPrice
+          : toNumber(holding.avgCostPrice);
+      const positionValue = toNumber(holding.quantity) * markPrice;
+      holdingsByAccount.set(
+        holding.simAccountId,
+        (holdingsByAccount.get(holding.simAccountId) ?? 0) + positionValue,
+      );
+    }
+
+    const rows = accounts.map((account) => ({
+      simAccountId: account.id,
+      userId: account.userId,
+      totalEquity:
+        toNumber(account.cashAvailable) +
+        (holdingsByAccount.get(account.id) ?? 0),
+      displayName: this.buildDisplayName(account),
+      rank: 0,
+    }));
+
+    rows.sort(
+      (a, b) =>
+        b.totalEquity - a.totalEquity ||
+        a.simAccountId.localeCompare(b.simAccountId),
+    );
+
+    let rank = 0;
+    let position = 0;
+    let lastEquity: number | null = null;
+    for (const row of rows) {
+      position += 1;
+      if (
+        lastEquity === null ||
+        Math.abs(row.totalEquity - lastEquity) > 1e-6
+      ) {
+        rank = position;
+        lastEquity = row.totalEquity;
+      }
+      row.rank = rank;
+    }
+
+    return rows;
+  }
+
+  async rebuildDailyLeaderboard(options?: { date?: string; force?: boolean }) {
+    const asOfDateString = this.parseLeaderboardDate(options?.date);
+
+    const rows = await this.computeDailyLeaderboardRows();
+    const asOfDate = this.toDateOnlyUtc(asOfDateString);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.simLeaderboardDaily.deleteMany({
+        where: { asOfDate },
+      });
+
+      if (!rows.length) return;
+
+      await tx.simLeaderboardDaily.createMany({
+        data: rows.map((row) => ({
+          asOfDate,
+          simAccountId: row.simAccountId,
+          totalEquity: dec(row.totalEquity),
+          rank: row.rank,
+        })),
+      });
+    });
+
+    this.logger.log(
+      `Daily leaderboard rebuilt for ${asOfDateString} (${rows.length} rows)`,
+    );
+
+    return {
+      asOfDate: asOfDateString,
+      skipped: false,
+      count: rows.length,
+    };
+  }
+
+  @Cron(LEADERBOARD_CRON, { timeZone: LEADERBOARD_TIMEZONE })
+  async rebuildDailyLeaderboardOnSchedule() {
+    try {
+      const result = await this.rebuildDailyLeaderboard({ force: false });
+      if (result.skipped) {
+        this.logger.log(`Leaderboard rebuild skipped for ${result.asOfDate}`);
+      }
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(
+        `Scheduled leaderboard rebuild failed: ${err.message}`,
+        err.stack,
+      );
+    }
+  }
+
+  async getDailyLeaderboard(
+    user: JwtPayload,
+    params?: { date?: string; limit?: number; offset?: number },
+  ): Promise<DailyLeaderboardResponse> {
+    const limit = this.normalizeLeaderboardLimit(params?.limit);
+    const offset = this.normalizeLeaderboardOffset(params?.offset);
+    const requestedDate = params?.date?.trim();
+
+    let asOfDateString: string;
+    let asOfDate: Date;
+
+    if (requestedDate) {
+      asOfDateString = this.parseLeaderboardDate(requestedDate);
+      asOfDate = this.toDateOnlyUtc(asOfDateString);
+    } else {
+      const latestSnapshot = await this.prisma.simLeaderboardDaily.findFirst({
+        orderBy: { asOfDate: 'desc' },
+        select: { asOfDate: true },
+      });
+
+      if (latestSnapshot?.asOfDate) {
+        asOfDate = latestSnapshot.asOfDate;
+        asOfDateString = latestSnapshot.asOfDate.toISOString().slice(0, 10);
+      } else {
+        asOfDateString = this.parseLeaderboardDate();
+        asOfDate = this.toDateOnlyUtc(asOfDateString);
+      }
+    }
+
+    const [totalParticipants, entries, me] = await Promise.all([
+      this.prisma.simLeaderboardDaily.count({
+        where: { asOfDate },
+      }),
+      this.prisma.simLeaderboardDaily.findMany({
+        where: { asOfDate },
+        include: {
+          account: {
+            select: {
+              userId: true,
+              user: {
+                select: {
+                  email: true,
+                  profile: {
+                    select: {
+                      firstName: true,
+                      lastName: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ rank: 'asc' }, { totalEquity: 'desc' }],
+        skip: offset,
+        take: limit,
+      }),
+      this.prisma.simLeaderboardDaily.findFirst({
+        where: {
+          asOfDate,
+          account: {
+            is: {
+              userId: user.sub,
+            },
+          },
+        },
+        select: {
+          rank: true,
+          totalEquity: true,
+          simAccountId: true,
+        },
+      }),
+    ]);
+
+    return {
+      asOfDate: asOfDateString,
+      totalParticipants,
+      rows: entries.map((entry) => ({
+        rank: entry.rank,
+        totalEquity: toNumber(entry.totalEquity),
+        simAccountId: entry.simAccountId,
+        userId: entry.account.userId,
+        displayName: this.buildDisplayName(entry.account),
+      })),
+      me: me
+        ? {
+            rank: me.rank,
+            totalEquity: toNumber(me.totalEquity),
+            simAccountId: me.simAccountId,
+          }
+        : null,
     };
   }
 

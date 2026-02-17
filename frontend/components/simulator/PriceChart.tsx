@@ -110,7 +110,7 @@ export function PriceChart({
     const observer = new MutationObserver(update)
     observer.observe(root, { attributes: true, attributeFilter: ["class"] })
     return () => observer.disconnect()
-  }, [height, timeMode])
+  }, [])
 
   useEffect(() => {
     if (!containerRef.current || chartRef.current) return
@@ -157,16 +157,11 @@ export function PriceChart({
         borderColor: palette.border,
         rightOffset: 2,
         timeVisible: true,
-        secondsVisible: timeMode !== "date",
+        secondsVisible: true,
         tickMarkFormatter: (time: Time) => {
           const unixTs = toUnixSeconds(time)
           if (unixTs === null) return "--"
-          return timeMode === "date"
-            ? new Intl.DateTimeFormat("en-PK", {
-                month: "short",
-                day: "2-digit",
-              }).format(new Date(unixTs * 1000))
-            : formatTime(unixTs)
+          return formatTime(unixTs)
         },
       },
       watermark: {
@@ -190,16 +185,10 @@ export function PriceChart({
         timeFormatter: (time: Time) => {
           const unixTs = toUnixSeconds(time)
           if (unixTs === null) return "--"
-          return timeMode === "date"
-            ? new Intl.DateTimeFormat("en-PK", {
-                year: "numeric",
-                month: "short",
-                day: "2-digit",
-              }).format(new Date(unixTs * 1000))
-            : formatTime(unixTs)
+          return formatTime(unixTs)
         },
       },
-      height,
+      height: 320,
     })
     const series = chart.addAreaSeries({
       lineColor: "#38bdf8",
@@ -275,7 +264,7 @@ export function PriceChart({
       isAutoFittingRef.current = false
       didInitialFitRef.current = false
     }
-  }, [height, timeMode])
+  }, [])
 
   useEffect(() => {
     if (!chartRef.current) return

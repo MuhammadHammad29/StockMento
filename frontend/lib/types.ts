@@ -738,6 +738,27 @@ export interface SimOrderPlacement {
   execution?: SimOrderExecution | null
 }
 
+export interface SimLeaderboardRow {
+  rank: number
+  totalEquity: number
+  simAccountId: string
+  userId: string
+  displayName: string
+}
+
+export interface SimLeaderboardMe {
+  rank: number
+  totalEquity: number
+  simAccountId: string
+}
+
+export interface SimLeaderboardResponse {
+  asOfDate: string
+  totalParticipants: number
+  rows: SimLeaderboardRow[]
+  me: SimLeaderboardMe | null
+}
+
 export interface SimKlinePoint {
   symbol: string
   timeframe: string
