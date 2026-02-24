@@ -19,7 +19,7 @@ const DEFAULT_INITIAL_CASH =
   Number.parseFloat(process.env.SIM_INITIAL_CASH ?? '100000') || 100000;
 const LEADERBOARD_DEFAULT_LIMIT = 50;
 const LEADERBOARD_MAX_LIMIT = 200;
-const LEADERBOARD_CRON = process.env.SIM_LEADERBOARD_CRON ?? '35 15 * * 1-5';
+const LEADERBOARD_CRON = process.env.SIM_LEADERBOARD_CRON ?? '50 16 * * 1-5';
 const LEADERBOARD_TIMEZONE =
   process.env.SIM_LEADERBOARD_TIMEZONE ?? 'Asia/Karachi';
 

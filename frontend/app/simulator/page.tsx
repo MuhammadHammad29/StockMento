@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import io, { Socket } from "socket.io-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -96,7 +95,6 @@ type OrderCancelledEvent = {
 }
 
 export default function SimulatorPage() {
-  const router = useRouter()
   const { user, loading } = useAuth()
   const [ticks, setTicks] = useState<SimTick[]>([])
   const [portfolio, setPortfolio] = useState<SimPortfolio | null>(null)
@@ -801,6 +799,12 @@ export default function SimulatorPage() {
     }
   }, [layoutMode, accountStatus?.hasAccount])
 
+  useEffect(() => {
+    if (!loading && !user) {
+      window.location.replace("/signin")
+    }
+  }, [loading, user])
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
@@ -810,7 +814,6 @@ export default function SimulatorPage() {
   }
 
   if (!user) {
-    router.replace("/signin")
     return null
   }
 
