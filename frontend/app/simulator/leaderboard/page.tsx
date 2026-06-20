@@ -14,9 +14,9 @@ import type { SimAccountStatusResponse, SimLeaderboardResponse } from "@/lib/typ
 
 const LEADERBOARD_LIMIT = 100
 const rankMedal = (rank: number) => {
-  if (rank === 1) return "🥇"
-  if (rank === 2) return "🥈"
-  if (rank === 3) return "🥉"
+  if (rank === 1) return "\u{1F947}"
+  if (rank === 2) return "\u{1F948}"
+  if (rank === 3) return "\u{1F949}"
   return null
 }
 

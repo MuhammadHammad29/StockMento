@@ -547,6 +547,13 @@ export class SimulatorService {
       : currentPrice <= triggerPrice + 1e-6;
   }
 
+  private getReservedCash(meta: Prisma.JsonValue | null | undefined): number {
+    if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return 0;
+    const raw = (meta as Record<string, unknown>).reservedCash;
+    const value = Number(raw);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  }
+
   async placeOrder(
     user: JwtPayload,
     params: {
@@ -619,11 +626,35 @@ export class SimulatorService {
     const orderQty = params.quantity;
     const heldQty = toNumber(holding?.quantity);
     const cashAvailable = toNumber(account.cashAvailable);
+    const cashLocked = toNumber(account.cashLocked);
+    const spendableCash = cashAvailable - cashLocked;
 
-    if (params.side === 'sell' && heldQty < orderQty - 1e-6) {
-      throw new BadRequestException(
-        'Insufficient holdings to sell that quantity.',
-      );
+    if (params.side === 'sell') {
+      const openSellOrders = await this.prisma.simOrder.findMany({
+        where: {
+          simAccountId: account.id,
+          stockId: stock.id,
+          side: 'sell',
+          status: { in: [SimOrderStatus.new, SimOrderStatus.partially_filled] },
+        },
+        select: {
+          quantity: true,
+          filledQty: true,
+        },
+      });
+
+      const reservedSellQty = openSellOrders.reduce((sum, openOrder) => {
+        const remainingQty =
+          toNumber(openOrder.quantity) - toNumber(openOrder.filledQty);
+        return sum + Math.max(remainingQty, 0);
+      }, 0);
+
+      const availableToSell = heldQty - reservedSellQty;
+      if (availableToSell < orderQty - 1e-6) {
+        throw new BadRequestException(
+          'Insufficient free holdings to sell that quantity.',
+        );
+      }
     }
 
     const cashCheckPrice =
@@ -635,7 +666,7 @@ export class SimulatorService {
       if (
         cashCheckPrice &&
         cashCheckPrice > 0 &&
-        cashAvailable + 1e-6 < cashCheckPrice * orderQty
+        spendableCash + 1e-6 < cashCheckPrice * orderQty
       ) {
         throw new BadRequestException('Insufficient cash to place this order.');
       }
@@ -657,33 +688,94 @@ export class SimulatorService {
           'Unable to fetch live price for market order',
         );
       }
+      if (
+        params.side === 'buy' &&
+        spendableCash + 1e-6 < executionPrice * orderQty
+      ) {
+        throw new BadRequestException('Insufficient cash to place this order.');
+      }
     }
 
-    const order = await this.prisma.simOrder.create({
-      data: {
-        simAccountId: account.id,
-        stockId: stock.id,
-        side: params.side,
-        orderType,
-        quantity: dec(params.quantity),
-        filledQty: dec(0),
-        status: SimOrderStatus.new,
-        limitPrice: params.limitPrice ? dec(params.limitPrice) : undefined,
-        triggerPrice: params.triggerPrice
-          ? dec(params.triggerPrice)
+    const reservedBuyCash =
+      params.side === 'buy' &&
+      orderType !== SimOrderType.market &&
+      cashCheckPrice &&
+      cashCheckPrice > 0
+        ? cashCheckPrice * orderQty
+        : 0;
+
+    const orderData: Prisma.SimOrderCreateInput = {
+      account: { connect: { id: account.id } },
+      stock: { connect: { id: stock.id } },
+      side: params.side,
+      orderType,
+      quantity: dec(params.quantity),
+      filledQty: dec(0),
+      status: SimOrderStatus.new,
+      limitPrice: params.limitPrice ? dec(params.limitPrice) : undefined,
+      triggerPrice: params.triggerPrice ? dec(params.triggerPrice) : undefined,
+      stopLimitPrice: params.stopLimitPrice
+        ? dec(params.stopLimitPrice)
+        : undefined,
+      triggerStatus:
+        orderType === SimOrderType.stop_limit
+          ? SimOrderTriggerStatus.pending
           : undefined,
-        stopLimitPrice: params.stopLimitPrice
-          ? dec(params.stopLimitPrice)
+      createdAt: now,
+      updatedAt: now,
+      meta:
+        reservedBuyCash > 0
+          ? ({
+              reservedCash: reservedBuyCash,
+              reservedAt: now.toISOString(),
+            } as Prisma.InputJsonObject)
           : undefined,
-        triggerStatus:
-          orderType === SimOrderType.stop_limit
-            ? SimOrderTriggerStatus.pending
-            : undefined,
-        createdAt: now,
-        updatedAt: now,
-      },
-      include: { stock: true },
-    });
+    };
+
+    const order =
+      reservedBuyCash > 0
+        ? await this.prisma.$transaction(async (tx) => {
+            const liveAccount = await tx.simAccount.findUnique({
+              where: { id: account.id },
+              select: {
+                cashAvailable: true,
+                cashLocked: true,
+              },
+            });
+            if (!liveAccount) {
+              throw new BadRequestException('Simulator account not found.');
+            }
+
+            const liveSpendable =
+              toNumber(liveAccount.cashAvailable) -
+              toNumber(liveAccount.cashLocked);
+            if (liveSpendable + 1e-6 < reservedBuyCash) {
+              throw new BadRequestException(
+                'Insufficient cash to place this order.',
+              );
+            }
+
+            const created = await tx.simOrder.create({
+              data: orderData,
+              include: { stock: true },
+            });
+
+            await tx.simAccount.update({
+              where: { id: account.id },
+              data: {
+                cashLocked: dec(
+                  toNumber(liveAccount.cashLocked) + reservedBuyCash,
+                ),
+                updatedAt: new Date(),
+              },
+            });
+
+            return created;
+          })
+        : await this.prisma.simOrder.create({
+            data: orderData,
+            include: { stock: true },
+          });
 
     let execution: UserOrderFillEvent | null = null;
 
@@ -737,18 +829,40 @@ export class SimulatorService {
       order.meta && typeof order.meta === 'object' && !Array.isArray(order.meta)
         ? (order.meta as Record<string, unknown>)
         : {};
+    const reservedCash =
+      order.side === 'buy' ? this.getReservedCash(order.meta) : 0;
 
-    await this.prisma.simOrder.update({
-      where: { id: order.id },
-      data: {
-        status: SimOrderStatus.cancelled,
-        triggerStatus: SimOrderTriggerStatus.cancelled,
-        updatedAt: new Date(),
-        meta: {
-          ...baseMeta,
-          cancelledAt: new Date().toISOString(),
+    await this.prisma.$transaction(async (tx) => {
+      await tx.simOrder.update({
+        where: { id: order.id },
+        data: {
+          status: SimOrderStatus.cancelled,
+          triggerStatus: SimOrderTriggerStatus.cancelled,
+          updatedAt: new Date(),
+          meta: {
+            ...baseMeta,
+            cancelledAt: new Date().toISOString(),
+          },
         },
-      },
+      });
+
+      if (reservedCash > 0) {
+        const liveAccount = await tx.simAccount.findUnique({
+          where: { id: account.id },
+          select: { cashLocked: true },
+        });
+        if (liveAccount) {
+          await tx.simAccount.update({
+            where: { id: account.id },
+            data: {
+              cashLocked: dec(
+                Math.max(toNumber(liveAccount.cashLocked) - reservedCash, 0),
+              ),
+              updatedAt: new Date(),
+            },
+          });
+        }
+      }
     });
 
     return this.getPortfolio(user);
@@ -773,6 +887,9 @@ export class SimulatorService {
       },
       select: {
         id: true,
+        simAccountId: true,
+        side: true,
+        meta: true,
         account: {
           select: {
             userId: true,
@@ -782,19 +899,52 @@ export class SimulatorService {
     });
     if (!openOrders.length) return [];
 
-    await this.prisma.simOrder.updateMany({
-      where: {
-        id: { in: openOrders.map((order) => order.id) },
-      },
-      data: {
-        status: SimOrderStatus.cancelled,
-        triggerStatus: SimOrderTriggerStatus.cancelled,
-        updatedAt: now,
-        meta: {
-          cancelledAt: now.toISOString(),
-          reason,
-        } as Prisma.InputJsonObject,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      for (const order of openOrders) {
+        const baseMeta =
+          order.meta &&
+          typeof order.meta === 'object' &&
+          !Array.isArray(order.meta)
+            ? (order.meta as Record<string, unknown>)
+            : {};
+        await tx.simOrder.update({
+          where: { id: order.id },
+          data: {
+            status: SimOrderStatus.cancelled,
+            triggerStatus: SimOrderTriggerStatus.cancelled,
+            updatedAt: now,
+            meta: {
+              ...baseMeta,
+              cancelledAt: now.toISOString(),
+              reason,
+            } as Prisma.InputJsonObject,
+          },
+        });
+
+        if (order.side === 'buy') {
+          const reservedCash = this.getReservedCash(order.meta);
+          if (reservedCash > 0) {
+            const liveAccount = await tx.simAccount.findUnique({
+              where: { id: order.simAccountId },
+              select: { cashLocked: true },
+            });
+            if (liveAccount) {
+              await tx.simAccount.update({
+                where: { id: order.simAccountId },
+                data: {
+                  cashLocked: dec(
+                    Math.max(
+                      toNumber(liveAccount.cashLocked) - reservedCash,
+                      0,
+                    ),
+                  ),
+                  updatedAt: now,
+                },
+              });
+            }
+          }
+        }
+      }
     });
 
     return openOrders.map((order) => ({
@@ -880,17 +1030,46 @@ export class SimulatorService {
 
     const quantity = toNumber(order.quantity);
     const cost = price * quantity;
+    const reservedCash =
+      order.side === 'buy' ? this.getReservedCash(order.meta) : 0;
 
     if (order.side === 'buy' && toNumber(account.cashAvailable) + 1e-6 < cost) {
-      await this.prisma.simOrder.update({
-        where: { id: order.id },
-        data: { status: 'rejected', updatedAt: new Date() },
+      await this.prisma.$transaction(async (tx) => {
+        await tx.simOrder.update({
+          where: { id: order.id },
+          data: { status: 'rejected', updatedAt: new Date() },
+        });
+
+        if (reservedCash > 0) {
+          const liveAccount = await tx.simAccount.findUnique({
+            where: { id: account.id },
+            select: { cashLocked: true },
+          });
+          if (liveAccount) {
+            await tx.simAccount.update({
+              where: { id: account.id },
+              data: {
+                cashLocked: dec(
+                  Math.max(toNumber(liveAccount.cashLocked) - reservedCash, 0),
+                ),
+                updatedAt: new Date(),
+              },
+            });
+          }
+        }
       });
       return null;
     }
 
     let tradeId = '';
     await this.prisma.$transaction(async (tx) => {
+      const currentAccount = await tx.simAccount.findUnique({
+        where: { id: account.id },
+      });
+      if (!currentAccount) {
+        throw new BadRequestException('Simulator account not found.');
+      }
+
       const trade = await tx.simTrade.create({
         data: {
           orderId: order.id,
@@ -936,8 +1115,11 @@ export class SimulatorService {
         await tx.simAccount.update({
           where: { id: account.id },
           data: {
-            cashAvailable: dec(toNumber(account.cashAvailable) - cost),
-            equityLast: dec(toNumber(account.equityLast) - cost),
+            cashAvailable: dec(toNumber(currentAccount.cashAvailable) - cost),
+            cashLocked: dec(
+              Math.max(toNumber(currentAccount.cashLocked) - reservedCash, 0),
+            ),
+            equityLast: dec(toNumber(currentAccount.equityLast) - cost),
             updatedAt: new Date(),
           },
         });
@@ -970,10 +1152,10 @@ export class SimulatorService {
         await tx.simAccount.update({
           where: { id: account.id },
           data: {
-            cashAvailable: dec(toNumber(account.cashAvailable) + cost),
-            equityLast: dec(toNumber(account.equityLast) + cost),
+            cashAvailable: dec(toNumber(currentAccount.cashAvailable) + cost),
+            equityLast: dec(toNumber(currentAccount.equityLast) + cost),
             realizedPnlTotal: dec(
-              toNumber(account.realizedPnlTotal) + realizedDelta,
+              toNumber(currentAccount.realizedPnlTotal) + realizedDelta,
             ),
             updatedAt: new Date(),
           },
