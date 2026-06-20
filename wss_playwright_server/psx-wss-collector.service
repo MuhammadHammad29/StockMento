@@ -1,0 +1,73 @@
+[Unit]
+Description=PSX WebSocket Stock Data Collector (Direct)
+Documentation=https://github.com/R3d1001/stock_compiled
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+# Working directory
+WorkingDirectory=/opt/psx-wss-collector
+
+# Environment variables
+Environment="REDIS_URL=redis://localhost:6379/0"
+Environment="PSX_SAVE_DIR=/opt/saved_psx"
+# Redis key format (must match backend expectations)
+Environment="REDIS_KEY_TEMPLATE=psx:ticks:{symbol}"
+Environment="REDIS_PUBSUB_CHANNEL=psx:ticks:stream"
+Environment="REDIS_MAX_SAMPLES=15000"
+Environment="TICK_RETENTION_MINUTES=10080"
+# Symbols (comma-separated, leave empty for defaults)
+#Environment="SYMBOLS=ATRL,AVN,DGKC,..."
+#Environment="IDX_SYMBOLS=KSE100,KMI30"
+Environment="MARKET=REG"
+Environment="IDX_MARKET=IDX"
+# Market hours (PKT timezone) - set RESPECT_MARKET_HOURS=false to run 24/7
+Environment="RESPECT_MARKET_HOURS=true"
+Environment="MARKET_OPEN_HOUR=8"
+Environment="MARKET_OPEN_MINUTE=50"
+Environment="MARKET_CLOSE_HOUR=16"
+Environment="MARKET_CLOSE_MINUTE=0"
+Environment="FRIDAY_CLOSE_HOUR=17"
+Environment="FRIDAY_CLOSE_MINUTE=40"
+# Kline timeframes (comma-separated)
+Environment="KLINE_TIMEFRAMES=1m"
+
+# Run the collector
+ExecStart=/opt/psx-wss-collector/venv/bin/python -u /opt/psx-wss-collector/psx_wss_collector.py
+
+# Restart configuration
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=0
+
+# Watchdog - 10 minutes is plenty for direct WS (no proxy testing phase)
+WatchdogSec=600
+
+# Resource limits
+LimitNOFILE=65535
+LimitNPROC=65535
+
+# Shutdown
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=15
+TimeoutStartSec=120
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/saved_psx /opt/psx-wss-collector
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=psx-wss-collector
+
+[Install]
+WantedBy=multi-user.target

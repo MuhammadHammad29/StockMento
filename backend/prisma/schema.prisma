@@ -1,13 +1,504 @@
-/// Prisma client code generation config
 generator client {
   provider = "prisma-client-js"
 }
 
-/// Database connection for Postgres + multi-schema layout
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["core", "admin", "lms", "sim"]
+  schemas  = ["admin", "core", "lms", "sim"]
+}
+
+/// ----- Core schema models -----
+model Identity {
+  id                  String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email               String               @unique @db.Citext
+  passwordHash        String               @map("password_hash")
+  status              IdentityStatus       @default(pending)
+  lastLoginAt         DateTime?            @map("last_login_at")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @default(now()) @map("updated_at")
+  memberships         AppMembership[]
+  emailOtpTokens      EmailOtpToken?
+  passwordResetTokens PasswordResetToken[]
+  profile             UserProfile?
+  courseEnrollments   CourseEnrollment[]
+  labRuns             LabRun[]
+  lessonProgress      LessonProgress[]
+  quizResults         QuizResult[]
+  simAccounts         SimAccount[]
+
+  @@map("identities")
+  @@schema("core")
+}
+
+model UserProfile {
+  userId    String   @id @map("user_id") @db.Uuid
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  avatarUrl String?  @map("avatar_url")
+  bio       String?
+  meta      Json?
+  updatedAt DateTime @default(now()) @map("updated_at")
+  user      Identity @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profile")
+  @@schema("core")
+}
+
+model AppMembership {
+  id        String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  app       MembershipApp
+  status    MembershipStatus @default(active)
+  grantedAt DateTime         @default(now()) @map("granted_at")
+  user      Identity         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, app])
+  @@map("app_memberships")
+  @@schema("core")
+}
+
+model EmailOtpToken {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  codeHash  String   @map("code_hash")
+  used      Boolean  @default(false)
+  email     String   @unique @db.Citext
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+  userId    String   @unique @map("user_id") @db.Uuid
+  user      Identity @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_otp_tokens")
+  @@schema("core")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String?   @map("user_id") @db.Uuid
+  tokenHash String    @map("token_hash")
+  used      Boolean   @default(false)
+  createdAt DateTime  @default(now()) @map("created_at")
+  expiresAt DateTime  @map("expires_at")
+  user      Identity? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+  @@schema("core")
+}
+
+/// ----- Admin schema models -----
+model AdminIdentity {
+  id           String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name         String
+  email        String      @unique @db.Citext
+  passwordHash String      @map("password_hash")
+  status       AdminStatus @default(active)
+  lastLoginAt  DateTime?   @map("last_login_at")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @default(now()) @map("updated_at")
+  avatarUrl    String      @default("/avatars/avatar_admin.png") @map("avatar_url")
+
+  @@map("identities")
+  @@schema("admin")
+}
+
+/// ----- LMS schema models -----
+model Course {
+  id          String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  title       String
+  slug        String             @unique
+  description String
+  level       CourseLevel
+  mediaUrl    String?            @map("media_url")
+  isPublished Boolean            @default(false) @map("is_published")
+  publishedAt DateTime?          @map("published_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @default(now()) @map("updated_at")
+  enrollments CourseEnrollment[]
+  lessons     CourseLesson[]
+  sections    CourseSection[]
+
+  @@map("courses")
+  @@schema("lms")
+}
+
+model CourseSection {
+  id        String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  courseId  String         @map("course_id") @db.Uuid
+  title     String
+  position  Int
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @default(now()) @map("updated_at")
+  lessons   CourseLesson[]
+  course    Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("course_sections")
+  @@schema("lms")
+}
+
+model Lesson {
+  id              String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  title           String
+  contentType     LessonContentType @map("content_type")
+  durationMinutes Int               @map("duration_minutes")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @default(now()) @map("updated_at")
+  courseLinks     CourseLesson[]
+  labRuns         LabRun[]
+  labLink         LessonLab?
+  lessonProgress  LessonProgress[]
+  quizLink        LessonQuiz?
+  text            LessonText?
+  video           LessonVideo?
+  quizResults     QuizResult[]
+
+  @@map("lessons")
+  @@schema("lms")
+}
+
+model CourseLesson {
+  courseId  String        @map("course_id") @db.Uuid
+  sectionId String        @map("section_id") @db.Uuid
+  lessonId  String        @map("lesson_id") @db.Uuid
+  position  Int
+  course    Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson    Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  section   CourseSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, lessonId])
+  @@unique([sectionId, position])
+  @@map("course_lessons")
+  @@schema("lms")
+}
+
+model LessonVideo {
+  lessonId        String  @id @map("lesson_id") @db.Uuid
+  videoUrl        String  @map("video_url")
+  thumbnailUrl    String? @map("thumbnail_url")
+  durationSeconds Int     @map("duration_seconds")
+  transcript      String?
+  lesson          Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@map("lesson_video")
+  @@schema("lms")
+}
+
+model LessonText {
+  lessonId        String @id @map("lesson_id") @db.Uuid
+  bodyHtml        String @map("body_html")
+  readTimeMinutes Int    @map("read_time_minutes")
+  lesson          Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@map("lesson_text")
+  @@schema("lms")
+}
+
+model LessonQuiz {
+  lessonId String @id @map("lesson_id") @db.Uuid
+  quizId   String @unique @map("quiz_id") @db.Uuid
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  quiz     Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@map("lesson_quiz")
+  @@schema("lms")
+}
+
+model LessonLab {
+  lessonId String @id @map("lesson_id") @db.Uuid
+  labId    String @unique @map("lab_id") @db.Uuid
+  lab      Lab    @relation(fields: [labId], references: [id], onDelete: Cascade)
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@map("lesson_lab")
+  @@schema("lms")
+}
+
+model Quiz {
+  id         String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  title      String
+  passScore  Int            @map("pass_score")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @default(now()) @map("updated_at")
+  lessonLink LessonQuiz?
+  questions  QuizQuestion[]
+  results    QuizResult[]
+
+  @@map("quizzes")
+  @@schema("lms")
+}
+
+model QuizQuestion {
+  id         String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  quizId     String           @map("quiz_id") @db.Uuid
+  promptHtml String           @map("prompt_html")
+  type       QuizQuestionType
+  position   Int
+  points     Int
+  choices    QuestionChoice[]
+  quiz       Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([quizId, position])
+  @@map("quiz_questions")
+  @@schema("lms")
+}
+
+model QuestionChoice {
+  id         String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  questionId String       @map("question_id") @db.Uuid
+  choiceHtml String       @map("choice_html")
+  isCorrect  Boolean      @map("is_correct")
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_choices")
+  @@schema("lms")
+}
+
+model LessonProgress {
+  id          String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId      String               @map("user_id") @db.Uuid
+  lessonId    String               @map("lesson_id") @db.Uuid
+  status      LessonProgressStatus
+  startedAt   DateTime?            @map("started_at")
+  completedAt DateTime?            @map("completed_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @default(now()) @map("updated_at")
+  lesson      Lesson               @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user        Identity             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@map("lesson_progress")
+  @@schema("lms")
+}
+
+model QuizResult {
+  id               String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  lessonId         String    @map("lesson_id") @db.Uuid
+  quizId           String    @map("quiz_id") @db.Uuid
+  passed           Boolean
+  attemptsCount    Int       @map("attempts_count")
+  lastAttemptScore Decimal?  @map("last_attempt_score")
+  passedAt         DateTime? @map("passed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @map("updated_at")
+  lesson           Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  quiz             Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user             Identity  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@map("quiz_results")
+  @@schema("lms")
+}
+
+model Lab {
+  id               String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  title            String
+  labUrl           String     @map("lab_url")
+  instructionsHtml String     @map("instructions_html")
+  metadata         Json?
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @default(now()) @map("updated_at")
+  runs             LabRun[]
+  lessonLink       LessonLab?
+
+  @@map("labs")
+  @@schema("lms")
+}
+
+model LabRun {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  lessonId    String    @map("lesson_id") @db.Uuid
+  labId       String    @map("lab_id") @db.Uuid
+  attemptNo   Int       @map("attempt_no")
+  passed      Boolean
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @map("updated_at")
+  lab         Lab       @relation(fields: [labId], references: [id], onDelete: Cascade)
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user        Identity  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId, attemptNo])
+  @@map("lab_runs")
+  @@schema("lms")
+}
+
+model CourseEnrollment {
+  id              String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId          String                 @map("user_id") @db.Uuid
+  courseId        String                 @map("course_id") @db.Uuid
+  status          CourseEnrollmentStatus
+  progressPercent Decimal?               @map("progress_percent")
+  startedAt       DateTime?              @map("started_at")
+  completedAt     DateTime?              @map("completed_at")
+  course          Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user            Identity               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("course_enrollments")
+  @@schema("lms")
+}
+
+/// ----- Simulator schema models -----
+model SimStock {
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  symbol           String             @unique
+  name             String
+  isActive         Boolean            @default(true) @map("is_active")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @default(now()) @map("updated_at")
+  holdings         SimHolding[]
+  orders           SimOrder[]
+  lots             SimPositionLot[]
+  trades           SimTrade[]
+  watchlistEntries SimUserWatchlist[]
+
+  @@map("stocks")
+  @@schema("sim")
+}
+
+model SimAccount {
+  id                String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId            String                 @map("user_id") @db.Uuid
+  baseCcy           String                 @default("PKR") @map("base_ccy")
+  cashAvailable     Decimal                @default(0) @map("cash_available")
+  cashLocked        Decimal                @default(0) @map("cash_locked")
+  equityLast        Decimal?               @map("equity_last")
+  realizedPnlTotal  Decimal?               @map("realized_pnl_total")
+  unrealizedPnlLast Decimal?               @map("unrealized_pnl_last")
+  status            SimAccountStatus       @default(active)
+  activatedAt       DateTime?              @map("activated_at")
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @default(now()) @map("updated_at")
+  user              Identity               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holdings          SimHolding[]
+  leaderboard       SimLeaderboardDaily[]
+  orders            SimOrder[]
+  snapshots         SimPortfolioSnapshot[]
+  lots              SimPositionLot[]
+  trades            SimTrade[]
+  watchlist         SimUserWatchlist[]
+
+  @@map("accounts")
+  @@schema("sim")
+}
+
+model SimUserWatchlist {
+  id           String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  simAccountId String     @map("sim_account_id") @db.Uuid
+  stockId      String     @map("stock_id") @db.Uuid
+  addedAt      DateTime   @default(now()) @map("added_at")
+  account      SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
+  stock        SimStock   @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([simAccountId, stockId])
+  @@map("user_watchlist")
+  @@schema("sim")
+}
+
+model SimOrder {
+  id             String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  simAccountId   String                 @map("sim_account_id") @db.Uuid
+  stockId        String                 @map("stock_id") @db.Uuid
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @default(now()) @map("updated_at")
+  side           SimOrderSide
+  orderType      SimOrderType           @map("order_type")
+  limitPrice     Decimal?               @map("limit_price")
+  triggerPrice   Decimal?               @map("trigger_price")
+  stopLimitPrice Decimal?               @map("stop_limit_price")
+  triggeredAt    DateTime?              @map("triggered_at")
+  triggerStatus  SimOrderTriggerStatus? @map("trigger_status")
+  quantity       Decimal
+  filledQty      Decimal                @default(0) @map("filled_qty")
+  status         SimOrderStatus
+  meta           Json?
+  account        SimAccount             @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
+  stock          SimStock               @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  trades         SimTrade[]
+
+  @@map("orders")
+  @@schema("sim")
+}
+
+model SimTrade {
+  id           String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  orderId      String     @map("order_id") @db.Uuid
+  simAccountId String     @map("sim_account_id") @db.Uuid
+  stockId      String     @map("stock_id") @db.Uuid
+  tradeTime    DateTime   @map("trade_time")
+  price        Decimal
+  quantity     Decimal
+  fee          Decimal?
+  cashEffect   Decimal?   @map("cash_effect")
+  order        SimOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  account      SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
+  stock        SimStock   @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@map("trades")
+  @@schema("sim")
+}
+
+model SimHolding {
+  id           String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  simAccountId String     @map("sim_account_id") @db.Uuid
+  stockId      String     @map("stock_id") @db.Uuid
+  quantity     Decimal
+  avgCostPrice Decimal    @map("avg_cost_price")
+  realizedPnl  Decimal?   @map("realized_pnl")
+  updatedAt    DateTime   @default(now()) @map("updated_at")
+  account      SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
+  stock        SimStock   @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([simAccountId, stockId])
+  @@map("holdings")
+  @@schema("sim")
+}
+
+model SimPositionLot {
+  id             String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  simAccountId   String     @map("sim_account_id") @db.Uuid
+  stockId        String     @map("stock_id") @db.Uuid
+  openedAt       DateTime   @map("opened_at")
+  qtyOpened      Decimal    @map("qty_opened")
+  qtyRemaining   Decimal    @map("qty_remaining")
+  costBasisTotal Decimal    @map("cost_basis_total")
+  avgEntryPrice  Decimal    @map("avg_entry_price")
+  methodHint     String?    @map("method_hint")
+  account        SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
+  stock          SimStock   @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@map("position_lots")
+  @@schema("sim")
+}
+
+model SimPortfolioSnapshot {
+  id                String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  simAccountId      String     @map("sim_account_id") @db.Uuid
+  asOfMinute        DateTime   @map("as_of_minute")
+  cash              Decimal
+  holdingsValue     Decimal    @map("holdings_value")
+  totalEquity       Decimal    @map("total_equity")
+  realizedPnlToDate Decimal    @map("realized_pnl_to_date")
+  unrealizedPnl     Decimal    @map("unrealized_pnl")
+  account           SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([simAccountId, asOfMinute])
+  @@map("portfolio_snapshots")
+  @@schema("sim")
+}
+
+model SimLeaderboardDaily {
+  id           String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  asOfDate     DateTime   @map("as_of_date") @db.Date
+  simAccountId String     @map("sim_account_id") @db.Uuid
+  totalEquity  Decimal    @map("total_equity")
+  rank         Int
+  account      SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([asOfDate, simAccountId])
+  @@map("leaderboard_daily")
+  @@schema("sim")
 }
 
 /// ----- Core schema enums -----
@@ -137,528 +628,5 @@ enum SimOrderStatus {
   expired
 
   @@map("sim_order_status")
-  @@schema("sim")
-}
-
-/// ----- Core schema models -----
-model Identity {
-  id           String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  email        String           @unique @db.Citext
-  passwordHash String           @map("password_hash")
-  status       IdentityStatus   @default(pending)
-  lastLoginAt  DateTime?        @map("last_login_at")
-  createdAt    DateTime         @default(now()) @map("created_at")
-  updatedAt    DateTime         @default(now()) @map("updated_at")
-
-  profile             UserProfile?
-  memberships         AppMembership[]
-  emailOtpTokens      EmailOtpToken[]
-  passwordResetTokens PasswordResetToken[]
-  lessonProgress      LessonProgress[]
-  quizResults         QuizResult[]
-  labRuns             LabRun[]
-  courseEnrollments   CourseEnrollment[]
-  simAccounts         SimAccount[]
-
-  @@map("identities")
-  @@schema("core")
-}
-
-model UserProfile {
-  userId    String   @id @map("user_id") @db.Uuid
-  firstName String   @map("first_name")
-  lastName  String   @map("last_name")
-  avatarUrl String?  @map("avatar_url")
-  bio       String?
-  meta      Json?
-  updatedAt DateTime @default(now()) @map("updated_at")
-
-  user Identity @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_profile")
-  @@schema("core")
-}
-
-model AppMembership {
-  id        String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  userId    String          @map("user_id") @db.Uuid
-  app       MembershipApp
-  status    MembershipStatus @default(active)
-  grantedAt DateTime        @default(now()) @map("granted_at")
-
-  user Identity @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, app])
-  @@map("app_memberships")
-  @@schema("core")
-}
-
-model EmailOtpToken {
-  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  userId    String   @unique @map("user_id") @db.Uuid
-  codeHash  String   @map("code_hash")
-  used      Boolean  @default(false)
-  email     String   @unique @db.Citext
-  createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime @map("expires_at")
-
-  user Identity @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("email_otp_tokens")
-  @@schema("core")
-}
-
-model PasswordResetToken {
-  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  userId    String?  @map("user_id") @db.Uuid
-  tokenHash String   @map("token_hash")
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime @map("expires_at")
-
-  user Identity? @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("password_reset_tokens")
-  @@schema("core")
-}
-
-/// ----- Admin schema models -----
-model AdminIdentity {
-  id           String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  name         String
-  email        String      @unique @db.Citext
-  passwordHash String      @map("password_hash")
-  avatarUrl    String      @map("avatar_url") @default("/avatars/avatar_admin.png")
-  status       AdminStatus @default(active)
-  lastLoginAt  DateTime?   @map("last_login_at")
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @default(now()) @map("updated_at")
-
-  @@map("identities")
-  @@schema("admin")
-}
-
-/// ----- LMS schema models -----
-model Course {
-  id           String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  title        String
-  slug         String        @unique
-  description  String
-  level        CourseLevel
-  mediaUrl     String?       @map("media_url")
-  isPublished  Boolean       @default(false) @map("is_published")
-  publishedAt  DateTime?     @map("published_at")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @default(now()) @map("updated_at")
-
-  sections     CourseSection[]
-  lessons      CourseLesson[]
-  enrollments  CourseEnrollment[]
-
-  @@map("courses")
-  @@schema("lms")
-}
-
-model CourseSection {
-  id        String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  courseId  String    @map("course_id") @db.Uuid
-  title     String
-  position  Int
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @map("updated_at")
-
-  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessons   CourseLesson[]
-
-  @@map("course_sections")
-  @@schema("lms")
-}
-
-model Lesson {
-  id              String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  title           String
-  contentType     LessonContentType  @map("content_type")
-  durationMinutes Int                @map("duration_minutes")
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @default(now()) @map("updated_at")
-
-  courseLinks     CourseLesson[]
-  video           LessonVideo?
-  text            LessonText?
-  quizLink        LessonQuiz?
-  labLink         LessonLab?
-  lessonProgress  LessonProgress[]
-  quizResults     QuizResult[]
-  labRuns         LabRun[]
-
-  @@map("lessons")
-  @@schema("lms")
-}
-
-model CourseLesson {
-  courseId String @map("course_id") @db.Uuid
-  sectionId String @map("section_id") @db.Uuid
-  lessonId String @map("lesson_id") @db.Uuid
-  position Int
-
-  course  Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  section CourseSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  lesson  Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@id([courseId, lessonId])
-  @@unique([sectionId, position])
-  @@map("course_lessons")
-  @@schema("lms")
-}
-
-model LessonVideo {
-  lessonId        String @id @map("lesson_id") @db.Uuid
-  videoUrl        String @map("video_url")
-  thumbnailUrl    String? @map("thumbnail_url")
-  durationSeconds Int    @map("duration_seconds")
-  transcript      String?
-
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@map("lesson_video")
-  @@schema("lms")
-}
-
-model LessonText {
-  lessonId        String @id @map("lesson_id") @db.Uuid
-  bodyHtml        String @map("body_html")
-  readTimeMinutes Int    @map("read_time_minutes")
-
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@map("lesson_text")
-  @@schema("lms")
-}
-
-model LessonQuiz {
-  lessonId String @id @map("lesson_id") @db.Uuid
-  quizId   String @unique @map("quiz_id") @db.Uuid
-
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
-
-  @@map("lesson_quiz")
-  @@schema("lms")
-}
-
-model LessonLab {
-  lessonId String @id @map("lesson_id") @db.Uuid
-  labId    String @unique @map("lab_id") @db.Uuid
-
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  lab    Lab    @relation(fields: [labId], references: [id], onDelete: Cascade)
-
-  @@map("lesson_lab")
-  @@schema("lms")
-}
-
-model Quiz {
-  id        String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  title     String
-  passScore Int            @map("pass_score")
-  createdAt DateTime       @default(now()) @map("created_at")
-  updatedAt DateTime       @default(now()) @map("updated_at")
-
-  lessonLink LessonQuiz?
-  questions  QuizQuestion[]
-  results    QuizResult[]
-
-  @@map("quizzes")
-  @@schema("lms")
-}
-
-model QuizQuestion {
-  id        String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  quizId    String          @map("quiz_id") @db.Uuid
-  promptHtml String         @map("prompt_html")
-  type      QuizQuestionType
-  position  Int
-  points    Int
-
-  quiz     Quiz            @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  choices  QuestionChoice[]
-
-  @@unique([quizId, position])
-  @@map("quiz_questions")
-  @@schema("lms")
-}
-
-model QuestionChoice {
-  id         String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  questionId String  @map("question_id") @db.Uuid
-  choiceHtml String  @map("choice_html")
-  isCorrect  Boolean @map("is_correct")
-
-  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-  @@map("question_choices")
-  @@schema("lms")
-}
-
-model LessonProgress {
-  id         String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  userId     String              @map("user_id") @db.Uuid
-  lessonId   String              @map("lesson_id") @db.Uuid
-  status     LessonProgressStatus
-  startedAt  DateTime?           @map("started_at")
-  completedAt DateTime?          @map("completed_at")
-  createdAt  DateTime            @default(now()) @map("created_at")
-  updatedAt  DateTime            @default(now()) @map("updated_at")
-
-  user   Identity @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId])
-  @@map("lesson_progress")
-  @@schema("lms")
-}
-
-model QuizResult {
-  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  userId           String   @map("user_id") @db.Uuid
-  lessonId         String   @map("lesson_id") @db.Uuid
-  quizId           String   @map("quiz_id") @db.Uuid
-  passed           Boolean
-  attemptsCount    Int      @map("attempts_count")
-  lastAttemptScore Decimal? @map("last_attempt_score")
-  passedAt         DateTime? @map("passed_at")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @default(now()) @map("updated_at")
-
-  user   Identity @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  quiz   Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId])
-  @@map("quiz_results")
-  @@schema("lms")
-}
-
-model Lab {
-  id              String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  title           String
-  labUrl          String   @map("lab_url")
-  instructionsHtml String  @map("instructions_html")
-  metadata        Json?
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @default(now()) @map("updated_at")
-
-  lessonLink LessonLab?
-  runs       LabRun[]
-
-  @@map("labs")
-  @@schema("lms")
-}
-
-model LabRun {
-  id         String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  userId     String  @map("user_id") @db.Uuid
-  lessonId   String  @map("lesson_id") @db.Uuid
-  labId      String  @map("lab_id") @db.Uuid
-  attemptNo  Int     @map("attempt_no")
-  passed     Boolean
-  completedAt DateTime? @map("completed_at")
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @default(now()) @map("updated_at")
-
-  user   Identity @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  lab    Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId, attemptNo])
-  @@map("lab_runs")
-  @@schema("lms")
-}
-
-model CourseEnrollment {
-  id             String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  userId         String                 @map("user_id") @db.Uuid
-  courseId       String                 @map("course_id") @db.Uuid
-  status         CourseEnrollmentStatus
-  progressPercent Decimal?              @map("progress_percent")
-  startedAt      DateTime?              @map("started_at")
-  completedAt    DateTime?              @map("completed_at")
-
-  user   Identity @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  @@map("course_enrollments")
-  @@unique([userId, courseId])
-  @@schema("lms")
-}
-
-/// ----- Simulator schema models -----
-model SimStock {
-  id         String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  symbol     String  @unique
-  name       String
-  isActive   Boolean @default(true) @map("is_active")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @default(now()) @map("updated_at")
-
-  watchlistEntries SimUserWatchlist[]
-  orders           SimOrder[]
-  trades           SimTrade[]
-  holdings         SimHolding[]
-  lots             SimPositionLot[]
-
-  @@map("stocks")
-  @@schema("sim")
-}
-
-model SimAccount {
-  id                String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  userId            String           @map("user_id") @db.Uuid
-  baseCcy           String           @map("base_ccy") @default("PKR")
-  cashAvailable     Decimal          @default(0) @map("cash_available")
-  cashLocked        Decimal          @default(0) @map("cash_locked")
-  equityLast        Decimal?         @map("equity_last")
-  realizedPnlTotal  Decimal?         @map("realized_pnl_total")
-  unrealizedPnlLast Decimal?         @map("unrealized_pnl_last")
-  status            SimAccountStatus @default(active)
-  activatedAt       DateTime?        @map("activated_at")
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @default(now()) @map("updated_at")
-
-  user        Identity           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  watchlist   SimUserWatchlist[]
-  orders      SimOrder[]
-  trades      SimTrade[]
-  holdings    SimHolding[]
-  lots        SimPositionLot[]
-  snapshots   SimPortfolioSnapshot[]
-  leaderboard SimLeaderboardDaily[]
-
-  @@map("accounts")
-  @@schema("sim")
-}
-
-model SimUserWatchlist {
-  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  simAccountId String    @map("sim_account_id") @db.Uuid
-  stockId      String    @map("stock_id") @db.Uuid
-  addedAt      DateTime  @default(now()) @map("added_at")
-
-  account SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
-  stock   SimStock   @relation(fields: [stockId], references: [id], onDelete: Cascade)
-
-  @@unique([simAccountId, stockId])
-  @@map("user_watchlist")
-  @@schema("sim")
-}
-
-model SimOrder {
-  id              String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  simAccountId    String             @map("sim_account_id") @db.Uuid
-  stockId         String             @map("stock_id") @db.Uuid
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @default(now()) @map("updated_at")
-  side            SimOrderSide
-  orderType       SimOrderType       @map("order_type")
-  limitPrice      Decimal?           @map("limit_price")
-  triggerPrice    Decimal?           @map("trigger_price")
-  stopLimitPrice  Decimal?           @map("stop_limit_price")
-  triggeredAt     DateTime?          @map("triggered_at")
-  triggerStatus   SimOrderTriggerStatus? @map("trigger_status")
-  quantity        Decimal
-  filledQty       Decimal            @map("filled_qty") @default(0)
-  status          SimOrderStatus
-  meta            Json?
-
-  account SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
-  stock   SimStock   @relation(fields: [stockId], references: [id], onDelete: Cascade)
-  trades  SimTrade[]
-
-  @@map("orders")
-  @@schema("sim")
-}
-
-model SimTrade {
-  id           String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  orderId      String  @map("order_id") @db.Uuid
-  simAccountId String  @map("sim_account_id") @db.Uuid
-  stockId      String  @map("stock_id") @db.Uuid
-  tradeTime    DateTime @map("trade_time")
-  price        Decimal
-  quantity     Decimal
-  fee          Decimal?
-  cashEffect   Decimal? @map("cash_effect")
-
-  order   SimOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  account SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
-  stock   SimStock   @relation(fields: [stockId], references: [id], onDelete: Cascade)
-
-  @@map("trades")
-  @@schema("sim")
-}
-
-model SimHolding {
-  id           String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  simAccountId String  @map("sim_account_id") @db.Uuid
-  stockId      String  @map("stock_id") @db.Uuid
-  quantity     Decimal
-  avgCostPrice Decimal  @map("avg_cost_price")
-  realizedPnl  Decimal? @map("realized_pnl")
-  updatedAt    DateTime @default(now()) @map("updated_at")
-
-  account SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
-  stock   SimStock   @relation(fields: [stockId], references: [id], onDelete: Cascade)
-
-  @@unique([simAccountId, stockId])
-  @@map("holdings")
-  @@schema("sim")
-}
-
-model SimPositionLot {
-  id           String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  simAccountId String  @map("sim_account_id") @db.Uuid
-  stockId      String  @map("stock_id") @db.Uuid
-  openedAt     DateTime @map("opened_at")
-  qtyOpened    Decimal  @map("qty_opened")
-  qtyRemaining Decimal  @map("qty_remaining")
-  costBasisTotal Decimal @map("cost_basis_total")
-  avgEntryPrice Decimal @map("avg_entry_price")
-  methodHint     String? @map("method_hint")
-
-  account SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
-  stock   SimStock   @relation(fields: [stockId], references: [id], onDelete: Cascade)
-
-  @@map("position_lots")
-  @@schema("sim")
-}
-
-model SimPortfolioSnapshot {
-  id           String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  simAccountId String  @map("sim_account_id") @db.Uuid
-  asOfMinute   DateTime @map("as_of_minute")
-  cash         Decimal
-  holdingsValue Decimal @map("holdings_value")
-  totalEquity  Decimal @map("total_equity")
-  realizedPnlToDate Decimal @map("realized_pnl_to_date")
-  unrealizedPnl Decimal @map("unrealized_pnl")
-
-  account SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
-
-  @@unique([simAccountId, asOfMinute])
-  @@map("portfolio_snapshots")
-  @@schema("sim")
-}
-
-model SimLeaderboardDaily {
-  id           String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  asOfDate     DateTime @map("as_of_date") @db.Date
-  simAccountId String   @map("sim_account_id") @db.Uuid
-  totalEquity  Decimal  @map("total_equity")
-  rank         Int
-
-  account SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
-
-  @@unique([asOfDate, simAccountId])
-  @@map("leaderboard_daily")
   @@schema("sim")
 }

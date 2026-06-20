@@ -87,6 +87,21 @@ class LeaderboardQueryDto {
   offset?: number;
 }
 
+class TradeHistoryQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  offset?: number;
+}
+
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('student')
 @Controller('simulator')
@@ -104,6 +119,11 @@ export class SimulatorController {
   @Get('portfolio')
   portfolio(@CurrentUser() user: JwtPayload) {
     return this.simulatorService.getPortfolio(user);
+  }
+
+  @Get('trades')
+  trades(@CurrentUser() user: JwtPayload, @Query() query: TradeHistoryQueryDto) {
+    return this.simulatorService.getTradeHistory(user, query);
   }
 
   @Get('leaderboard')

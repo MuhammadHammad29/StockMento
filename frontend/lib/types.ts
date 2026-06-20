@@ -720,6 +720,29 @@ export interface SimOrderExecution {
   time: string
 }
 
+export interface SimTradeHistoryItem {
+  id: string
+  orderId: string
+  symbol: string
+  name: string
+  side: 'buy' | 'sell'
+  orderType: 'market' | 'limit' | 'stop_limit'
+  quantity: number
+  price: number
+  grossValue: number
+  fee?: number | null
+  cashEffect?: number | null
+  tradeTime: string
+}
+
+export interface SimTradeHistoryResponse {
+  rows: SimTradeHistoryItem[]
+  limit: number
+  offset: number
+  nextOffset?: number | null
+  hasMore: boolean
+}
+
 export interface SimPortfolio {
   accountId: string
   cashAvailable: number

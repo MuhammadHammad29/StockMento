@@ -11,7 +11,7 @@ import React from "react"
 import Link from "next/link"
 
 import { usePathname, useSearchParams } from "next/navigation"
-import { Home, BookOpen, TrendingUp, LineChart, User as UserIcon, Settings } from "lucide-react"
+import { Home, BookOpen, TrendingUp, LineChart,FlaskConical, User as UserIcon, Settings } from "lucide-react"
 
 
 import BaseNavbar from "./BaseNavbar"
@@ -31,6 +31,7 @@ export default function UserNavbar({ className }: UserNavbarProps) {
   const isCoursesActive = pathname.startsWith('/courses')
   const isProgressActive = pathname === '/progress'
   const isSimulatorActive = pathname.startsWith('/simulator')
+  const islabsActive = pathname.startsWith('/labs')
 
   const isProfilePage = pathname === '/dashboard/profile'
   const isAccountSettingsActive = isProfilePage && searchParams?.get('tab') === 'settings'
@@ -62,15 +63,15 @@ export default function UserNavbar({ className }: UserNavbarProps) {
         Courses
       </Link>
       <Link 
-        href="/progress" 
+        href="/labs" 
         className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
-          isProgressActive 
+          islabsActive 
             ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' 
             : 'text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20'
         }`}
       >
-        <TrendingUp className="h-4 w-4" />
-        Progress
+        <FlaskConical className="h-4 w-4" />
+        Labs
       </Link>
       <Link 
         href="/simulator" 
@@ -83,6 +84,18 @@ export default function UserNavbar({ className }: UserNavbarProps) {
         <LineChart className="h-4 w-4" />
         Simulator
       </Link>
+      <Link 
+        href="/progress" 
+        className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
+          isProgressActive 
+            ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' 
+            : 'text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20'
+        }`}
+      >
+        <TrendingUp className="h-4 w-4" />
+        Progress
+      </Link>
+      
     </nav>
   )
 
@@ -109,14 +122,14 @@ export default function UserNavbar({ className }: UserNavbarProps) {
         Courses
       </Link>
       <Link 
-        href="/progress"
+        href="/labs"
         className={`hidden lg:flex text-xs sm:text-sm transition-colors ${
-          isProgressActive 
+          islabsActive 
             ? 'text-emerald-600 font-medium' 
             : 'text-muted-foreground hover:text-emerald-600'
         }`}
       >
-        Progress
+        Labs
       </Link>
       <Link 
         href="/simulator"
@@ -127,6 +140,16 @@ export default function UserNavbar({ className }: UserNavbarProps) {
         }`}
       >
         Simulator
+      </Link>
+      <Link 
+        href="/progress"
+        className={`hidden lg:flex text-xs sm:text-sm transition-colors ${
+          isProgressActive 
+            ? 'text-emerald-600 font-medium' 
+            : 'text-muted-foreground hover:text-emerald-600'
+        }`}
+      >
+        Progress
       </Link>
     </>
   )

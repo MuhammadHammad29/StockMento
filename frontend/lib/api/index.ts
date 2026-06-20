@@ -32,6 +32,7 @@ import {
   SimAccountStatusResponse,
   SimOrderPlacement,
   SimLeaderboardResponse,
+  SimTradeHistoryResponse,
 } from '../types'
 import { STORAGE_KEYS } from '../data-utils'
 
@@ -544,6 +545,10 @@ export const simulatorApi = {
   },
   portfolio: async (): Promise<SimPortfolio> => {
     return apiCall<SimPortfolio>('/simulator/portfolio')
+  },
+  trades: async (query?: { limit?: number; offset?: number }): Promise<SimTradeHistoryResponse> => {
+    const qs = buildQueryString({ limit: query?.limit, offset: query?.offset })
+    return apiCall<SimTradeHistoryResponse>(`/simulator/trades${qs}`)
   },
   start: async (symbol = 'ATRL'): Promise<SimulatorStartResponse> => {
     const query = buildQueryString({ symbol })

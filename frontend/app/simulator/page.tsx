@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "sonner"
-import { BarChart3, BriefcaseBusiness, ChevronDown, Info, Lock, Wallet } from "lucide-react"
+import { BarChart3, BriefcaseBusiness, ChevronDown, Info, Lock, RefreshCw, Wallet } from "lucide-react"
 import UserNavbar from "@/components/navigation/UserNavbar"
 import { useAuth } from "@/lib/auth-context"
 import { simulatorApi } from "@/lib/api"
@@ -21,6 +21,7 @@ import type {
   SimIntradayCandle,
   SimKlinePoint,
   SimPortfolio,
+  SimTradeHistoryItem,
   SimTick,
 } from "@/lib/types"
 import { PriceChart } from "@/components/simulator/PriceChart"
@@ -28,6 +29,7 @@ import { PriceChart } from "@/components/simulator/PriceChart"
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 const MAX_TICKS = 15000
 const PORTFOLIO_POLL_INTERVAL_MS = 25000
+const TRADE_HISTORY_PAGE_SIZE = 9
 
 const DEFAULT_WATCHLIST = [
   "ATRL",
@@ -98,6 +100,10 @@ export default function SimulatorPage() {
   const { user, loading } = useAuth()
   const [ticks, setTicks] = useState<SimTick[]>([])
   const [portfolio, setPortfolio] = useState<SimPortfolio | null>(null)
+  const [tradeHistory, setTradeHistory] = useState<SimTradeHistoryItem[]>([])
+  const [tradeHistoryLoading, setTradeHistoryLoading] = useState(false)
+  const [tradeHistoryOffset, setTradeHistoryOffset] = useState(0)
+  const [tradeHistoryHasMore, setTradeHistoryHasMore] = useState(false)
   const [symbol, setSymbol] = useState("ATRL")
   const [watchlist, setWatchlist] = useState<Record<string, SimTick | null>>({})
   const [selectedIndexSymbol, setSelectedIndexSymbol] = useState<IndexSymbol>("KSE100")
@@ -154,6 +160,11 @@ export default function SimulatorPage() {
     return value.toLocaleString("en-US")
   }
 
+  const formatQuantity = (value?: number | null) => {
+    if (value === null || value === undefined || Number.isNaN(value)) return "--"
+    return Number.isInteger(value) ? value.toLocaleString("en-US") : value.toLocaleString("en-US", { maximumFractionDigits: 4 })
+  }
+
   const formatFillTime = (value?: string | null) => {
     if (!value) return null
     const parsed = new Date(value)
@@ -162,6 +173,18 @@ export default function SimulatorPage() {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
+    })
+  }
+
+  const formatTradeDateTime = (value?: string | null) => {
+    if (!value) return "--"
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) return "--"
+    return parsed.toLocaleString([], {
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     })
   }
 
@@ -191,6 +214,26 @@ export default function SimulatorPage() {
     })
   }, [symbol])
 
+  const refreshTradeHistory = useCallback(async (offset = 0) => {
+    if (!user || !accountStatus?.hasAccount) return
+    const safeOffset = Math.max(0, offset)
+    setTradeHistoryLoading(true)
+    try {
+      const result = await simulatorApi.trades({
+        limit: TRADE_HISTORY_PAGE_SIZE,
+        offset: safeOffset,
+      })
+      setTradeHistory(result.rows)
+      setTradeHistoryOffset(result.offset)
+      setTradeHistoryHasMore(result.hasMore)
+    } catch (error) {
+      console.error(error)
+      toast.error("Unable to load trade history.", { position: "top-right" })
+    } finally {
+      setTradeHistoryLoading(false)
+    }
+  }, [user, accountStatus?.hasAccount])
+
   const pnlColor = (value?: number | null) => {
     if (value === null || value === undefined || Number.isNaN(value)) return "text-muted-foreground"
     if (value > 0) return "text-emerald-400"
@@ -213,6 +256,9 @@ export default function SimulatorPage() {
   useEffect(() => {
     if (!user) {
       setAccountStatus(null)
+      setTradeHistory([])
+      setTradeHistoryOffset(0)
+      setTradeHistoryHasMore(false)
       setAccountChecking(false)
       return
     }
@@ -250,6 +296,7 @@ export default function SimulatorPage() {
         if (!active) return
         setPortfolio(data.portfolio)
         setTicks((data.ticks ?? []).slice(-MAX_TICKS))
+        void refreshTradeHistory(0)
         const wl = await simulatorApi.tickers([...DEFAULT_WATCHLIST, ...INDEX_SYMBOLS].join(","))
         if (!active) return
         const nextWatchlist: Record<string, SimTick | null> = {}
@@ -314,6 +361,7 @@ export default function SimulatorPage() {
         time: event.time,
       })
       void refreshPortfolio()
+      void refreshTradeHistory(0)
     })
     socket.on("orderCancelled", (event: OrderCancelledEvent) => {
       if (!event?.orderId) return
@@ -344,7 +392,7 @@ export default function SimulatorPage() {
       active = false
       socket?.disconnect()
     }
-  }, [symbol, user, accountStatus?.hasAccount, showOrderFilledToast])
+  }, [symbol, user, accountStatus?.hasAccount, showOrderFilledToast, refreshTradeHistory])
 
   useEffect(() => {
     if (!user || !accountStatus?.hasAccount) {
@@ -472,6 +520,10 @@ export default function SimulatorPage() {
             cancelRequestedOrderIdsRef.current.delete(orderId)
           }
 
+          if (resolvedOrderIds.length > 0) {
+            void refreshTradeHistory(0)
+          }
+
           return nextPortfolio
         })
       } catch (error) {
@@ -489,7 +541,7 @@ export default function SimulatorPage() {
       active = false
       window.clearInterval(intervalId)
     }
-  }, [user, accountStatus?.hasAccount])
+  }, [user, accountStatus?.hasAccount, refreshTradeHistory])
 
   const ownedVolume = useMemo(() => {
     if (!portfolio) return 0
@@ -654,6 +706,7 @@ export default function SimulatorPage() {
             side: form.side,
             quantity,
           })
+          void refreshTradeHistory(0)
         } else {
           toast.success("Order placed", { position: "top-right" })
         }
@@ -1530,6 +1583,164 @@ export default function SimulatorPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="border border-border/60 bg-card/90">
+          <CardHeader>
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <CardTitle className="text-foreground">Trade History</CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Executed trades from your simulator account
+                </CardDescription>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 w-8 shrink-0 px-0 sm:w-auto sm:px-3"
+                onClick={() => void refreshTradeHistory(tradeHistoryOffset)}
+                disabled={tradeHistoryLoading}
+                aria-label="Refresh trade history"
+                title="Refresh trade history"
+              >
+                <RefreshCw className={`h-4 w-4 ${tradeHistoryLoading ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">{tradeHistoryLoading ? "Refreshing..." : "Refresh"}</span>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="text-sm">
+            {tradeHistory.length ? (
+              <div>
+                <div>
+                  <div className="space-y-2 md:hidden">
+                    {tradeHistory.map((trade) => (
+                      <div key={trade.id} className="rounded-lg border border-border p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-semibold text-foreground">{trade.symbol}</span>
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] uppercase ${
+                                  trade.side === "buy"
+                                    ? "border-emerald-500/50 text-emerald-500"
+                                    : "border-red-500/50 text-red-500"
+                                }`}
+                              >
+                                {trade.side}
+                              </Badge>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {formatTradeDateTime(trade.tradeTime)} - {trade.orderType.replace("_", " ")}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-foreground">{formatCurrency(trade.grossValue)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatQuantity(trade.quantity)} @ {formatCurrency(trade.price)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                          <div>
+                            <p>Fee</p>
+                            <p className="font-semibold text-foreground">{formatCurrency(trade.fee)}</p>
+                          </div>
+                          <div>
+                            <p>Cash Effect</p>
+                            <p className={`font-semibold ${pnlColor(trade.cashEffect)}`}>
+                              {formatCurrency(trade.cashEffect, true)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="hidden overflow-x-auto md:block">
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 z-10 bg-card/95 text-muted-foreground backdrop-blur">
+                        <tr>
+                          <th className="p-2 text-left">Time</th>
+                          <th className="p-2 text-left">Symbol</th>
+                          <th className="p-2 text-left">Side</th>
+                          <th className="p-2 text-left">Type</th>
+                          <th className="p-2 text-right">Qty</th>
+                          <th className="p-2 text-right">Price</th>
+                          <th className="p-2 text-right">Gross Value</th>
+                          <th className="p-2 text-right">Cash Effect</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tradeHistory.map((trade) => (
+                          <tr key={trade.id} className="border-b border-border last:border-b-0">
+                            <td className="whitespace-nowrap p-2 text-muted-foreground">
+                              {formatTradeDateTime(trade.tradeTime)}
+                            </td>
+                            <td className="p-2 font-semibold text-foreground">{trade.symbol}</td>
+                            <td className="p-2">
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] uppercase ${
+                                  trade.side === "buy"
+                                    ? "border-emerald-500/50 text-emerald-500"
+                                    : "border-red-500/50 text-red-500"
+                                }`}
+                              >
+                                {trade.side}
+                              </Badge>
+                            </td>
+                            <td className="whitespace-nowrap p-2 text-muted-foreground">
+                              {trade.orderType.replace("_", " ")}
+                            </td>
+                            <td className="p-2 text-right">{formatQuantity(trade.quantity)}</td>
+                            <td className="p-2 text-right">{formatCurrency(trade.price)}</td>
+                            <td className="p-2 text-right">{formatCurrency(trade.grossValue)}</td>
+                            <td className={`p-2 text-right ${pnlColor(trade.cashEffect)}`}>
+                              {formatCurrency(trade.cashEffect, true)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                {tradeHistoryLoading ? "Loading trade history..." : "No executed trades yet. Filled buy and sell orders will appear here."}
+              </div>
+            )}
+
+            {(tradeHistory.length > 0 || tradeHistoryOffset > 0) ? (
+              <div className="mt-3 flex flex-col gap-2 border-t border-border/60 pt-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  Showing {tradeHistory.length ? tradeHistoryOffset + 1 : 0}
+                  {tradeHistory.length ? `-${tradeHistoryOffset + tradeHistory.length}` : ""} trades
+                </span>
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs"
+                    onClick={() => void refreshTradeHistory(Math.max(0, tradeHistoryOffset - TRADE_HISTORY_PAGE_SIZE))}
+                    disabled={tradeHistoryLoading || tradeHistoryOffset === 0}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs"
+                    onClick={() => void refreshTradeHistory(tradeHistoryOffset + TRADE_HISTORY_PAGE_SIZE)}
+                    disabled={tradeHistoryLoading || !tradeHistoryHasMore}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
 
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           {DEFAULT_WATCHLIST.map((item) => {

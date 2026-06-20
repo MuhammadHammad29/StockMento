@@ -57,6 +57,29 @@ export type PortfolioSnapshotResponse = {
   }>;
 };
 
+export type TradeHistoryRow = {
+  id: string;
+  orderId: string;
+  symbol: string;
+  name: string;
+  side: string;
+  orderType: string;
+  quantity: number;
+  price: number;
+  grossValue: number;
+  fee: number | null;
+  cashEffect: number | null;
+  tradeTime: string;
+};
+
+export type TradeHistoryResponse = {
+  rows: TradeHistoryRow[];
+  limit: number;
+  offset: number;
+  nextOffset: number | null;
+  hasMore: boolean;
+};
+
 export type OrderExecutionResponse = {
   orderId: string;
   tradeId: string;
@@ -251,6 +274,70 @@ export class SimulatorService {
         status: o.status,
         createdAt: o.createdAt.toISOString(),
       })),
+    };
+  }
+
+  async getTradeHistory(
+    user: JwtPayload,
+    params?: { limit?: number; offset?: number },
+  ): Promise<TradeHistoryResponse> {
+    const account = await this.ensureSimAccount(user);
+    this.assertActive(account);
+
+    const limit = Math.max(
+      1,
+      Math.min(100, Math.floor(Number(params?.limit) || 25)),
+    );
+    const offset = Math.max(0, Math.floor(Number(params?.offset) || 0));
+
+    const trades = await this.prisma.simTrade.findMany({
+      where: { simAccountId: account.id },
+      include: {
+        stock: {
+          select: {
+            symbol: true,
+            name: true,
+          },
+        },
+        order: {
+          select: {
+            side: true,
+            orderType: true,
+          },
+        },
+      },
+      orderBy: { tradeTime: 'desc' },
+      skip: offset,
+      take: limit + 1,
+    });
+
+    const rows = trades.slice(0, limit).map((trade) => {
+      const quantity = toNumber(trade.quantity);
+      const price = toNumber(trade.price);
+      return {
+        id: trade.id,
+        orderId: trade.orderId,
+        symbol: trade.stock.symbol,
+        name: trade.stock.name,
+        side: trade.order.side,
+        orderType: trade.order.orderType,
+        quantity,
+        price,
+        grossValue: quantity * price,
+        fee: trade.fee ? toNumber(trade.fee) : null,
+        cashEffect: trade.cashEffect ? toNumber(trade.cashEffect) : null,
+        tradeTime: trade.tradeTime.toISOString(),
+      };
+    });
+
+    const hasMore = trades.length > limit;
+
+    return {
+      rows,
+      limit,
+      offset,
+      nextOffset: hasMore ? offset + limit : null,
+      hasMore,
     };
   }
 

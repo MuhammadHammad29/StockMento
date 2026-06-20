@@ -1,0 +1,78 @@
+[Unit]
+Description=PSXTerminal WebSocket Stock Data Collector (Playwright/MessagePack)
+Documentation=https://github.com/R3d1001/stock_compiled
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+WorkingDirectory=/opt/psx-wss-collector
+
+# Playwright browser location. Important because ProtectHome=true blocks /root/.cache.
+#Environment="PLAYWRIGHT_BROWSERS_PATH=/opt/psx-wss-collector/ms-playwright"
+Environment=PLAYWRIGHT_BROWSERS_PATH=/opt/psx-wss-collector/ms-playwright
+Environment=HOME=/opt/psx-wss-collector
+
+
+# Redis / backend-compatible stream format
+Environment="REDIS_URL=redis://localhost:6379/0"
+Environment="PSX_SAVE_DIR=/opt/saved_psx"
+Environment="KLINE_SAVE_DIR=/opt/saved_psx/klines"
+Environment="REDIS_KEY_TEMPLATE=psx:ticks:{symbol}"
+Environment="REDIS_PUBSUB_CHANNEL=psx:ticks:stream"
+Environment="REDIS_MAX_SAMPLES=15000"
+Environment="TICK_RETENTION_MINUTES=10080"
+Environment="SIM_ACTIVE_DAY_KEY=sim:active_trading_day"
+
+# Symbols. Leave commented to use collector defaults.
+#Environment="SYMBOLS=ATRL,AVN,DGKC,EFERT,ENGROH,FABL,FCCL,FFL,GAL,GHNI,HCAR,HUBC,LUCK,MARI,MEBL,MLCF,MTL,NETSOL,OCTOPUS,OGDC,PAEL,PIOC,PPL,PRL,SAZEW,SEARL,SNGP,SYS,TOMCL,PSO"
+#Environment="IDX_SYMBOLS=KSE100,KMI30"
+Environment="MARKET=REG"
+Environment="IDX_MARKET=IDX"
+
+# Kline timeframes. More timeframes mean more subscriptions.
+Environment="KLINE_TIMEFRAMES=1m"
+
+# Keep this below 20 because the opened symbol page may create its own subscription.
+Environment="MAX_SUBS_PER_WS=18"
+
+# Market hours, Pakistan time
+Environment="RESPECT_MARKET_HOURS=true"
+Environment="MARKET_OPEN_HOUR=8"
+Environment="MARKET_OPEN_MINUTE=50"
+Environment="MARKET_CLOSE_HOUR=16"
+Environment="MARKET_CLOSE_MINUTE=0"
+Environment="FRIDAY_CLOSE_HOUR=17"
+Environment="FRIDAY_CLOSE_MINUTE=40"
+
+ExecStart=/opt/psx-wss-collector/venv/bin/python -u /opt/psx-wss-collector/psx_wss_collector.py
+
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=0
+WatchdogSec=600
+
+LimitNOFILE=65535
+LimitNPROC=65535
+
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=20
+TimeoutStartSec=180
+
+# Hardening. These are compatible with the Playwright setup above.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/saved_psx /opt/psx-wss-collector /tmp
+PrivateTmp=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=psx-wss-collector
+
+[Install]
+WantedBy=multi-user.target
