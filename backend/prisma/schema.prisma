@@ -22,6 +22,7 @@ model Identity {
   passwordResetTokens PasswordResetToken[]
   profile             UserProfile?
   courseEnrollments   CourseEnrollment[]
+  labRuns             LabRun[]
   lessonProgress      LessonProgress[]
   simAccounts         SimAccount[]
 
@@ -141,6 +142,7 @@ model Lesson {
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @default(now()) @map("updated_at")
   courseLinks     CourseLesson[]
+  labRuns         LabRun[]
   labLink         LessonLab?
   lessonProgress  LessonProgress[]
   quizLink        LessonQuiz?
@@ -265,16 +267,47 @@ model LessonProgress {
 }
 
 model Lab {
-  id               String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id               String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  slug             String        @unique
   title            String
-  labUrl           String     @map("lab_url")
-  instructionsHtml String     @map("instructions_html")
+  description      String
+  module           String
+  difficulty       LabDifficulty
+  estimatedMinutes Int           @map("estimated_minutes")
+  stockSymbol      String?       @map("stock_symbol")
+  routePath        String        @map("route_path")
+  labUrl           String        @map("lab_url")
+  instructionsHtml String        @map("instructions_html")
+  isPublished      Boolean       @default(false) @map("is_published")
+  sortOrder        Int           @default(0) @map("sort_order")
   metadata         Json?
-  createdAt        DateTime   @default(now()) @map("created_at")
-  updatedAt        DateTime   @default(now()) @map("updated_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @default(now()) @map("updated_at")
   lessonLink       LessonLab?
+  runs             LabRun[]
 
   @@map("labs")
+  @@schema("lms")
+}
+
+model LabRun {
+  id             String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  labId          String       @map("lab_id") @db.Uuid
+  lessonId       String?      @map("lesson_id") @db.Uuid
+  attemptNo      Int          @map("attempt_no")
+  status         LabRunStatus
+  completedTasks Json?        @map("completed_tasks")
+  totalTasks     Int?         @map("total_tasks")
+  score          Decimal?
+  startedAt      DateTime     @default(now()) @map("started_at")
+  completedAt    DateTime?    @map("completed_at")
+  lab            Lab          @relation(fields: [labId], references: [id], onDelete: Cascade)
+  lesson         Lesson?      @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  user           Identity     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, labId, attemptNo])
+  @@map("lab_runs")
   @@schema("lms")
 }
 
@@ -484,6 +517,24 @@ enum QuizQuestionType {
   true_false
 
   @@map("quiz_question_type")
+  @@schema("lms")
+}
+
+enum LabDifficulty {
+  beginner
+  intermediate
+  advanced
+
+  @@map("lab_difficulty")
+  @@schema("lms")
+}
+
+enum LabRunStatus {
+  started
+  completed
+  failed
+
+  @@map("lab_run_status")
   @@schema("lms")
 }
 

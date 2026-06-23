@@ -33,6 +33,9 @@ import {
   SimOrderPlacement,
   SimLeaderboardResponse,
   SimTradeHistoryResponse,
+  PublicLabSummary,
+  LabCompletionPayload,
+  LabRunResult,
 } from '../types'
 import { STORAGE_KEYS } from '../data-utils'
 
@@ -587,6 +590,26 @@ export const simulatorApi = {
   },
 }
 
+export const labsApi = {
+  list: async (): Promise<PublicLabSummary[]> => {
+    return apiCall<PublicLabSummary[]>('/labs')
+  },
+
+  get: async (slugOrId: string): Promise<PublicLabSummary> => {
+    return apiCall<PublicLabSummary>(`/labs/${slugOrId}`)
+  },
+
+  complete: async (
+    slugOrId: string,
+    payload: LabCompletionPayload,
+  ): Promise<LabRunResult> => {
+    return apiCall<LabRunResult>(`/labs/${slugOrId}/complete`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+}
+
 
 // Analytics APIs 
 export const analyticsApi = { //object containing functions to call various analytics endpoints
@@ -796,6 +819,7 @@ export const api = {
   profile: profileApi,
   progress: progressApi,
   simulator: simulatorApi,
+  labs: labsApi,
 }
 
 export default api

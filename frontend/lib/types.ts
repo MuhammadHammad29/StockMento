@@ -516,9 +516,53 @@ export interface PublicLessonQuiz {
 export interface PublicLessonLab {
   id: string;
   title: string;
+  description?: string;
+  module?: string;
+  difficulty?: LabDifficulty;
+  estimatedMinutes?: number;
+  stockSymbol?: string | null;
+  routePath?: string;
   labUrl: string;
   instructionsHtml: string;
   metadata?: Record<string, unknown> | null;
+}
+
+export type LabDifficulty = 'beginner' | 'intermediate' | 'advanced';
+
+export interface PublicLabSummary {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  module: string;
+  difficulty: LabDifficulty;
+  estimatedMinutes: number;
+  stockSymbol: string | null;
+  routePath: string;
+  labUrl: string;
+  instructionsHtml: string;
+  isPublished: boolean;
+  sortOrder: number;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface LabCompletionPayload {
+  lessonId?: string;
+  courseId?: string;
+  passed: boolean;
+  completedTasks?: string[];
+  totalTasks?: number;
+  score?: number;
+  metadata?: Record<string, unknown>;
+  status?: 'completed' | 'failed';
+}
+
+export interface LabRunResult {
+  id: string;
+  labId: string;
+  attemptNo: number;
+  status: 'started' | 'completed' | 'failed';
+  completedAt: string | null;
 }
 
 export interface PublicLessonDetail {

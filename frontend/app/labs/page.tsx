@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import UserNavbar from "@/components/navigation/UserNavbar"
 import { useAuth } from "@/lib/auth-context"
+import { labsApi } from "@/lib/api"
+import type { PublicLabSummary } from "@/lib/types"
 
 type Difficulty = "Beginner" | "Intermediate" | "Advanced"
 
@@ -33,6 +35,7 @@ type Lab = {
   stock: string
   available: boolean
   module: string
+  routePath?: string
 }
 
 const LABS: Lab[] = [
@@ -83,14 +86,38 @@ export default function LabsPage() {
   const { user, loading } = useAuth()
   const [filter, setFilter] = useState<(typeof DIFF_CHIPS)[number]["value"]>("All")
   const [query, setQuery] = useState("")
+  const [dbLabs, setDbLabs] = useState<Lab[]>([])
 
   useEffect(() => {
     if (!loading && !user) window.location.replace("/signin")
   }, [loading, user])
 
+  useEffect(() => {
+    if (!user) return
+
+    let active = true
+    const loadLabs = async () => {
+      try {
+        const labs = await labsApi.list()
+        if (active && labs.length > 0) {
+          setDbLabs(labs.map(mapPublicLab))
+        }
+      } catch {
+        if (active) setDbLabs([])
+      }
+    }
+
+    void loadLabs()
+    return () => {
+      active = false
+    }
+  }, [user])
+
+  const labs = dbLabs.length > 0 ? dbLabs : LABS
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return LABS.filter((lab) => {
+    return labs.filter((lab) => {
       const matchDiff = filter === "All" || lab.difficulty === filter
       const matchQuery =
         !q ||
@@ -100,7 +127,7 @@ export default function LabsPage() {
         lab.module.toLowerCase().includes(q)
       return matchDiff && matchQuery
     })
-  }, [filter, query])
+  }, [filter, labs, query])
 
   const byModule = useMemo(() => {
     const groups = new Map<string, Lab[]>()
@@ -114,9 +141,9 @@ export default function LabsPage() {
 
   const counts = useMemo(() => {
     const byDiff: Record<Difficulty, number> = { Beginner: 0, Intermediate: 0, Advanced: 0 }
-    for (const lab of LABS) byDiff[lab.difficulty]++
+    for (const lab of labs) byDiff[lab.difficulty]++
     return byDiff
-  }, [])
+  }, [labs])
 
   if (loading) {
     return (
@@ -150,7 +177,7 @@ export default function LabsPage() {
           </div>
 
           <div className="grid grid-cols-4 gap-px overflow-hidden rounded-xl border border-border bg-border/60">
-            <MiniStat label="Total" value={LABS.length.toString()} />
+            <MiniStat label="Total" value={labs.length.toString()} />
             <MiniStat label="Beginner" value={counts.Beginner.toString()} />
             <MiniStat label="Intermed." value={counts.Intermediate.toString()} />
             <MiniStat label="Advanced" value={counts.Advanced.toString()} />
@@ -286,10 +313,30 @@ function LabCard({ lab }: { lab: Lab }) {
 
   if (disabled) return Body
   return (
-    <Link href={`/labs/${lab.id}`} className="block">
+    <Link href={lab.routePath ?? `/labs/${lab.id}`} className="block">
       {Body}
     </Link>
   )
+}
+
+function mapPublicLab(lab: PublicLabSummary): Lab {
+  return {
+    id: lab.sortOrder || Number.parseInt(lab.routePath.split("/").pop() ?? "", 10) || 0,
+    title: lab.title,
+    description: lab.description,
+    difficulty: toDisplayDifficulty(lab.difficulty),
+    estimatedMinutes: lab.estimatedMinutes,
+    stock: lab.stockSymbol ?? "Multi-Stock",
+    available: lab.isPublished,
+    module: lab.module,
+    routePath: lab.routePath,
+  }
+}
+
+function toDisplayDifficulty(value: PublicLabSummary["difficulty"]): Difficulty {
+  if (value === "advanced") return "Advanced"
+  if (value === "intermediate") return "Intermediate"
+  return "Beginner"
 }
 
 function MiniStat({ value, label }: { value: string; label: string }) {

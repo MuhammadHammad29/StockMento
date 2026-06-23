@@ -11,6 +11,7 @@ import { CoursesModule } from './courses/courses.module';
 import { AdminAnalyticsModule } from './admin-analytics/admin-analytics.module';
 import { SimulatorModule } from './simulator/simulator.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { LabsModule } from './labs/labs.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ProfileModule,
     LmsAdminModule,
     CoursesModule,
+    LabsModule,
     AdminAnalyticsModule,
     SimulatorModule,
   ],
