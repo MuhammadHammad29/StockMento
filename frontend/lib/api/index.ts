@@ -599,6 +599,12 @@ export const labsApi = {
     return apiCall<PublicLabSummary>(`/labs/${slugOrId}`)
   },
 
+  start: async (slugOrId: string): Promise<LabRunResult> => {
+    return apiCall<LabRunResult>(`/labs/${slugOrId}/start`, {
+      method: 'POST',
+    })
+  },
+
   complete: async (
     slugOrId: string,
     payload: LabCompletionPayload,

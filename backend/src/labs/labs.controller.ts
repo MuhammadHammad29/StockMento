@@ -23,6 +23,14 @@ export class LabsController {
     return this.labsService.getLab(slugOrId);
   }
 
+  @Post(':slugOrId/start')
+  startLab(
+    @Param('slugOrId') slugOrId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.labsService.startLab(slugOrId, user);
+  }
+
   @Post(':slugOrId/complete')
   completeLab(
     @Param('slugOrId') slugOrId: string,

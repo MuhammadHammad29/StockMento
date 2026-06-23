@@ -23,36 +23,51 @@ export class LabsService {
   }
 
   async getLab(slugOrId: string) {
-    const lab = await this.prisma.lab.findFirst({
-      where: this.buildLabLookup(slugOrId),
-    });
-
-    if (!lab) {
-      throw new NotFoundException('Lab not found');
-    }
+    const lab = await this.findPublishedLab(slugOrId);
 
     return this.mapLabSummary(lab);
   }
 
-  async completeLab(slugOrId: string, user: JwtPayload, dto: CompleteLabDto) {
-    const lab = await this.prisma.lab.findFirst({
-      where: this.buildLabLookup(slugOrId),
-    });
-
-    if (!lab) {
-      throw new NotFoundException('Lab not found');
-    }
-
+  async startLab(slugOrId: string, user: JwtPayload) {
+    const lab = await this.findPublishedLab(slugOrId);
     const lastRun = await this.prisma.labRun.findFirst({
       where: {
         userId: user.sub,
         labId: lab.id,
       },
       orderBy: { attemptNo: 'desc' },
-      select: { attemptNo: true },
     });
 
-    const attemptNo = (lastRun?.attemptNo ?? 0) + 1;
+    if (
+      lastRun &&
+      (lastRun.status === LabRunStatus.started ||
+        lastRun.status === LabRunStatus.completed)
+    ) {
+      return this.mapLabRunResult(lastRun);
+    }
+
+    const run = await this.prisma.labRun.create({
+      data: {
+        userId: user.sub,
+        labId: lab.id,
+        attemptNo: (lastRun?.attemptNo ?? 0) + 1,
+        status: LabRunStatus.started,
+      },
+    });
+
+    return this.mapLabRunResult(run);
+  }
+
+  async completeLab(slugOrId: string, user: JwtPayload, dto: CompleteLabDto) {
+    const lab = await this.findPublishedLab(slugOrId);
+    const lastRun = await this.prisma.labRun.findFirst({
+      where: {
+        userId: user.sub,
+        labId: lab.id,
+      },
+      orderBy: { attemptNo: 'desc' },
+    });
+
     const status =
       dto.status === 'failed' || dto.passed === false
         ? LabRunStatus.failed
@@ -64,22 +79,32 @@ export class LabsService {
     };
 
     const run = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.labRun.create({
-        data: {
-          userId: user.sub,
-          labId: lab.id,
-          lessonId: dto.lessonId,
-          attemptNo,
-          status,
-          completedTasks,
-          totalTasks: dto.totalTasks,
-          score:
-            dto.score === undefined
-              ? undefined
-              : new Prisma.Decimal(dto.score),
-          completedAt: status === LabRunStatus.completed ? new Date() : null,
-        },
-      });
+      const terminalData = {
+        lessonId: dto.lessonId,
+        status,
+        completedTasks,
+        totalTasks: dto.totalTasks,
+        score:
+          dto.score === undefined
+            ? undefined
+            : new Prisma.Decimal(dto.score),
+        completedAt: new Date(),
+      };
+
+      const created =
+        lastRun?.status === LabRunStatus.started
+          ? await tx.labRun.update({
+              where: { id: lastRun.id },
+              data: terminalData,
+            })
+          : await tx.labRun.create({
+              data: {
+                userId: user.sub,
+                labId: lab.id,
+                attemptNo: (lastRun?.attemptNo ?? 0) + 1,
+                ...terminalData,
+              },
+            });
 
       if (status === LabRunStatus.completed && dto.courseId && dto.lessonId) {
         await this.markLinkedLessonComplete(tx, user.sub, dto.courseId, dto.lessonId);
@@ -88,13 +113,7 @@ export class LabsService {
       return created;
     });
 
-    return {
-      id: run.id,
-      labId: lab.id,
-      attemptNo: run.attemptNo,
-      status: run.status,
-      completedAt: run.completedAt,
-    };
+    return this.mapLabRunResult(run);
   }
 
   private async markLinkedLessonComplete(
@@ -194,9 +213,46 @@ export class LabsService {
         slugOrId,
       );
 
+    const routePath = slugOrId.startsWith('/labs/')
+      ? slugOrId
+      : `/labs/${slugOrId}`;
+    const lookup: Prisma.LabWhereInput[] = [{ slug: slugOrId }, { routePath }];
+
+    if (isUuid) {
+      lookup.unshift({ id: slugOrId });
+    }
+
     return {
       isPublished: true,
-      OR: isUuid ? [{ id: slugOrId }, { slug: slugOrId }] : [{ slug: slugOrId }],
+      OR: lookup,
+    };
+  }
+
+  private async findPublishedLab(slugOrId: string) {
+    const lab = await this.prisma.lab.findFirst({
+      where: this.buildLabLookup(slugOrId),
+    });
+
+    if (!lab) {
+      throw new NotFoundException('Lab not found');
+    }
+
+    return lab;
+  }
+
+  private mapLabRunResult(run: {
+    id: string;
+    labId: string;
+    attemptNo: number;
+    status: LabRunStatus;
+    completedAt: Date | null;
+  }) {
+    return {
+      id: run.id,
+      labId: run.labId,
+      attemptNo: run.attemptNo,
+      status: run.status,
+      completedAt: run.completedAt,
     };
   }
 

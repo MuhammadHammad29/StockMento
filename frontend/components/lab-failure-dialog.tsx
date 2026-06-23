@@ -1,10 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { AlertTriangle, ArrowLeft, RotateCcw, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { labsApi } from "@/lib/api"
 
 type LabFailureDialogProps = {
   title?: string
@@ -77,6 +79,12 @@ export function LabTimelineFailureDialog({
   onReset,
 }: LabTimelineFailureDialogProps) {
   const [dismissed, setDismissed] = useState(false)
+  useLabRunReporter({
+    isTimelineFinished,
+    isComplete,
+    completedCount,
+    totalTasks,
+  })
 
   useEffect(() => {
     if (!isTimelineFinished || isComplete) {
@@ -100,4 +108,86 @@ export function LabTimelineFailureDialog({
       }}
     />
   )
+}
+
+function useLabRunReporter({
+  isTimelineFinished,
+  isComplete,
+  completedCount,
+  totalTasks,
+}: {
+  isTimelineFinished: boolean
+  isComplete: boolean
+  completedCount: number
+  totalTasks: number
+}) {
+  const pathname = usePathname()
+  const labLookup = pathname.split("/").filter(Boolean).at(-1)
+  const startRequestedRef = useRef(false)
+  const terminalReportedRef = useRef(false)
+
+  useEffect(() => {
+    if (!labLookup || startRequestedRef.current) return
+
+    startRequestedRef.current = true
+    void labsApi.start(labLookup).catch(() => {
+      startRequestedRef.current = false
+    })
+  }, [labLookup])
+
+  useEffect(() => {
+    if (!labLookup || terminalReportedRef.current) return
+
+    if (isComplete) {
+      terminalReportedRef.current = true
+      void labsApi
+        .complete(labLookup, {
+          passed: true,
+          completedTasks: Array.from({ length: totalTasks }, (_, index) => `task-${index + 1}`),
+          totalTasks,
+          score: 100,
+          status: "completed",
+        })
+        .catch(() => {
+          terminalReportedRef.current = false
+        })
+      return
+    }
+
+    if (isTimelineFinished) {
+      terminalReportedRef.current = true
+      void labsApi
+        .complete(labLookup, {
+          passed: false,
+          completedTasks: Array.from(
+            { length: completedCount },
+            (_, index) => `task-${index + 1}`,
+          ),
+          totalTasks,
+          score: totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0,
+          status: "failed",
+          metadata: {
+            reason: "timeline_finished",
+          },
+        })
+        .catch(() => {
+          terminalReportedRef.current = false
+        })
+    }
+  }, [completedCount, isComplete, isTimelineFinished, labLookup, totalTasks])
+
+  useEffect(() => {
+    if (!terminalReportedRef.current || isComplete || isTimelineFinished) return
+
+    terminalReportedRef.current = false
+    if (!labLookup) {
+      startRequestedRef.current = false
+      return
+    }
+
+    startRequestedRef.current = true
+    void labsApi.start(labLookup).catch(() => {
+      startRequestedRef.current = false
+    })
+  }, [isComplete, isTimelineFinished, labLookup])
 }
