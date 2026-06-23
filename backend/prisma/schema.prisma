@@ -22,9 +22,7 @@ model Identity {
   passwordResetTokens PasswordResetToken[]
   profile             UserProfile?
   courseEnrollments   CourseEnrollment[]
-  labRuns             LabRun[]
   lessonProgress      LessonProgress[]
-  quizResults         QuizResult[]
   simAccounts         SimAccount[]
 
   @@map("identities")
@@ -143,13 +141,11 @@ model Lesson {
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @default(now()) @map("updated_at")
   courseLinks     CourseLesson[]
-  labRuns         LabRun[]
   labLink         LessonLab?
   lessonProgress  LessonProgress[]
   quizLink        LessonQuiz?
   text            LessonText?
   video           LessonVideo?
-  quizResults     QuizResult[]
 
   @@map("lessons")
   @@schema("lms")
@@ -220,7 +216,6 @@ model Quiz {
   updatedAt  DateTime       @default(now()) @map("updated_at")
   lessonLink LessonQuiz?
   questions  QuizQuestion[]
-  results    QuizResult[]
 
   @@map("quizzes")
   @@schema("lms")
@@ -269,26 +264,6 @@ model LessonProgress {
   @@schema("lms")
 }
 
-model QuizResult {
-  id               String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  userId           String    @map("user_id") @db.Uuid
-  lessonId         String    @map("lesson_id") @db.Uuid
-  quizId           String    @map("quiz_id") @db.Uuid
-  passed           Boolean
-  attemptsCount    Int       @map("attempts_count")
-  lastAttemptScore Decimal?  @map("last_attempt_score")
-  passedAt         DateTime? @map("passed_at")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @default(now()) @map("updated_at")
-  lesson           Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  quiz             Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  user             Identity  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId])
-  @@map("quiz_results")
-  @@schema("lms")
-}
-
 model Lab {
   id               String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   title            String
@@ -297,29 +272,9 @@ model Lab {
   metadata         Json?
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @default(now()) @map("updated_at")
-  runs             LabRun[]
   lessonLink       LessonLab?
 
   @@map("labs")
-  @@schema("lms")
-}
-
-model LabRun {
-  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  userId      String    @map("user_id") @db.Uuid
-  lessonId    String    @map("lesson_id") @db.Uuid
-  labId       String    @map("lab_id") @db.Uuid
-  attemptNo   Int       @map("attempt_no")
-  passed      Boolean
-  completedAt DateTime? @map("completed_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @default(now()) @map("updated_at")
-  lab         Lab       @relation(fields: [labId], references: [id], onDelete: Cascade)
-  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  user        Identity  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId, attemptNo])
-  @@map("lab_runs")
   @@schema("lms")
 }
 
@@ -349,9 +304,7 @@ model SimStock {
   updatedAt        DateTime           @default(now()) @map("updated_at")
   holdings         SimHolding[]
   orders           SimOrder[]
-  lots             SimPositionLot[]
   trades           SimTrade[]
-  watchlistEntries SimUserWatchlist[]
 
   @@map("stocks")
   @@schema("sim")
@@ -374,25 +327,9 @@ model SimAccount {
   holdings          SimHolding[]
   leaderboard       SimLeaderboardDaily[]
   orders            SimOrder[]
-  snapshots         SimPortfolioSnapshot[]
-  lots              SimPositionLot[]
   trades            SimTrade[]
-  watchlist         SimUserWatchlist[]
 
   @@map("accounts")
-  @@schema("sim")
-}
-
-model SimUserWatchlist {
-  id           String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  simAccountId String     @map("sim_account_id") @db.Uuid
-  stockId      String     @map("stock_id") @db.Uuid
-  addedAt      DateTime   @default(now()) @map("added_at")
-  account      SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
-  stock        SimStock   @relation(fields: [stockId], references: [id], onDelete: Cascade)
-
-  @@unique([simAccountId, stockId])
-  @@map("user_watchlist")
   @@schema("sim")
 }
 
@@ -452,39 +389,6 @@ model SimHolding {
 
   @@unique([simAccountId, stockId])
   @@map("holdings")
-  @@schema("sim")
-}
-
-model SimPositionLot {
-  id             String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  simAccountId   String     @map("sim_account_id") @db.Uuid
-  stockId        String     @map("stock_id") @db.Uuid
-  openedAt       DateTime   @map("opened_at")
-  qtyOpened      Decimal    @map("qty_opened")
-  qtyRemaining   Decimal    @map("qty_remaining")
-  costBasisTotal Decimal    @map("cost_basis_total")
-  avgEntryPrice  Decimal    @map("avg_entry_price")
-  methodHint     String?    @map("method_hint")
-  account        SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
-  stock          SimStock   @relation(fields: [stockId], references: [id], onDelete: Cascade)
-
-  @@map("position_lots")
-  @@schema("sim")
-}
-
-model SimPortfolioSnapshot {
-  id                String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  simAccountId      String     @map("sim_account_id") @db.Uuid
-  asOfMinute        DateTime   @map("as_of_minute")
-  cash              Decimal
-  holdingsValue     Decimal    @map("holdings_value")
-  totalEquity       Decimal    @map("total_equity")
-  realizedPnlToDate Decimal    @map("realized_pnl_to_date")
-  unrealizedPnl     Decimal    @map("unrealized_pnl")
-  account           SimAccount @relation(fields: [simAccountId], references: [id], onDelete: Cascade)
-
-  @@unique([simAccountId, asOfMinute])
-  @@map("portfolio_snapshots")
   @@schema("sim")
 }
 
