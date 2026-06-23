@@ -137,9 +137,18 @@ export class CoursesService {
       include: enrollmentInclude,
     });
 
-    return enrollments.map((enrollment) =>
-      this.mapEnrollmentResponse(enrollment),
+    const reconciled = await Promise.all(
+      enrollments.map((enrollment) =>
+        enrollment.status === CourseEnrollmentStatus.dropped
+          ? enrollment
+          : this.recalculateEnrollmentProgress(
+              enrollment.courseId,
+              userId,
+            ).then((updated) => updated ?? enrollment),
+      ),
     );
+
+    return reconciled.map((enrollment) => this.mapEnrollmentResponse(enrollment));
   }
 
   async getLearningStreak(userId: string) {
@@ -323,7 +332,16 @@ export class CoursesService {
       include: enrollmentInclude,
     });
 
-    return enrollment ? this.mapEnrollmentResponse(enrollment) : null;
+    if (!enrollment) {
+      return null;
+    }
+
+    if (enrollment.status === CourseEnrollmentStatus.dropped) {
+      return this.mapEnrollmentResponse(enrollment);
+    }
+
+    const reconciled = await this.recalculateEnrollmentProgress(courseId, userId);
+    return this.mapEnrollmentResponse(reconciled ?? enrollment);
   }
 
   async enrollInCourse(courseId: string, userId: string) {
@@ -480,6 +498,8 @@ export class CoursesService {
       lessonIds.length === 0
         ? 0
         : Math.round((completedLessons / lessonIds.length) * 100);
+
+    await this.recalculateEnrollmentProgress(courseId, userId);
 
     return {
       courseId,
@@ -653,6 +673,7 @@ export class CoursesService {
           status: CourseEnrollmentStatus.active,
           completedAt: null,
         },
+        include: enrollmentInclude,
       });
     }
 
@@ -674,8 +695,9 @@ export class CoursesService {
           percent >= 100
             ? CourseEnrollmentStatus.completed
             : CourseEnrollmentStatus.active,
-        completedAt: percent >= 100 ? new Date() : null,
+        completedAt: percent >= 100 ? (enrollment.completedAt ?? new Date()) : null,
       },
+      include: enrollmentInclude,
     });
   }
 

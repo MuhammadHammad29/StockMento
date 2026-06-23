@@ -3,7 +3,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, PartyPopper } from "lucide-react";
+import Link from "next/link";
+import { BookOpenCheck, PartyPopper, Sparkles } from "lucide-react";
 
 interface CourseCompletionDialogProps {
   isOpen: boolean;
@@ -31,14 +32,17 @@ export default function CourseCompletionDialog({
 
           <DialogHeader className="mb-6 space-y-3">
             <DialogTitle className="text-center text-2xl font-bold">
-              Congratulations!
+              Course complete
             </DialogTitle>
             <div className="space-y-2">
               <p className="text-lg font-medium text-foreground">
-                You&apos;ve completed the course:
+                You&apos;ve completed every published lesson in:
               </p>
               <p className="font-semibold text-emerald-600 dark:text-emerald-400">
                 &quot;{courseTitle}&quot;
+              </p>
+              <p className="mx-auto max-w-sm text-sm leading-6 text-muted-foreground">
+                If new lessons are added later, your course will automatically move back to in progress until you finish the new content.
               </p>
             </div>
           </DialogHeader>
@@ -49,18 +53,24 @@ export default function CourseCompletionDialog({
                 <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">
                   100%
                 </div>
-                <p className="text-sm text-muted-foreground">Complete</p>
+                <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <BookOpenCheck className="h-4 w-4 text-emerald-600" />
+                  Current curriculum complete
+                </p>
               </div>
             </CardContent>
           </Card>
 
-          <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Button
               onClick={onClose}
               className="w-full bg-emerald-600 hover:bg-emerald-700"
               size="lg"
             >
-              Continue Learning
+              Review Course
+            </Button>
+            <Button asChild variant="outline" size="lg" className="w-full">
+              <Link href="/courses">Browse Courses</Link>
             </Button>
           </div>
         </div>

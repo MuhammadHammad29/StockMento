@@ -27,6 +27,7 @@ import { useAuth } from "@/lib/auth-context"
 import { simulatorApi } from "@/lib/api"
 import type { SimKlinePoint } from "@/lib/types"
 import { PriceChart } from "@/components/simulator/PriceChart"
+import { LabTimelineFailureDialog } from "@/components/lab-failure-dialog"
 
 // ── Config ──
 
@@ -517,6 +518,13 @@ export default function Lab22Page() {
       <UserNavbar />
       {showConfetti && <Confetti />}
       {showCompletion && <CompletionDialog onClose={() => setShowCompletion(false)} />}
+      <LabTimelineFailureDialog
+        isTimelineFinished={currentDayIndex >= dataLength - 1}
+        isComplete={allComplete}
+        completedCount={completedCount}
+        totalTasks={TASK_ORDER.length}
+        onReset={handleReset}
+      />
       {guideStep !== null && guideStep < GUIDE_STEPS.length && (
         <GuideOverlay step={guideStep} total={GUIDE_STEPS.length} title={GUIDE_STEPS[guideStep].title} body={GUIDE_STEPS[guideStep].body}
           onNext={() => { guideStep < GUIDE_STEPS.length - 1 ? setGuideStep(guideStep + 1) : setGuideStep(null) }} onBack={() => setGuideStep((s) => (s === null ? 0 : Math.max(0, s - 1)))} onSkip={() => setGuideStep(null)} />

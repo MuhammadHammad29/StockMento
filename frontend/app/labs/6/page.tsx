@@ -26,6 +26,7 @@ import { useAuth } from "@/lib/auth-context"
 import { simulatorApi } from "@/lib/api"
 import type { SimKlinePoint } from "@/lib/types"
 import { PriceChart } from "@/components/simulator/PriceChart"
+import { LabTimelineFailureDialog } from "@/components/lab-failure-dialog"
 
 const LAB_SYMBOL = "MEBL"
 const STARTING_CASH = 120_000
@@ -533,6 +534,13 @@ export default function Lab6Page() {
       <UserNavbar />
       {showConfetti && <Confetti />}
       {showCompletion && <CompletionDialog onClose={() => setShowCompletion(false)} />}
+      <LabTimelineFailureDialog
+        isTimelineFinished={currentDayIndex >= allKlines.length - 1}
+        isComplete={allComplete}
+        completedCount={completedCount}
+        totalTasks={TASK_ORDER.length}
+        onReset={handleReset}
+      />
       {guideStep !== null && guideStep < GUIDE_STEPS.length && (
         <GuideOverlay step={guideStep} total={GUIDE_STEPS.length}
           title={GUIDE_STEPS[guideStep].title} body={GUIDE_STEPS[guideStep].body}

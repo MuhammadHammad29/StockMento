@@ -282,6 +282,15 @@ export default function LessonPage() {
         const summary = await studentCoursesApi.updateLessonProgress(courseId, lessonId, {
           status: nextStatus,
         })
+        const previousProgress = progressSummary?.percentComplete ?? enrollment?.progressPercent ?? 0
+        if (
+          nextStatus === "completed" &&
+          previousProgress < 100 &&
+          summary.percentComplete >= 100 &&
+          typeof window !== "undefined"
+        ) {
+          sessionStorage.setItem(`course-completed:${courseId}`, "true")
+        }
         setProgressSummary(summary)
         try {
           const refreshedEnrollment = await studentCoursesApi.get(courseId)
@@ -305,7 +314,7 @@ export default function LessonPage() {
         setIsProgressMutationPending(false)
       }
     },
-    [courseId, lessonId, isEnrolled, user],
+    [courseId, lessonId, isEnrolled, user, enrollment?.progressPercent, progressSummary?.percentComplete],
   )
 
   const handleQuizChoiceSelect = useCallback(

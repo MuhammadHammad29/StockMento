@@ -11,7 +11,7 @@ import { useParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { formatDuration } from "@/lib/data-utils"
 import { toast } from "sonner"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import CourseCompletionDialog from "@/components/course-completion-dialog"
 import { UserNavbar } from "@/components/navigation"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -31,6 +31,7 @@ export default function CourseDetailPage() {
   const [isEnrollmentActionPending, setIsEnrollmentActionPending] = useState(false)
   const [progressSummary, setProgressSummary] = useState<CourseProgressSummary | null>(null)
   const [isProgressLoading, setIsProgressLoading] = useState(false)
+  const completionStateRef = useRef(false)
   const routeParams = useParams<{ id: string }>()
   const courseId = Array.isArray(routeParams.id) ? (routeParams.id[0] ?? "") : routeParams.id
 
@@ -65,10 +66,11 @@ useEffect(() => {
   loadCourse()
 }, [loadCourse])
 
-useEffect(() => {
-  setHasShownCompletionDialog(false)
-  setShowCompletionDialog(false)
-}, [courseId])
+  useEffect(() => {
+    setHasShownCompletionDialog(false)
+    setShowCompletionDialog(false)
+    completionStateRef.current = false
+  }, [courseId])
 
 useEffect(() => {
     if (!user) {
@@ -151,11 +153,30 @@ useEffect(() => {
     progressSummary?.percentComplete ?? enrollmentProgress
 
   useEffect(() => {
-    if (isEnrolled && overallProgress >= 100 && !hasShownCompletionDialog) {
+    const totalLessons = progressSummary?.totalLessons ?? lessons.length
+    const isNowComplete = isEnrolled && totalLessons > 0 && overallProgress >= 100
+
+    if (!isNowComplete) {
+      completionStateRef.current = false
+      return
+    }
+
+    if (typeof window === "undefined" || hasShownCompletionDialog) {
+      completionStateRef.current = isNowComplete
+      return
+    }
+
+    const completionMarkerKey = `course-completed:${courseId}`
+    const hasCompletionMarker = sessionStorage.getItem(completionMarkerKey) === "true"
+
+    if (hasCompletionMarker && !completionStateRef.current) {
+      sessionStorage.removeItem(completionMarkerKey)
       setShowCompletionDialog(true)
       setHasShownCompletionDialog(true)
     }
-  }, [isEnrolled, overallProgress, hasShownCompletionDialog])
+
+    completionStateRef.current = isNowComplete
+  }, [courseId, hasShownCompletionDialog, isEnrolled, lessons.length, overallProgress, progressSummary?.totalLessons])
 
   const handleEnroll = async () => {
     if (!user) {
