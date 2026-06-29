@@ -36,6 +36,10 @@ type Lab = {
   available: boolean
   module: string
   routePath?: string
+  runStatus?: "started" | "completed" | "failed"
+  attemptNo?: number
+  completedTasks?: number
+  totalTasks?: number
 }
 
 const LABS: Lab[] = [
@@ -265,6 +269,7 @@ export default function LabsPage() {
 
 function LabCard({ lab }: { lab: Lab }) {
   const disabled = !lab.available
+  const status = getLabStatus(lab)
   const Body = (
     <div
       className={`card-lift group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface-1 p-5 ${disabled ? "opacity-60" : ""}`}
@@ -293,6 +298,20 @@ function LabCard({ lab }: { lab: Lab }) {
 
       <p className="mt-3 line-clamp-2 flex-1 text-sm text-muted-foreground">{lab.description}</p>
 
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Badge className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${status.className}`}>
+          {status.label}
+        </Badge>
+        {lab.runStatus && (
+          <span className="text-xs text-muted-foreground">
+            Attempt {lab.attemptNo ?? 1}
+            {typeof lab.completedTasks === "number" && typeof lab.totalTasks === "number"
+              ? ` • ${lab.completedTasks}/${lab.totalTasks} tasks`
+              : ""}
+          </span>
+        )}
+      </div>
+
       <div className="mt-4 flex items-center justify-between border-t border-border/70 pt-3 text-xs text-muted-foreground">
         <div className="flex items-center gap-4">
           <span className="inline-flex items-center gap-1">
@@ -304,7 +323,7 @@ function LabCard({ lab }: { lab: Lab }) {
           </span>
         </div>
         <span className="inline-flex items-center gap-1 font-medium text-foreground transition-colors group-hover:text-primary">
-          {lab.available ? "Start" : "Locked"}
+          {lab.available ? status.action : "Locked"}
           <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
@@ -330,6 +349,44 @@ function mapPublicLab(lab: PublicLabSummary): Lab {
     available: lab.isPublished,
     module: lab.module,
     routePath: lab.routePath,
+    runStatus: lab.latestRun?.status,
+    attemptNo: lab.latestRun?.attemptNo,
+    completedTasks: Array.isArray(lab.latestRun?.completedTasks?.tasks)
+      ? lab.latestRun.completedTasks.tasks.length
+      : undefined,
+    totalTasks: lab.latestRun?.totalTasks ?? undefined,
+  }
+}
+
+function getLabStatus(lab: Lab) {
+  if (!lab.runStatus) {
+    return {
+      label: "Not started",
+      action: "Start",
+      className: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300",
+    }
+  }
+
+  if (lab.runStatus === "completed") {
+    return {
+      label: "Completed",
+      action: "Review",
+      className: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300",
+    }
+  }
+
+  if (lab.runStatus === "failed") {
+    return {
+      label: "Failed",
+      action: "Retry",
+      className: "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300",
+    }
+  }
+
+  return {
+    label: "In progress",
+    action: "Continue",
+    className: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300",
   }
 }
 

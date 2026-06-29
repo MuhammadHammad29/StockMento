@@ -21,7 +21,7 @@ import QuizBuilder, {
 import { AdminNavbar } from "@/components/navigation"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { courseApi, lessonApi } from "@/lib/api"
-import type { AdminCourse, AdminCourseSection, UpdateLessonPayload } from "@/lib/types"
+import type { AdminCourse, AdminCourseSection, AdminLabCatalogItem, UpdateLessonPayload } from "@/lib/types"
 import { toast } from "sonner"
 
 type LessonType = "text" | "video" | "quiz" | "lab"
@@ -33,6 +33,7 @@ interface LessonFormState {
   bodyHtml: string
   videoUrl: string
   thumbnailUrl: string
+  labId: string
 }
 
 const emptyState: LessonFormState = {
@@ -42,6 +43,7 @@ const emptyState: LessonFormState = {
   bodyHtml: "",
   videoUrl: "",
   thumbnailUrl: "",
+  labId: "",
 }
 
 export default function EditLessonPage() {
@@ -55,6 +57,7 @@ export default function EditLessonPage() {
 
   const [course, setCourse] = useState<AdminCourse | null>(null)
   const [section, setSection] = useState<AdminCourseSection | null>(null)
+  const [labs, setLabs] = useState<AdminLabCatalogItem[]>([])
   const [formData, setFormData] = useState<LessonFormState>(emptyState)
   const [quizForm, setQuizForm] = useState<QuizFormState>(createEmptyQuizForm())
   const [isLoading, setIsLoading] = useState(true)
@@ -65,8 +68,12 @@ export default function EditLessonPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const courseResponse = await courseApi.getCourse(courseId)
+      const [courseResponse, labCatalog] = await Promise.all([
+        courseApi.getCourse(courseId),
+        lessonApi.listLabCatalog(),
+      ])
       setCourse(courseResponse)
+      setLabs(labCatalog)
 
       const sectionMatch = courseResponse.sections?.find((sec) =>
         sec.lessons?.some((link) => link.lessonId === lessonId),
@@ -85,6 +92,7 @@ export default function EditLessonPage() {
         bodyHtml: lessonLink.lesson.text?.bodyHtml ?? "",
         videoUrl: lessonLink.lesson.video?.videoUrl ?? "",
         thumbnailUrl: lessonLink.lesson.video?.thumbnailUrl ?? "",
+        labId: lessonLink.lesson.labLink?.labId ?? "",
       })
       if (lessonLink.lesson.contentType === "quiz") {
         setQuizForm(quizFormFromAdminQuiz(lessonLink.lesson.quizLink?.quiz))
@@ -140,6 +148,13 @@ export default function EditLessonPage() {
       }
     }
 
+    if (formData.contentType === "lab" && !formData.labId) {
+      toast.error("Select lab", {
+        description: "Lab lessons must be linked to an existing lab.",
+      })
+      return
+    }
+
     setIsSaving(true)
     try {
       const payload: UpdateLessonPayload = {
@@ -150,6 +165,7 @@ export default function EditLessonPage() {
         readTimeMinutes: formData.contentType === "text" ? formData.durationMinutes : undefined,
         videoUrl: formData.contentType === "video" ? formData.videoUrl.trim() : undefined,
         thumbnailUrl: formData.contentType === "video" ? formData.thumbnailUrl.trim() : undefined,
+        labId: formData.contentType === "lab" ? formData.labId : undefined,
       }
       if (formData.contentType === "quiz") {
         payload.quiz = quizFormToPayload(quizForm)
@@ -308,6 +324,34 @@ export default function EditLessonPage() {
               <div className="space-y-2">
                 <Label>Quiz Details</Label>
                 <QuizBuilder value={quizForm} onChange={setQuizForm} />
+              </div>
+            )}
+
+            {formData.contentType === "lab" && (
+              <div className="space-y-2">
+                <Label htmlFor="labId">Linked Lab *</Label>
+                <Select value={formData.labId} onValueChange={(value) => updateField("labId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an available lab" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {labs.map((lab) => {
+                      const assignedElsewhere =
+                        Boolean(lab.assignedLesson) &&
+                        lab.assignedLesson?.lessonId !== lessonId
+                      return (
+                        <SelectItem key={lab.id} value={lab.id} disabled={assignedElsewhere}>
+                          {lab.sortOrder}. {lab.title}
+                          {assignedElsewhere ? ` — assigned to ${lab.assignedLesson?.title}` : ""}
+                          {!lab.isPublished ? " — unpublished" : ""}
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  A lab can only belong to one lesson. Labs assigned to other lessons are disabled.
+                </p>
               </div>
             )}
           </CardContent>

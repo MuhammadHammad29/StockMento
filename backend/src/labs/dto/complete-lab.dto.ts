@@ -1,12 +1,11 @@
 import {
   IsArray,
   IsBoolean,
-  IsNumber,
+  IsInt,
   IsObject,
   IsOptional,
   IsString,
   IsUUID,
-  Max,
   Min,
 } from 'class-validator';
 
@@ -27,15 +26,9 @@ export class CompleteLabDto {
   completedTasks?: string[];
 
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(0)
   totalTasks?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  score?: number;
 
   @IsOptional()
   @IsObject()

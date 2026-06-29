@@ -20,7 +20,7 @@ import QuizBuilder, {
 import { AdminNavbar } from "@/components/navigation"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { courseApi, lessonApi } from "@/lib/api"
-import type { AdminCourseSection, CreateLessonPayload } from "@/lib/types"
+import type { AdminCourseSection, AdminLabCatalogItem, CreateLessonPayload } from "@/lib/types"
 import { toast } from "sonner"
 
 type LessonType = "text" | "video" | "quiz" | "lab"
@@ -33,6 +33,7 @@ interface LessonFormState {
   bodyHtml: string
   videoUrl: string
   thumbnailUrl: string
+  labId: string
 }
 
 const initialForm: LessonFormState = {
@@ -43,6 +44,7 @@ const initialForm: LessonFormState = {
   bodyHtml: "",
   videoUrl: "",
   thumbnailUrl: "",
+  labId: "",
 }
 
 export default function AdminNewLessonPage() {
@@ -55,6 +57,7 @@ export default function AdminNewLessonPage() {
   const courseId = Array.isArray(routeParams.id) ? (routeParams.id[0] ?? "") : routeParams.id
 
   const [sections, setSections] = useState<AdminCourseSection[]>([])
+  const [labs, setLabs] = useState<AdminLabCatalogItem[]>([])
   const [formData, setFormData] = useState<LessonFormState>(initialForm)
   const [quizForm, setQuizForm] = useState<QuizFormState>(() => createEmptyQuizForm())
   const [isLoading, setIsLoading] = useState(true)
@@ -66,9 +69,13 @@ export default function AdminNewLessonPage() {
       setIsLoading(true)
       setError(null)
       try {
-        const course = await courseApi.getCourse(courseId)
+        const [course, labCatalog] = await Promise.all([
+          courseApi.getCourse(courseId),
+          lessonApi.listLabCatalog(),
+        ])
         const courseSections = course.sections ?? []
         setSections(courseSections)
+        setLabs(labCatalog)
         const preferredSection = searchParams?.get("sectionId")
         const defaultSection = preferredSection && courseSections.some((sec) => sec.id === preferredSection)
           ? preferredSection
@@ -135,6 +142,13 @@ export default function AdminNewLessonPage() {
       }
     }
 
+    if (formData.contentType === "lab" && !formData.labId) {
+      toast.error("Select lab", {
+        description: "Lab lessons must be linked to an existing unassigned lab.",
+      })
+      return
+    }
+
     if (!formData.sectionId) {
       toast.error("Select section", {
         description: "Choose a section before creating a lesson.",
@@ -152,6 +166,7 @@ export default function AdminNewLessonPage() {
         readTimeMinutes: formData.contentType === "text" ? formData.durationMinutes : undefined,
         videoUrl: formData.contentType === "video" ? formData.videoUrl.trim() : undefined,
         thumbnailUrl: formData.contentType === "video" ? formData.thumbnailUrl.trim() : undefined,
+        labId: formData.contentType === "lab" ? formData.labId : undefined,
       }
       if (formData.contentType === "quiz") {
         payload.quiz = quizFormToPayload(quizForm)
@@ -349,6 +364,32 @@ export default function AdminNewLessonPage() {
                   onChange={setQuizForm}
                   defaultTitle={formData.title}
                 />
+              </div>
+            )}
+
+            {formData.contentType === "lab" && (
+              <div className="space-y-2">
+                <Label htmlFor="labId">Linked Lab *</Label>
+                <Select value={formData.labId} onValueChange={(value) => updateField("labId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an available lab" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {labs.map((lab) => {
+                      const assigned = Boolean(lab.assignedLesson)
+                      return (
+                        <SelectItem key={lab.id} value={lab.id} disabled={assigned}>
+                          {lab.sortOrder}. {lab.title}
+                          {assigned ? ` — assigned to ${lab.assignedLesson?.title}` : ""}
+                          {!lab.isPublished ? " — unpublished" : ""}
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Each lab can be linked to one lesson only. Assigned labs are disabled.
+                </p>
               </div>
             )}
           </CardContent>

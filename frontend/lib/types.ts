@@ -374,6 +374,29 @@ export interface AdminQuizChoice {
 export interface AdminLessonLabLink {
   lessonId: string;
   labId: string;
+  lab?: AdminLabCatalogItem | null;
+}
+
+export interface AdminLabCatalogItem {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  module: string;
+  difficulty: LabDifficulty;
+  estimatedMinutes: number;
+  stockSymbol: string | null;
+  routePath: string;
+  isPublished: boolean;
+  sortOrder: number;
+  assignedLesson: {
+    lessonId: string;
+    title: string;
+  } | null;
+}
+
+export interface UpdateLabPayload {
+  isPublished?: boolean;
 }
 
 export interface CreateCoursePayload {
@@ -413,6 +436,7 @@ export interface CreateLessonPayload {
   durationSeconds?: number;
   transcript?: string;
   quiz?: QuizPayload;
+  labId?: string;
 }
 
 export type UpdateLessonPayload = Partial<CreateLessonPayload>;
@@ -544,6 +568,20 @@ export interface PublicLabSummary {
   isPublished: boolean;
   sortOrder: number;
   metadata?: Record<string, unknown> | null;
+  latestRun?: PublicLabRunSummary | null;
+}
+
+export interface PublicLabRunSummary {
+  id: string;
+  attemptNo: number;
+  status: 'started' | 'completed' | 'failed';
+  completedTasks?: {
+    tasks?: string[];
+    metadata?: Record<string, unknown>;
+  } | null;
+  totalTasks: number | null;
+  startedAt: string;
+  completedAt: string | null;
 }
 
 export interface LabCompletionPayload {
@@ -552,7 +590,6 @@ export interface LabCompletionPayload {
   passed: boolean;
   completedTasks?: string[];
   totalTasks?: number;
-  score?: number;
   metadata?: Record<string, unknown>;
   status?: 'completed' | 'failed';
 }

@@ -114,4 +114,11 @@ export class CreateLessonDto {
   @ValidateNested()
   @Type(() => QuizDto)
   quiz?: QuizDto;
+
+  @ValidateIf(
+    (dto: CreateLessonDto) => dto.contentType === LessonContentType.lab,
+  )
+  @IsString()
+  @IsNotEmpty()
+  labId?: string;
 }

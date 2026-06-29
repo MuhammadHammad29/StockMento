@@ -8,6 +8,8 @@ import {
   AdminCourse,
   AdminCourseSection,
   AdminLesson,
+  AdminLabCatalogItem,
+  UpdateLabPayload,
   CreateCoursePayload,
   UpdateCoursePayload,
   CreateSectionPayload,
@@ -485,6 +487,20 @@ export const studentCoursesApi = {
 
 // Lesson Management APIs
 export const lessonApi = {
+  listLabCatalog: async (): Promise<AdminLabCatalogItem[]> => {
+    return apiCall<AdminLabCatalogItem[]>('/admin/courses/lab-catalog')
+  },
+
+  updateLab: async (
+    labId: string,
+    payload: UpdateLabPayload,
+  ): Promise<AdminLabCatalogItem> => {
+    return apiCall<AdminLabCatalogItem>(`/admin/courses/labs/${labId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  },
+
   createLesson: async (
     courseId: string,
     sectionId: string,

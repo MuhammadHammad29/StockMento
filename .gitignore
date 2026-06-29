@@ -33,3 +33,4 @@ klines_output/
 myenv/
 wss_playwright_server/saved_psx
 wss_playwright_server/old
+AGENTS.md

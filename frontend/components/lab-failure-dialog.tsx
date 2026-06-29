@@ -145,7 +145,6 @@ function useLabRunReporter({
           passed: true,
           completedTasks: Array.from({ length: totalTasks }, (_, index) => `task-${index + 1}`),
           totalTasks,
-          score: 100,
           status: "completed",
         })
         .catch(() => {
@@ -164,7 +163,6 @@ function useLabRunReporter({
             (_, index) => `task-${index + 1}`,
           ),
           totalTasks,
-          score: totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0,
           status: "failed",
           metadata: {
             reason: "timeline_finished",

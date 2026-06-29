@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://seekhoinvest.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://stockmento.com'
 
 export const metadata: Metadata = {
-  title: 'Labs | Seekho Invest',
+  title: 'Labs | StockMento',
   description:
     'Complete hands-on labs and exercises to practice your PSX trading skills. Learn through real historical scenarios and market conditions.',
   alternates: {

@@ -18,6 +18,7 @@ import {
   CreateLessonDto,
   UpdateLessonDto,
   ReorderLessonsDto,
+  UpdateLabDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -37,6 +38,16 @@ export class LmsAdminController {
   @Post()
   createCourse(@Body() dto: CreateCourseDto) {
     return this.service.createCourse(dto);
+  }
+
+  @Get('lab-catalog')
+  listLabCatalog() {
+    return this.service.listLabCatalog();
+  }
+
+  @Patch('labs/:labId')
+  updateLab(@Param('labId') labId: string, @Body() dto: UpdateLabDto) {
+    return this.service.updateLab(labId, dto);
   }
 
   @Get(':courseId')

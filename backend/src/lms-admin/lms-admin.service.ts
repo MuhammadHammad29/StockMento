@@ -13,6 +13,7 @@ import {
   CreateLessonDto,
   UpdateLessonDto,
   ReorderLessonsDto,
+  UpdateLabDto,
 } from './dto';
 import { Prisma } from '@prisma/client';
 
@@ -46,7 +47,9 @@ export class LmsAdminService {
                         },
                       },
                     },
-                    labLink: true,
+                    labLink: {
+                      include: { lab: true },
+                    },
                   },
                 },
               },
@@ -55,6 +58,109 @@ export class LmsAdminService {
         },
       },
     });
+  }
+
+  async listLabCatalog() {
+    const labs = await this.prisma.lab.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
+      include: {
+        lessonLink: {
+          include: {
+            lesson: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return labs.map((lab) => this.mapAdminLabCatalogItem(lab));
+  }
+
+  async updateLab(labId: string, dto: UpdateLabDto) {
+    const lab = await this.prisma.lab.findUnique({
+      where: { id: labId },
+      include: {
+        lessonLink: {
+          include: {
+            lesson: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!lab) {
+      throw new NotFoundException('Lab not found');
+    }
+
+    const updated = await this.prisma.lab.update({
+      where: { id: labId },
+      data: {
+        isPublished: dto.isPublished,
+      },
+      include: {
+        lessonLink: {
+          include: {
+            lesson: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return this.mapAdminLabCatalogItem(updated);
+  }
+
+  private mapAdminLabCatalogItem(lab: {
+    id: string;
+    slug: string;
+    title: string;
+    description: string;
+    module: string;
+    difficulty: string;
+    estimatedMinutes: number;
+    stockSymbol: string | null;
+    routePath: string;
+    isPublished: boolean;
+    sortOrder: number;
+    lessonLink: {
+      lessonId: string;
+      lesson: {
+        title: string;
+      };
+    } | null;
+  }) {
+    return {
+      id: lab.id,
+      slug: lab.slug,
+      title: lab.title,
+      description: lab.description,
+      module: lab.module,
+      difficulty: lab.difficulty,
+      estimatedMinutes: lab.estimatedMinutes,
+      stockSymbol: lab.stockSymbol,
+      routePath: lab.routePath,
+      isPublished: lab.isPublished,
+      sortOrder: lab.sortOrder,
+      assignedLesson: lab.lessonLink
+        ? {
+            lessonId: lab.lessonLink.lessonId,
+            title: lab.lessonLink.lesson.title,
+          }
+        : null,
+    };
   }
 
   async createCourse(dto: CreateCourseDto) {
@@ -103,7 +209,9 @@ export class LmsAdminService {
                         },
                       },
                     },
-                    labLink: true,
+                    labLink: {
+                      include: { lab: true },
+                    },
                   },
                 },
               },
@@ -344,6 +452,9 @@ export class LmsAdminService {
     if (contentType !== 'quiz') {
       await this.removeQuiz(tx, lessonId);
     }
+    if (contentType !== 'lab') {
+      await this.removeLab(tx, lessonId);
+    }
     switch (contentType) {
       case 'text':
         await tx.lessonText.upsert({
@@ -380,9 +491,47 @@ export class LmsAdminService {
       case 'quiz':
         await this.upsertQuiz(tx, lessonId, dto);
         break;
+      case 'lab':
+        await this.upsertLab(tx, lessonId, dto);
+        break;
       default:
         break;
     }
+  }
+
+  private async removeLab(tx: Prisma.TransactionClient, lessonId: string) {
+    await tx.lessonLab.delete({ where: { lessonId } }).catch(() => {
+      /* ignore */
+    });
+  }
+
+  private async upsertLab(
+    tx: Prisma.TransactionClient,
+    lessonId: string,
+    dto: CreateLessonDto | UpdateLessonDto,
+  ) {
+    if (!dto.labId) {
+      throw new BadRequestException('Lab selection is required.');
+    }
+
+    const lab = await tx.lab.findUnique({
+      where: { id: dto.labId },
+      include: { lessonLink: true },
+    });
+    if (!lab) {
+      throw new BadRequestException('Selected lab does not exist.');
+    }
+    if (lab.lessonLink && lab.lessonLink.lessonId !== lessonId) {
+      throw new BadRequestException(
+        'Selected lab is already assigned to another lesson.',
+      );
+    }
+
+    await tx.lessonLab.upsert({
+      where: { lessonId },
+      update: { labId: dto.labId },
+      create: { lessonId, labId: dto.labId },
+    });
   }
 
   private async removeQuiz(tx: Prisma.TransactionClient, lessonId: string) {

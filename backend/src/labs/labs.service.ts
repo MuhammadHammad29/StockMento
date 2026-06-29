@@ -13,13 +13,29 @@ import { CompleteLabDto } from './dto/complete-lab.dto';
 export class LabsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listPublishedLabs() {
+  async listPublishedLabs(user: JwtPayload) {
     const labs = await this.prisma.lab.findMany({
       where: { isPublished: true },
       orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
     });
 
-    return labs.map((lab) => this.mapLabSummary(lab));
+    const runs = await this.prisma.labRun.findMany({
+      where: {
+        userId: user.sub,
+        labId: { in: labs.map((lab) => lab.id) },
+      },
+      orderBy: [{ labId: 'asc' }, { attemptNo: 'desc' }],
+    });
+    const latestRunByLab = new Map<string, (typeof runs)[number]>();
+    for (const run of runs) {
+      if (!latestRunByLab.has(run.labId)) {
+        latestRunByLab.set(run.labId, run);
+      }
+    }
+
+    return labs.map((lab) =>
+      this.mapLabSummary(lab, latestRunByLab.get(lab.id)),
+    );
   }
 
   async getLab(slugOrId: string) {
@@ -68,15 +84,20 @@ export class LabsService {
       orderBy: { attemptNo: 'desc' },
     });
 
-    const status =
-      dto.status === 'failed' || dto.passed === false
-        ? LabRunStatus.failed
-        : LabRunStatus.completed;
-
     const completedTasks: Prisma.InputJsonObject = {
       tasks: dto.completedTasks ?? [],
       metadata: (dto.metadata ?? {}) as Prisma.InputJsonObject,
     };
+    const completedTaskCount = dto.completedTasks?.length ?? 0;
+    const hasAllTasks =
+      dto.passed === true &&
+      dto.totalTasks !== undefined &&
+      dto.totalTasks > 0 &&
+      completedTaskCount >= dto.totalTasks;
+    const status =
+      dto.status === 'failed' || !hasAllTasks
+        ? LabRunStatus.failed
+        : LabRunStatus.completed;
 
     const run = await this.prisma.$transaction(async (tx) => {
       const terminalData = {
@@ -84,10 +105,6 @@ export class LabsService {
         status,
         completedTasks,
         totalTasks: dto.totalTasks,
-        score:
-          dto.score === undefined
-            ? undefined
-            : new Prisma.Decimal(dto.score),
         completedAt: new Date(),
       };
 
@@ -271,6 +288,14 @@ export class LabsService {
     isPublished: boolean;
     sortOrder: number;
     metadata: Prisma.JsonValue | null;
+  }, latestRun?: {
+    id: string;
+    attemptNo: number;
+    status: LabRunStatus;
+    completedTasks: Prisma.JsonValue | null;
+    totalTasks: number | null;
+    startedAt: Date;
+    completedAt: Date | null;
   }) {
     return {
       id: lab.id,
@@ -287,6 +312,17 @@ export class LabsService {
       isPublished: lab.isPublished,
       sortOrder: lab.sortOrder,
       metadata: lab.metadata,
+      latestRun: latestRun
+        ? {
+            id: latestRun.id,
+            attemptNo: latestRun.attemptNo,
+            status: latestRun.status,
+            completedTasks: latestRun.completedTasks,
+            totalTasks: latestRun.totalTasks,
+            startedAt: latestRun.startedAt,
+            completedAt: latestRun.completedAt,
+          }
+        : null,
     };
   }
 }

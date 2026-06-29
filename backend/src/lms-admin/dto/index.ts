@@ -6,3 +6,4 @@ export * from './reorder-sections.dto';
 export * from './create-lesson.dto';
 export * from './update-lesson.dto';
 export * from './reorder-lessons.dto';
+export * from './update-lab.dto';

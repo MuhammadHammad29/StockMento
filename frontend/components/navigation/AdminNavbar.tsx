@@ -10,7 +10,7 @@
 import React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BookOpen, BarChart3 } from "lucide-react"
+import { BookOpen, BarChart3, FlaskConical } from "lucide-react"
 import BaseNavbar from "./BaseNavbar"
 import { useAdminAuth } from "@/lib/admin-auth-context"
 import { getAvatarPath } from "@/lib/avatar-utils"
@@ -24,6 +24,7 @@ export default function AdminNavbar({ className }: AdminNavbarProps) {
   const pathname = usePathname()
 
   const isCoursesActive = pathname.startsWith('/admin/courses')
+  const isLabsActive = pathname.startsWith('/admin/labs')
   const isAnalyticsActive = pathname.startsWith('/admin/analytics')
 
   const mobileMenuContent = (
@@ -38,6 +39,17 @@ export default function AdminNavbar({ className }: AdminNavbarProps) {
       >
         <BookOpen className="h-4 w-4" />
         Manage Courses
+      </Link>
+      <Link 
+        href="/admin/labs" 
+        className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
+          isLabsActive 
+            ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' 
+            : 'text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20'
+        }`}
+      >
+        <FlaskConical className="h-4 w-4" />
+        Manage Labs
       </Link>
       <Link 
         href="/admin/analytics" 
@@ -64,6 +76,16 @@ export default function AdminNavbar({ className }: AdminNavbarProps) {
         }`}
       >
         Courses
+      </Link>
+      <Link 
+        href="/admin/labs"
+        className={`hidden lg:flex text-xs sm:text-sm transition-colors ${
+          isLabsActive 
+            ? 'text-emerald-600 font-medium' 
+            : 'text-muted-foreground hover:text-emerald-600'
+        }`}
+      >
+        Labs
       </Link>
       <Link 
         href="/admin/analytics"

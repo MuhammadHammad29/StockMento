@@ -14,8 +14,8 @@ export class LabsController {
   constructor(private readonly labsService: LabsService) {}
 
   @Get()
-  listPublishedLabs() {
-    return this.labsService.listPublishedLabs();
+  listPublishedLabs(@CurrentUser() user: JwtPayload) {
+    return this.labsService.listPublishedLabs(user);
   }
 
   @Get(':slugOrId')
