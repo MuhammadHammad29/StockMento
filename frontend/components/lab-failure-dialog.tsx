@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { AlertTriangle, ArrowLeft, RotateCcw, X } from "lucide-react"
+import { AlertTriangle, ArrowLeft, Lock, RotateCcw, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { labsApi } from "@/lib/api"
@@ -87,7 +87,7 @@ export function LabTimelineFailureDialog({
   onReset,
 }: LabTimelineFailureDialogProps) {
   const [dismissed, setDismissed] = useState(false)
-  useLabRunReporter({
+  const { unavailable } = useLabRunReporter({
     isTimelineFinished,
     isComplete,
     completedCount,
@@ -103,6 +103,31 @@ export function LabTimelineFailureDialog({
       setDismissed(false)
     }
   }, [isComplete, isTimelineFinished])
+
+  if (unavailable) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 px-4 py-6 backdrop-blur-sm">
+        <div className="w-full max-w-lg rounded-3xl border border-border bg-card p-6 text-center shadow-2xl sm:p-8">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <Lock className="h-8 w-8" />
+          </div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            Lab unavailable
+          </p>
+          <h2 className="text-2xl font-bold text-foreground">This lab is not published</h2>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+            The lab may be unpublished, removed, or not available for students yet.
+          </p>
+          <Button asChild className="mt-7 h-12">
+            <Link href="/labs">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Labs
+            </Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   if (!isTimelineFinished || isComplete || dismissed) {
     return null
@@ -144,6 +169,7 @@ function useLabRunReporter({
   const pathname = usePathname()
   const labLookup = pathname.split("/").filter(Boolean).at(-1)
   const [startReady, setStartReady] = useState(false)
+  const [unavailable, setUnavailable] = useState(false)
   const startRequestedRef = useRef(false)
   const terminalReportedRef = useRef(false)
   const resumeAppliedRef = useRef(false)
@@ -160,6 +186,7 @@ function useLabRunReporter({
     if (!labLookup || startRequestedRef.current) return
 
     startRequestedRef.current = true
+    setUnavailable(false)
     void labsApi
       .start(labLookup)
       .then((run) => {
@@ -175,6 +202,7 @@ function useLabRunReporter({
       })
       .catch(() => {
         setStartReady(false)
+        setUnavailable(true)
         startRequestedRef.current = false
       })
   }, [labLookup, onFreshStart, onResume])
@@ -273,9 +301,12 @@ function useLabRunReporter({
         setStartReady(true)
       })
       .catch(() => {
+        setUnavailable(true)
         startRequestedRef.current = false
       })
   }, [isComplete, isTimelineFinished, labLookup])
+
+  return { unavailable }
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
