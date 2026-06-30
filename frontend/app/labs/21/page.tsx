@@ -219,10 +219,11 @@ export default function Lab21Page() {
     boughtThreeStocks: false, diversified: false, rebalanced: false,
     allFiveOwned: false, profitablePortfolio: false, madeProfit: false,
   })
-  const [guideStep, setGuideStep] = useState<number | null>(0)
+  const [guideStep, setGuideStep] = useState<number | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showCompletion, setShowCompletion] = useState(false)
   const completionShownRef = useRef(false)
+  const resumeAppliedRef = useRef(false)
 
   // Common data length (minimum across all stocks)
   const dataLength = useMemo(() => {
@@ -330,6 +331,42 @@ export default function Lab21Page() {
 
   const completedCount = TASK_ORDER.filter((k) => tasks[k]).length
   const allComplete = completedCount === TASK_ORDER.length
+  const completedTaskKeys = useMemo(
+    () => TASK_ORDER.filter((key) => tasks[key]),
+    [tasks]
+  )
+
+  const labStateSnapshot = useMemo(
+    () => ({
+      currentDayIndex,
+      cash,
+      holdings,
+      quantity,
+      chartMode,
+      trades,
+      tasks,
+      guideStep,
+      completionShown: completionShownRef.current,
+    }),
+    [cash, chartMode, currentDayIndex, guideStep, holdings, quantity, tasks, trades]
+  )
+
+  const handleResume = useCallback((snapshot: Record<string, unknown>) => {
+    resumeAppliedRef.current = true
+    if (typeof snapshot.currentDayIndex === "number") setCurrentDayIndex(snapshot.currentDayIndex)
+    if (typeof snapshot.cash === "number") setCash(snapshot.cash)
+    if (snapshot.holdings !== undefined) setHoldings(snapshot.holdings as never)
+    if (typeof snapshot.quantity === "string") setQuantity(snapshot.quantity)
+    if (snapshot.chartMode === "area" || snapshot.chartMode === "candles") setChartMode(snapshot.chartMode)
+    if (Array.isArray(snapshot.trades)) {
+      setTrades(snapshot.trades as never[])
+      tradeIdRef.current = Math.max(0, ...snapshot.trades.map((trade) => Number((trade as { id?: unknown }).id) || 0))
+    }
+    if (snapshot.tasks && typeof snapshot.tasks === "object") setTasks((prev) => ({ ...prev, ...(snapshot.tasks as Partial<Tasks>) }))
+    if (typeof snapshot.guideStep === "number" || snapshot.guideStep === null) setGuideStep(snapshot.guideStep)
+    completionShownRef.current = Boolean(snapshot.completionShown)
+  }, [])
+
 
   useEffect(() => {
     if (allComplete && !completionShownRef.current) {
@@ -394,6 +431,7 @@ export default function Lab21Page() {
     setTrades([]); tradeIdRef.current = 0
     setTasks({ boughtThreeStocks: false, diversified: false, rebalanced: false, allFiveOwned: false, profitablePortfolio: false, madeProfit: false })
     setGuideStep(0); setShowConfetti(false); setShowCompletion(false); completionShownRef.current = false
+    resumeAppliedRef.current = false
   }, [initialDayIndex])
 
   const fmt = (v: number, sign = false) => { const s = sign && v > 0 ? "+" : ""; return `PKR ${s}${v.toFixed(0)}` }
@@ -429,6 +467,10 @@ export default function Lab21Page() {
         isComplete={allComplete}
         completedCount={completedCount}
         totalTasks={TASK_ORDER.length}
+        completedTasks={completedTaskKeys}
+        stateSnapshot={labStateSnapshot}
+        onResume={handleResume}
+        onFreshStart={() => setGuideStep(0)}
         onReset={handleReset}
       />
       {guideStep !== null && guideStep < GUIDE_STEPS.length && (

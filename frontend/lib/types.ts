@@ -580,6 +580,7 @@ export interface PublicLabRunSummary {
     metadata?: Record<string, unknown>;
   } | null;
   totalTasks: number | null;
+  stateSnapshot?: Record<string, unknown> | null;
   startedAt: string;
   completedAt: string | null;
 }
@@ -594,11 +595,26 @@ export interface LabCompletionPayload {
   status?: 'completed' | 'failed';
 }
 
+export interface LabProgressPayload {
+  lessonId?: string;
+  completedTasks?: string[];
+  totalTasks?: number;
+  stateSnapshot?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  clientVersion?: string;
+}
+
 export interface LabRunResult {
   id: string;
   labId: string;
   attemptNo: number;
   status: 'started' | 'completed' | 'failed';
+  completedTasks?: {
+    tasks?: string[];
+    metadata?: Record<string, unknown>;
+  } | null;
+  totalTasks?: number | null;
+  stateSnapshot?: Record<string, unknown> | null;
   completedAt: string | null;
 }
 

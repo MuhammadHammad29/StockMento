@@ -250,10 +250,11 @@ export default function Lab2Page() {
     cancelledOrder: false,
     madeProfit: false,
   })
-  const [guideStep, setGuideStep] = useState<number | null>(0)
+  const [guideStep, setGuideStep] = useState<number | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showCompletion, setShowCompletion] = useState(false)
   const completionShownRef = useRef(false)
+  const resumeAppliedRef = useRef(false)
 
   const initialDayIndex = useMemo(() => {
     if (!allKlines.length) return 0
@@ -273,7 +274,9 @@ export default function Lab2Page() {
           .sort((a, b) => a.timestamp - b.timestamp)
         if (filtered.length < LEAD_IN_DAYS + 10) { setDataError("Not enough historical data available for this lab."); return }
         setAllKlines(filtered)
-        setCurrentDayIndex(Math.min(LEAD_IN_DAYS, filtered.length - 1))
+        if (!resumeAppliedRef.current) {
+          setCurrentDayIndex(Math.min(LEAD_IN_DAYS, filtered.length - 1))
+        }
       } catch { if (active) setDataError("Failed to load historical data. Please try again.") }
       finally { if (active) setDataLoading(false) }
     }
@@ -315,6 +318,57 @@ export default function Lab2Page() {
 
   const completedCount = TASK_ORDER.filter((k) => tasks[k]).length
   const allComplete = completedCount === TASK_ORDER.length
+  const completedTaskKeys = useMemo(
+    () => TASK_ORDER.filter((key) => tasks[key]),
+    [tasks]
+  )
+
+  const labStateSnapshot = useMemo(
+    () => ({
+      currentDayIndex,
+      cash,
+      holdings,
+      avgCost,
+      realizedPnl,
+      quantity,
+      limitPrice,
+      orderType,
+      chartMode,
+      pendingOrders,
+      trades,
+      fillAlert,
+      tasks,
+      guideStep,
+      completionShown: completionShownRef.current,
+    }),
+    [avgCost, cash, chartMode, currentDayIndex, fillAlert, guideStep, holdings, limitPrice, orderType, pendingOrders, quantity, realizedPnl, tasks, trades]
+  )
+
+  const handleResume = useCallback((snapshot: Record<string, unknown>) => {
+    resumeAppliedRef.current = true
+    if (typeof snapshot.currentDayIndex === "number") setCurrentDayIndex(snapshot.currentDayIndex)
+    if (typeof snapshot.cash === "number") setCash(snapshot.cash)
+    if (snapshot.holdings !== undefined) setHoldings(snapshot.holdings as never)
+    if (typeof snapshot.avgCost === "number") setAvgCost(snapshot.avgCost)
+    if (typeof snapshot.realizedPnl === "number") setRealizedPnl(snapshot.realizedPnl)
+    if (typeof snapshot.quantity === "string") setQuantity(snapshot.quantity)
+    if (typeof snapshot.limitPrice === "string") setLimitPrice(snapshot.limitPrice)
+    if (snapshot.orderType !== undefined) setOrderType(snapshot.orderType as never)
+    if (snapshot.chartMode === "area" || snapshot.chartMode === "candles") setChartMode(snapshot.chartMode)
+    if (Array.isArray(snapshot.pendingOrders)) {
+      setPendingOrders(snapshot.pendingOrders as never[])
+      orderIdRef.current = Math.max(0, ...snapshot.pendingOrders.map((order) => Number((order as { id?: unknown }).id) || 0))
+    }
+    if (Array.isArray(snapshot.trades)) {
+      setTrades(snapshot.trades as never[])
+      tradeIdRef.current = Math.max(0, ...snapshot.trades.map((trade) => Number((trade as { id?: unknown }).id) || 0))
+    }
+    if (typeof snapshot.fillAlert === "string" || snapshot.fillAlert === null) setFillAlert(snapshot.fillAlert)
+    if (snapshot.tasks && typeof snapshot.tasks === "object") setTasks((prev) => ({ ...prev, ...(snapshot.tasks as Partial<Tasks>) }))
+    if (typeof snapshot.guideStep === "number" || snapshot.guideStep === null) setGuideStep(snapshot.guideStep)
+    completionShownRef.current = Boolean(snapshot.completionShown)
+  }, [])
+
 
   useEffect(() => {
     if (allComplete && !completionShownRef.current) {
@@ -499,6 +553,7 @@ export default function Lab2Page() {
     })
     setGuideStep(0); setShowConfetti(false); setShowCompletion(false)
     completionShownRef.current = false
+    resumeAppliedRef.current = false
   }, [initialDayIndex])
 
   // Format helpers
@@ -555,6 +610,10 @@ export default function Lab2Page() {
         isComplete={allComplete}
         completedCount={completedCount}
         totalTasks={TASK_ORDER.length}
+        completedTasks={completedTaskKeys}
+        stateSnapshot={labStateSnapshot}
+        onResume={handleResume}
+        onFreshStart={() => setGuideStep(0)}
         onReset={handleReset}
       />
       {guideStep !== null && guideStep < GUIDE_STEPS.length && (

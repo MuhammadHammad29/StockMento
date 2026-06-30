@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { AlertTriangle, ArrowLeft, RotateCcw, X } from "lucide-react"
@@ -68,6 +68,10 @@ type LabTimelineFailureDialogProps = {
   isComplete: boolean
   completedCount: number
   totalTasks: number
+  completedTasks?: string[]
+  stateSnapshot?: Record<string, unknown>
+  onResume?: (snapshot: Record<string, unknown>) => void
+  onFreshStart?: () => void
   onReset: () => void
 }
 
@@ -76,6 +80,10 @@ export function LabTimelineFailureDialog({
   isComplete,
   completedCount,
   totalTasks,
+  completedTasks,
+  stateSnapshot,
+  onResume,
+  onFreshStart,
   onReset,
 }: LabTimelineFailureDialogProps) {
   const [dismissed, setDismissed] = useState(false)
@@ -84,6 +92,10 @@ export function LabTimelineFailureDialog({
     isComplete,
     completedCount,
     totalTasks,
+    completedTasks,
+    stateSnapshot,
+    onResume,
+    onFreshStart,
   })
 
   useEffect(() => {
@@ -115,25 +127,96 @@ function useLabRunReporter({
   isComplete,
   completedCount,
   totalTasks,
+  completedTasks,
+  stateSnapshot,
+  onResume,
+  onFreshStart,
 }: {
   isTimelineFinished: boolean
   isComplete: boolean
   completedCount: number
   totalTasks: number
+  completedTasks?: string[]
+  stateSnapshot?: Record<string, unknown>
+  onResume?: (snapshot: Record<string, unknown>) => void
+  onFreshStart?: () => void
 }) {
   const pathname = usePathname()
   const labLookup = pathname.split("/").filter(Boolean).at(-1)
+  const [startReady, setStartReady] = useState(false)
   const startRequestedRef = useRef(false)
   const terminalReportedRef = useRef(false)
+  const resumeAppliedRef = useRef(false)
+  const lastSavedPayloadRef = useRef<string | null>(null)
+
+  const taskKeys = useMemo(
+    () =>
+      completedTasks ??
+      Array.from({ length: completedCount }, (_, index) => `task-${index + 1}`),
+    [completedCount, completedTasks],
+  )
 
   useEffect(() => {
     if (!labLookup || startRequestedRef.current) return
 
     startRequestedRef.current = true
-    void labsApi.start(labLookup).catch(() => {
-      startRequestedRef.current = false
-    })
-  }, [labLookup])
+    void labsApi
+      .start(labLookup)
+      .then((run) => {
+        setStartReady(true)
+        if (run.status === "started" && !resumeAppliedRef.current) {
+          if (onResume && isPlainRecord(run.stateSnapshot)) {
+            resumeAppliedRef.current = true
+            onResume(run.stateSnapshot)
+          } else {
+            onFreshStart?.()
+          }
+        }
+      })
+      .catch(() => {
+        setStartReady(false)
+        startRequestedRef.current = false
+      })
+  }, [labLookup, onFreshStart, onResume])
+
+  useEffect(() => {
+    if (!startReady) return
+    if (!labLookup || terminalReportedRef.current || isComplete || isTimelineFinished) return
+    if (totalTasks <= 0) return
+
+    const payload = {
+      completedTasks: taskKeys,
+      totalTasks,
+      stateSnapshot: stateSnapshot ?? {
+        completedCount,
+        totalTasks,
+      },
+      metadata: {
+        progressPercent: Math.round((completedCount / Math.max(totalTasks, 1)) * 100),
+      },
+      clientVersion: "lab-run-snapshot-v1",
+    }
+    const serialized = JSON.stringify(payload)
+    if (serialized === lastSavedPayloadRef.current) return
+
+    const timeout = window.setTimeout(() => {
+      lastSavedPayloadRef.current = serialized
+      void labsApi.saveProgress(labLookup, payload).catch(() => {
+        lastSavedPayloadRef.current = null
+      })
+    }, 700)
+
+    return () => window.clearTimeout(timeout)
+  }, [
+    completedCount,
+    isComplete,
+    isTimelineFinished,
+    labLookup,
+    startReady,
+    stateSnapshot,
+    taskKeys,
+    totalTasks,
+  ])
 
   useEffect(() => {
     if (!labLookup || terminalReportedRef.current) return
@@ -146,6 +229,7 @@ function useLabRunReporter({
           completedTasks: Array.from({ length: totalTasks }, (_, index) => `task-${index + 1}`),
           totalTasks,
           status: "completed",
+          metadata: stateSnapshot ? { stateSnapshot } : undefined,
         })
         .catch(() => {
           terminalReportedRef.current = false
@@ -158,21 +242,19 @@ function useLabRunReporter({
       void labsApi
         .complete(labLookup, {
           passed: false,
-          completedTasks: Array.from(
-            { length: completedCount },
-            (_, index) => `task-${index + 1}`,
-          ),
+          completedTasks: taskKeys,
           totalTasks,
           status: "failed",
           metadata: {
             reason: "timeline_finished",
+            ...(stateSnapshot ? { stateSnapshot } : {}),
           },
         })
         .catch(() => {
           terminalReportedRef.current = false
         })
     }
-  }, [completedCount, isComplete, isTimelineFinished, labLookup, totalTasks])
+  }, [completedCount, isComplete, isTimelineFinished, labLookup, stateSnapshot, taskKeys, totalTasks])
 
   useEffect(() => {
     if (!terminalReportedRef.current || isComplete || isTimelineFinished) return
@@ -184,8 +266,18 @@ function useLabRunReporter({
     }
 
     startRequestedRef.current = true
-    void labsApi.start(labLookup).catch(() => {
-      startRequestedRef.current = false
-    })
+    setStartReady(false)
+    void labsApi
+      .start(labLookup)
+      .then(() => {
+        setStartReady(true)
+      })
+      .catch(() => {
+        startRequestedRef.current = false
+      })
   }, [isComplete, isTimelineFinished, labLookup])
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value))
 }

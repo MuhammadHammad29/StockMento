@@ -8,6 +8,7 @@ import {
 import type { JwtPayload } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompleteLabDto } from './dto/complete-lab.dto';
+import { SaveLabProgressDto } from './dto/save-lab-progress.dto';
 
 @Injectable()
 export class LabsService {
@@ -129,6 +130,54 @@ export class LabsService {
 
       return created;
     });
+
+    return this.mapLabRunResult(run);
+  }
+
+  async saveLabProgress(
+    slugOrId: string,
+    user: JwtPayload,
+    dto: SaveLabProgressDto,
+  ) {
+    const lab = await this.findPublishedLab(slugOrId);
+    const lastRun = await this.prisma.labRun.findFirst({
+      where: {
+        userId: user.sub,
+        labId: lab.id,
+      },
+      orderBy: { attemptNo: 'desc' },
+    });
+
+    if (lastRun && lastRun.status !== LabRunStatus.started) {
+      return this.mapLabRunResult(lastRun);
+    }
+
+    const completedTasks: Prisma.InputJsonObject = {
+      tasks: dto.completedTasks ?? [],
+      metadata: (dto.metadata ?? {}) as Prisma.InputJsonObject,
+    };
+
+    const progressData = {
+      lessonId: dto.lessonId,
+      completedTasks,
+      totalTasks: dto.totalTasks,
+      stateSnapshot: (dto.stateSnapshot ?? {}) as Prisma.InputJsonObject,
+    };
+
+    const run = lastRun
+      ? await this.prisma.labRun.update({
+          where: { id: lastRun.id },
+          data: progressData,
+        })
+      : await this.prisma.labRun.create({
+          data: {
+            userId: user.sub,
+            labId: lab.id,
+            attemptNo: 1,
+            status: LabRunStatus.started,
+            ...progressData,
+          },
+        });
 
     return this.mapLabRunResult(run);
   }
@@ -262,6 +311,9 @@ export class LabsService {
     labId: string;
     attemptNo: number;
     status: LabRunStatus;
+    completedTasks?: Prisma.JsonValue | null;
+    totalTasks?: number | null;
+    stateSnapshot?: Prisma.JsonValue | null;
     completedAt: Date | null;
   }) {
     return {
@@ -269,6 +321,9 @@ export class LabsService {
       labId: run.labId,
       attemptNo: run.attemptNo,
       status: run.status,
+      completedTasks: run.completedTasks ?? null,
+      totalTasks: run.totalTasks ?? null,
+      stateSnapshot: run.stateSnapshot ?? null,
       completedAt: run.completedAt,
     };
   }
@@ -294,6 +349,7 @@ export class LabsService {
     status: LabRunStatus;
     completedTasks: Prisma.JsonValue | null;
     totalTasks: number | null;
+    stateSnapshot: Prisma.JsonValue | null;
     startedAt: Date;
     completedAt: Date | null;
   }) {
@@ -319,6 +375,7 @@ export class LabsService {
             status: latestRun.status,
             completedTasks: latestRun.completedTasks,
             totalTasks: latestRun.totalTasks,
+            stateSnapshot: latestRun.stateSnapshot,
             startedAt: latestRun.startedAt,
             completedAt: latestRun.completedAt,
           }

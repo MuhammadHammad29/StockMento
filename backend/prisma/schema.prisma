@@ -299,6 +299,7 @@ model LabRun {
   status         LabRunStatus
   completedTasks Json?        @map("completed_tasks")
   totalTasks     Int?         @map("total_tasks")
+  stateSnapshot  Json?        @map("state_snapshot")
   startedAt      DateTime     @default(now()) @map("started_at")
   completedAt    DateTime?    @map("completed_at")
   lab            Lab          @relation(fields: [labId], references: [id], onDelete: Cascade)

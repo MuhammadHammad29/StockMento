@@ -43,6 +43,19 @@ type TaskKey =
 
 type Tasks = Record<TaskKey, boolean>
 
+type Lab1ResumeSnapshot = {
+  currentDayIndex?: number
+  cash?: number
+  holdings?: number
+  avgCost?: number
+  realizedPnl?: number
+  quantity?: string
+  chartMode?: "area" | "candles"
+  tasks?: Partial<Tasks>
+  guideStep?: number | null
+  completionShown?: boolean
+}
+
 const TASK_LABELS: Record<TaskKey, string> = {
   bought100: "Buy 100 shares",
   sold100: "Sell 100 shares",
@@ -295,10 +308,11 @@ export default function Lab1Page() {
     skipped1m: false,
     madeProfit: false,
   })
-  const [guideStep, setGuideStep] = useState<number | null>(0)
+  const [guideStep, setGuideStep] = useState<number | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showCompletion, setShowCompletion] = useState(false)
   const completionShownRef = useRef(false)
+  const resumeAppliedRef = useRef(false)
 
   // Initial day index once data loads
   const initialDayIndex = useMemo(() => {
@@ -329,7 +343,9 @@ export default function Lab1Page() {
           return
         }
         setAllKlines(filtered)
-        setCurrentDayIndex(Math.min(LEAD_IN_DAYS, filtered.length - 1))
+        if (!resumeAppliedRef.current) {
+          setCurrentDayIndex(Math.min(LEAD_IN_DAYS, filtered.length - 1))
+        }
       } catch {
         if (active) setDataError("Failed to load historical data. Please try again.")
       } finally {
@@ -395,6 +411,49 @@ export default function Lab1Page() {
   const completedCount = TASK_ORDER.filter((k) => tasks[k]).length
   const allComplete = completedCount === TASK_ORDER.length
 
+  const completedTaskKeys = useMemo(
+    () => TASK_ORDER.filter((key) => tasks[key]),
+    [tasks]
+  )
+
+  const labStateSnapshot = useMemo(
+    () => ({
+      currentDayIndex,
+      cash,
+      holdings,
+      avgCost,
+      realizedPnl,
+      quantity,
+      chartMode,
+      tasks,
+      guideStep,
+      completionShown: completionShownRef.current,
+    }),
+    [avgCost, cash, chartMode, currentDayIndex, guideStep, holdings, quantity, realizedPnl, tasks]
+  )
+
+  const handleResume = useCallback((snapshot: Record<string, unknown>) => {
+    const saved = snapshot as Lab1ResumeSnapshot
+
+    resumeAppliedRef.current = true
+    if (typeof saved.currentDayIndex === "number") setCurrentDayIndex(saved.currentDayIndex)
+    if (typeof saved.cash === "number") setCash(saved.cash)
+    if (typeof saved.holdings === "number") setHoldings(saved.holdings)
+    if (typeof saved.avgCost === "number") setAvgCost(saved.avgCost)
+    if (typeof saved.realizedPnl === "number") setRealizedPnl(saved.realizedPnl)
+    if (typeof saved.quantity === "string") setQuantity(saved.quantity)
+    if (saved.chartMode === "area" || saved.chartMode === "candles") {
+      setChartMode(saved.chartMode)
+    }
+    if (typeof saved.guideStep === "number" || saved.guideStep === null) {
+      setGuideStep(saved.guideStep)
+    }
+    if (saved.tasks && typeof saved.tasks === "object") {
+      setTasks((prev) => ({ ...prev, ...saved.tasks }))
+    }
+    completionShownRef.current = Boolean(saved.completionShown)
+  }, [])
+
   useEffect(() => {
     if (allComplete && !completionShownRef.current) {
       completionShownRef.current = true
@@ -458,6 +517,7 @@ export default function Lab1Page() {
     setShowConfetti(false)
     setShowCompletion(false)
     completionShownRef.current = false
+    resumeAppliedRef.current = false
   }, [initialDayIndex])
 
   // Format helpers
@@ -534,6 +594,10 @@ export default function Lab1Page() {
         isComplete={allComplete}
         completedCount={completedCount}
         totalTasks={TASK_ORDER.length}
+        completedTasks={completedTaskKeys}
+        stateSnapshot={labStateSnapshot}
+        onResume={handleResume}
+        onFreshStart={() => setGuideStep(0)}
         onReset={handleReset}
       />
       {guideStep !== null && guideStep < GUIDE_STEPS.length && (

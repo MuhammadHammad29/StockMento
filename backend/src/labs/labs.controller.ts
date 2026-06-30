@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { JwtPayload } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CompleteLabDto } from './dto/complete-lab.dto';
+import { SaveLabProgressDto } from './dto/save-lab-progress.dto';
 import { LabsService } from './labs.service';
 
 @Controller('labs')
@@ -38,5 +39,14 @@ export class LabsController {
     @Body() dto: CompleteLabDto,
   ) {
     return this.labsService.completeLab(slugOrId, user, dto);
+  }
+
+  @Patch(':slugOrId/progress')
+  saveLabProgress(
+    @Param('slugOrId') slugOrId: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: SaveLabProgressDto,
+  ) {
+    return this.labsService.saveLabProgress(slugOrId, user, dto);
   }
 }

@@ -37,6 +37,7 @@ import {
   SimTradeHistoryResponse,
   PublicLabSummary,
   LabCompletionPayload,
+  LabProgressPayload,
   LabRunResult,
 } from '../types'
 import { STORAGE_KEYS } from '../data-utils'
@@ -627,6 +628,16 @@ export const labsApi = {
   ): Promise<LabRunResult> => {
     return apiCall<LabRunResult>(`/labs/${slugOrId}/complete`, {
       method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  saveProgress: async (
+    slugOrId: string,
+    payload: LabProgressPayload,
+  ): Promise<LabRunResult> => {
+    return apiCall<LabRunResult>(`/labs/${slugOrId}/progress`, {
+      method: 'PATCH',
       body: JSON.stringify(payload),
     })
   },
